@@ -1,4 +1,4 @@
-function StatCard({title, value, subtitle, trend}: {
+export function StatCard({title, value, subtitle, trend}: {
     title: string;
     value: string;
     subtitle?: string;
