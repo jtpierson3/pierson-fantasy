@@ -1,4 +1,4 @@
-import { prisma } from "../../../lib/prisma";
+import { prisma } from "../../lib/prisma";
 import { ContestantCard } from "../components/survivor/contestant-card";
 import { ScoringFeed } from "../components/survivor/scoring-feed";
 import { StatCard } from "../components/survivor/stat-card";
