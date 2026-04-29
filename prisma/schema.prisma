@@ -16,6 +16,7 @@ model User {
   clerkId   String        @unique
   username  String
   email     String
+  isSiteAdmin   Boolean       @default(false)
   leagues   LeagueMember[]
   team      Team?
   createdAt DateTime      @default(now())
@@ -26,6 +27,7 @@ model League {
   id            String        @id @default(cuid())
   name          String
   description   String
+  leagueType    String
   members       LeagueMember[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -58,4 +60,88 @@ model TeamPlayer {
   team        Team        @relation(fields: [teamId], references: [id])
   teamId      String
   fplId       Int
+}
+
+//------------------------------ SURVIVOR ----------------------------------
+
+model Player {
+  id            String      @id @default(cuid())
+  name          String      @unique
+  imageUrl      String?
+  bio           String?
+  constestants  Contestant[]
+}
+
+model Season {
+  id          String      @id @default(cuid())
+  number      Int
+  title       String
+  imageUrl    String?
+  contestants Contestant[]
+  episodes    Episode[]
+}
+
+model Tribe {
+  id          String      @id @default(cuid())
+  name        String
+  color       String
+  seasonId    String
+  seasonId    Season      @relation(fields[SeasonId], references: [id])
+  memberships TribeMemberships[]
+}
+
+model Contestant {
+  id          String      @id @default(cuid())
+  playerId    String      
+  seasonId    String
+  player      Player      @relation(fields: [playerId], references: [id])
+  season      Season      @relation(fields: [SeasonId], references: [id])
+  status      String
+  tribeMemberships  TribeMemberships[]
+  episodeStats       EpisodeStat[]
+}
+
+model TribeMembership {
+  id          String    @id @default(cuid())
+  contestantId  String
+  tribeId       String
+  tribeType     String
+  isCurrent     Boolean  @default(true)
+  contestant    Contestant  @relation(fields: [contestantId], references: [id])
+  tribe         Tribe       @relation(fields: [tribeId], references: [id])
+}
+
+model ScoringEvent {
+  id        String        @id @default(cuid())
+  label     String
+  points    Int
+  category  String
+  stats     EpisodeStat[]
+}
+
+model EpisodeStat {
+  id          String      @id @default(cuid())
+  episodeId   String
+  contestantId String
+  eventId     String
+  episode     Episode     @relation(fields: [episodeId], references: [id])
+  contestant  Contestant  @relation(fields: [contestantId], references: [id])
+  event       ScoringEvent @relation(fields: [eventId], references: [id])
+}
+
+model LeagueTribe {
+  id          String      @id @default(cuid())
+  name        String
+  user        User        @relation(fields: [userId], references: [id])
+  userId      String      @unique
+  players     SurvivorPicks[]
+}
+
+model SurvivorPicks {
+  id            String      @id @default(cuid())
+  leagueId      String
+  contestantId  String
+  user          User        @relation(fields: [userId], references[id])
+  leagueTribe   LeagueTribe @relation(fields: [leagueId], references[id])
+  contestant    Contestant  @relation(fields: [contestantId], references[id])
 }
