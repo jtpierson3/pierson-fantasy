@@ -7,9 +7,6 @@ import { NextResponse } from 'next/server'
 export async function POST(req: Request) {
     const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET
 
-    console.log('Webhook secret exists:', !!WEBHOOK_SECRET)
-    console.log('All env keys:', Object.keys(process.env).filter(k=>k.includes('CLERK')))
-
     if (!WEBHOOK_SECRET) {
         return NextResponse.json({ error: 'No webhook secret' }, { status: 500 })
     }
@@ -46,10 +43,16 @@ export async function POST(req: Request) {
     if (evt.type === 'user.created') {
         const { id, email_addresses, username } = evt.data
 
+        const email = email_addresses?.[0]?.email_address
+
+        if (!email) {
+            return NextResponse.json({ error: 'No email found' }, { status: 400 })
+        }
+
         await prisma.user.create({
             data: {
                 clerkId: id,
-                email: email_addresses[0].email_address,
+                email,
                 username: username ?? email_addresses[0].email_address.split('@')[0],
             },
         })
