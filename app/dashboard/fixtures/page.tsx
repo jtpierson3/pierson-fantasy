@@ -87,6 +87,7 @@ export default function FixturesPage() {
 
                 const roundsRes = await fetch(`/api/sportmonks/rounds?seasonId=${season.id}`)
                 const roundsData = await roundsRes.json()
+                console.log("Rounds data:", JSON.stringify(roundsData.data?.slice(0,3), null, 2))
                 const allRounds: Round[] = roundsData.data ?? []
                 setRounds(allRounds)
 
