@@ -75,12 +75,13 @@ export default function FixturesPage() {
         async function init() {
             try {
                 const seasonRes = await fetch('/api/sportmonks/season')
+                if (!seasonRes.ok) {
+                    throw new Error(`Season fetch failed: ${seasonRes.status}`)
+                }
+
                 const seasonData = await seasonRes.json()
                 const season = seasonData.data?.current_season
                 if (!season) throw new Error ('No season found')
-
-                // DEGBUGGING DELETE AFTER
-                console.log('Season Data:', JSON.stringify(seasonData, null, 2))
 
                 setSeasonId(seasonId)
 
@@ -99,7 +100,8 @@ export default function FixturesPage() {
 
                 setCurrentRoundId(current?.id ?? allRounds[0]?.id)
             } catch (err) {
-                setError('Failed to load season dadta')
+                console.error('Init error: ', err)
+                setError('Failed to load season data')
                 setLoading(false)
             }
         }
