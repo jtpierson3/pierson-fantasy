@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import type { Fixture, Round } from '@/lib/sportmonks'
 
 type Props = {
@@ -45,12 +45,15 @@ export default function FixtureList({ rounds, initialFixtures, initialRoundId, s
   const currentRoundIndex = rounds.findIndex(r => r.id === currentRoundId)
   const currentRound = rounds[currentRoundIndex]
 
-  async function navigateToRound(roundId: number) {
+  const navigateToRound = useCallback(async (roundId: number) => {
     setLoading(true)
     setError(null)
     setCurrentRoundId(roundId)
     try {
-      const res = await fetch(`/api/sportmonks/fixtures?round=${roundId}&seasonId=${seasonId}`)
+      const res = await fetch(`/api/sportmonks/fixtures?round=${roundId}`)
+      if (!res.ok) {
+        throw new Error(`Failed to fetch: ${res.status}`)
+      }
       const data = await res.json()
       setFixtures(data.data ?? [])
     } catch {
@@ -58,19 +61,19 @@ export default function FixtureList({ rounds, initialFixtures, initialRoundId, s
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  function prevRound() {
+  const prevRound = useCallback(() => {
     if (currentRoundIndex > 0) {
       navigateToRound(rounds[currentRoundIndex - 1].id)
     }
-  }
+  }, [currentRoundIndex, rounds, navigateToRound])
 
-  function nextRound() {
+  const nextRound = useCallback(() => {
     if (currentRoundIndex < rounds.length - 1) {
       navigateToRound(rounds[currentRoundIndex + 1].id)
     }
-  }
+  }, [currentRoundIndex, rounds, navigateToRound])
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
