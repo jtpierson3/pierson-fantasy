@@ -1,4 +1,4 @@
-'use-client'
+"use client"
 
 import { useEffect, useState } from "react"
 
@@ -206,10 +206,76 @@ export default function FixturesPage() {
                     {fixtures.map((fixture => {
                         const home = getTeam(fixture.participants, 'home')
                         const away = getTeam(fixture.participants, 'away')
+                        const homeScore = getScore(fixture.scores, 'home')
+                        const awayScore = getScore(fixture.scores, 'away')
+                        const state = fixture.state?.short_name ?? 'NS'
+                        const isLive = isLiveState(state)
+                        const isFinished = isFinishedState(state)
+                        const {day, time} = formatDate(fixture.starting_at)
 
                         return(
-                            <div>
-                                
+                            <div
+                                key={fixture.id}
+                                className="bg-white border border-gray-100 rounded-xl p-4 hover:border-gray-200 transition-colors"
+                            >
+                                {/* Date and Status Row */}
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="text-xs text-gray-400">{day} * {time}</span>
+                                    <div className="flex items-center gap-2">
+                                        {fixture.venue && (
+                                            <span className="text-xs text-gray-400">
+                                                {fixture.venue.name}
+                                            </span>
+                                        )}
+                                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getStatusStyle(state)}`}>
+                                            {isLive ? 'LIVE' : state}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Teams and Score */}
+                                <div className="flex items-center gap-3">
+                                    {/* Home Team*/}
+                                    <div className="flex items-center gap-2 flex-1 justify-end">
+                                        <span className={`text-sm ${isFinished && homeScore! > awayScore! ? 'font-medium text-gray-900' : 'text-gray-600'}`}>
+                                            {home?.name ?? 'TBD'}
+                                        </span>
+                                        {home?.image_path && (
+                                            <img 
+                                                src={home.image_path}
+                                                alt={home.name}
+                                                className="w-6 h-6 object-contain"
+                                            />
+                                        )}
+                                    </div>
+
+                                    {/* Score or VS */}
+                                    <div className="flex items-center gap-1.5 min-w-[60px] justify-center">
+                                        {isFinished || isLive ? (
+                                            <>
+                                                <span className="text-lg font-medium text-gray-900">{homeScore}</span>
+                                                <span className="text-gray-300">-</span>
+                                                <span className="text-lg font-medium text-gray-900">{awayScore}</span>
+                                            </>
+                                        ) : (
+                                            <span className="text-sm text-gray-400">vs</span>
+                                        )}
+                                    </div>
+
+                                    {/* Away Team */}
+                                    <div className="flex items-center gap-2 flex-1">
+                                        {away?.image_path && (
+                                            <img 
+                                                src={away.image_path}
+                                                alt={away.name}
+                                                className="w-6 h-6 object-contain"
+                                            />
+                                        )}
+                                        <span className={`text-sm ${isFinished && awayScore! > homeScore! ? 'font-medium text-gray-900' : 'text-gray-600'}`}>
+                                            {away?.name ?? 'TBD'}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         )
                     }))}
