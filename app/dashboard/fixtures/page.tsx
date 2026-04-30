@@ -155,7 +155,7 @@ export default function FixturesPage() {
                             disabled={currentRoundIndex === 0}
                             className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray disabled:opacity-30 disabled:cursor-not-allowed"
                         >
-                            '
+                            .
                         </button>
                         <span className="text-sm font-medium text-gray-700 min-w-[90px] text-center">
                             {currentRound.name}
@@ -165,7 +165,7 @@ export default function FixturesPage() {
                             disabled={currentRoundIndex === rounds.length-1}
                             className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 test-gray-500 hover:bg-gray disabled:opacity-30 disabled:cursor-not-allowed"
                         >
-                            '
+                            .
                         </button>
                     </div>
                 )}
