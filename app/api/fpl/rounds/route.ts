@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server'
 import { getRounds } from '@/lib/sportmonks'
 
-const cache = new Map<string, {data: any; timestamp: number}>()
+type CacheEntry = {
+    data: unknown
+    timestamp: number
+}
+
+const cache = new Map<string, CacheEntry>()
 const CACHE_TTL = 60 * 60 *1000 // hourly - don't waste calls
 
 export async function GET(req: Request) {

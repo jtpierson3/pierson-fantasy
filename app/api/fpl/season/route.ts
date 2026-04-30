@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server'
 import { getCurrentSeason } from '@/lib/sportmonks'
 
-let cache: {data: any; timestamp: number} | null = null
+type CacheEntry = {
+    data: unknown
+    timestamp: number
+}
+
+let cache: CacheEntry | null = null
 const CACHE_TTL = 60 * 60 *1000 // hourly - don't waste calls
 
 export async function GET(req: Request) {
