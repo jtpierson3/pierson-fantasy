@@ -79,6 +79,9 @@ export default function FixturesPage() {
                 const season = seasonData.data?.current_season
                 if (!season) throw new Error ('No season found')
 
+                // DEGBUGGING DELETE AFTER
+                console.log('Season Data:', JSON.stringify(seasonData, null, 2))
+
                 setSeasonId(seasonId)
 
                 const roundsRes = await fetch(`/api/sportmonks/rounds?seasonId=${season.id}`)

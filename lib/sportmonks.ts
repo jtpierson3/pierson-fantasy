@@ -8,9 +8,6 @@ export async function sportmonksFetch(endpoint: string) {
     const separator = endpoint.includes('?') ? '&' : '?'
     const fullUrl = `${BASE_URL}${endpoint}${separator}api_token=${process.env.SPORTMONKS_API_KEY}`
 
-    //DEBUG DELETE AFTER
-    console.log('Fetching:', fullUrl)
-
     const res = await fetch(fullUrl)
 
     if (!res.ok) {
