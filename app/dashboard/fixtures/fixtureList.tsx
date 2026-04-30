@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import type { Fixture, Round } from './page'
+import type { Fixture, Round } from '@/lib/sportmonks'
 
 type Props = {
   rounds: Round[]
