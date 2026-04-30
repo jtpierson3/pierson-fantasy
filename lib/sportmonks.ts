@@ -6,10 +6,12 @@ export const LEAGUE_ID = 501
 export async function sportmonksFetch(endpoint: string) {
     const url = `{$BASE_URL}${endpoint}`
     const separator = endpoint.includes('?') ? '&' : '?'
+    const fullUrl = `${BASE_URL}${endpoint}${separator}api_token${process.env.SPORTMONKS_API_KEY}`
 
-    const res = await fetch(`${url}${separator}api_token=${process.env.SPORTMONKS_API_KEY}`, {
-        next: { revalidate: 60 }
-    })
+    //DEBUG DELETE AFTER
+    console.log('Fetching:', fullUrl)
+
+    const res = await fetch(fullUrl)
 
     if (!res.ok) {
         throw new Error(`Sportmonks error: ${res.status}`)
