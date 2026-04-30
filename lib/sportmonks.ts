@@ -4,7 +4,6 @@ const BASE_URL = 'https://api.sportmonks.com/v3/football'
 export const LEAGUE_ID = 501
 
 export async function sportmonksFetch(endpoint: string) {
-    const url = `{$BASE_URL}${endpoint}`
     const separator = endpoint.includes('?') ? '&' : '?'
     const fullUrl = `${BASE_URL}${endpoint}${separator}api_token=${process.env.SPORTMONKS_API_KEY}`
 
@@ -18,9 +17,7 @@ export async function sportmonksFetch(endpoint: string) {
 }
 
 export async function getFixturesByRound(round: number) {
-    return sportmonksFetch(`
-        /fixtures?filters=fixtureRounds:${round}&include=participants;scores;venue;state;league;round&per_page=20`
-    )
+    return sportmonksFetch(`/fixtures?filters=fixtureRounds:${round}&include=participants;scores;venue;state;league;round&per_page=20`)
 }
 
 export async function getRounds(seasonId: number) {
@@ -28,5 +25,5 @@ export async function getRounds(seasonId: number) {
 }
 
 export async function getCurrentSeason() {
-    return sportmonksFetch(`/leagues/${LEAGUE_ID}?include=currentSeason`)
+    return sportmonksFetch(`/leagues/${LEAGUE_ID}?include=currentseason`)
 }

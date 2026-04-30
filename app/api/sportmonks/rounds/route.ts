@@ -24,9 +24,7 @@ export async function GET(req: Request) {
             return NextResponse.json(cached.data) 
         }
 
-        console.log('Fetching rounds for seasonId:', seasonId)
         const data = await getRounds(parseInt(seasonId))
-        console.log('Rounds response:', JSON.stringify(data, null, 2))
         cache.set(cacheKey, { data, timestamp: Date.now() })
 
         return NextResponse.json(data)
