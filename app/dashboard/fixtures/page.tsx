@@ -80,7 +80,7 @@ export default function FixturesPage() {
                 }
 
                 const seasonData = await seasonRes.json()
-                const season = seasonData.data?.current_season
+                const season = seasonData.data?.currentseason
                 if (!season) throw new Error ('No season found')
 
                 setSeasonId(seasonId)
