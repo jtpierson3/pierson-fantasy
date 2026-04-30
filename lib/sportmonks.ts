@@ -6,7 +6,7 @@ export const LEAGUE_ID = 501
 export async function sportmonksFetch(endpoint: string) {
     const url = `{$BASE_URL}${endpoint}`
     const separator = endpoint.includes('?') ? '&' : '?'
-    const fullUrl = `${BASE_URL}${endpoint}${separator}api_token${process.env.SPORTMONKS_API_KEY}`
+    const fullUrl = `${BASE_URL}${endpoint}${separator}api_token=${process.env.SPORTMONKS_API_KEY}`
 
     //DEBUG DELETE AFTER
     console.log('Fetching:', fullUrl)
