@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getFixturesByRound, getCurrentSeason } from "@/lib/sportmonks";
+import { getFixturesByRound } from "@/lib/sportmonks";
 
 type CacheEntry = {
     data: unknown
@@ -25,7 +25,7 @@ export async function GET(req: Request) {
             return NextResponse.json(cached.data) 
         }
 
-        const data = await getFixturesByRound(parseInt(seasonId), parseInt(round))
+        const data = await getFixturesByRound(parseInt(round))
         cache.set(cacheKey, { data, timestamp: Date.now() })
 
         return NextResponse.json(data)

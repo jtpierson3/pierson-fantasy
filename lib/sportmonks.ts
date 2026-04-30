@@ -17,7 +17,7 @@ export async function sportmonksFetch(endpoint: string) {
     return res.json()
 }
 
-export async function getFixturesByRound(seasonId: number, round: number) {
+export async function getFixturesByRound(round: number) {
     return sportmonksFetch(`
         /fixtures?filters=fixtureRounds:${round}&include=participants;scores;venue;state;league;round&per_page=20`
     )
