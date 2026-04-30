@@ -3,9 +3,10 @@ import { headers } from 'next/headers'
 import { WebhookEvent } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
+import { env } from '@/lib/env'
 
 export async function POST(req: Request) {
-    const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET
+    const WEBHOOK_SECRET = env.CLERK_WEBHOOK_SECRET
 
     if (!WEBHOOK_SECRET) {
         return NextResponse.json({ error: 'No webhook secret' }, { status: 500 })

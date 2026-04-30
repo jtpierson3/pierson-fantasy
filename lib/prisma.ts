@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
+import { env } from '@/lib/env'
 import pg from 'pg'
 
 const { Pool } = pg
@@ -10,7 +11,7 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 const pool = globalForPrisma.pool ?? new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: env.DATABASE_URL,
 })
 
 if (process.env.NODE_ENV !== 'production') {
