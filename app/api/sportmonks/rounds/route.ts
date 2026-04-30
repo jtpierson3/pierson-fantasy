@@ -14,7 +14,7 @@ export async function GET(req: Request) {
         const { searchParams } = new URL(req.url)
         const seasonId = searchParams.get('seasonId')
 
-        if (!seasonId) {
+        if (!seasonId || isNaN(parseInt(seasonId))) {
             return NextResponse.json({error : 'seasonId required'}, {status: 400})
         }
 

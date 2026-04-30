@@ -10,18 +10,19 @@ export async function sportmonksFetch(endpoint: string) {
     const res = await fetch(fullUrl)
 
     if (!res.ok) {
-        throw new Error(`Sportmonks error: ${res.status}`)
+        const errorText = await res.text()
+        throw new Error(`Sportmonks error: ${res.status} - ${errorText}`)
     }
 
     return res.json()
 }
 
-export async function getFixturesByRound(round: number) {
-    return sportmonksFetch(`/fixtures?filters=fixtureRounds:${round}&include=participants;scores;venue;state;league;round&per_page=20`)
+export async function getFixturesByRound(roundId: number) {
+    return sportmonksFetch(`/fixtures?filters=fixtureRounds:${roundId}&include=participants;scores;venue;state;league;round`)
 }
 
 export async function getRounds(seasonId: number) {
-    return sportmonksFetch(`/rounds?filters=roundSeason:${seasonId}&per_page=50`)
+    return sportmonksFetch(`/rounds/seasons/${seasonId}`)
 }
 
 export async function getCurrentSeason() {
