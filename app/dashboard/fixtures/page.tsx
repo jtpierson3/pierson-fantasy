@@ -89,7 +89,6 @@ export default function FixturesPage() {
 
                 const roundsRes = await fetch(`/api/sportmonks/rounds?seasonId=${season.id}`)
                 const roundsData = await roundsRes.json()
-                console.log('Rounds: ', JSON.stringify(roundsData.data?.slice(0,2), null, 2))
                 const allRounds: Round[] = roundsData.data ?? []
                 
                 //Sort Rounds by starting_at date
@@ -133,6 +132,11 @@ export default function FixturesPage() {
             try{
                 const res = await fetch(`/api/sportmonks/fixtures?round=${currentRoundId}&seasonId=${seasonId}`)
                 const data = await res.json()
+
+                // DELETE AFTER
+                console.log('Fixtures response:', JSON.stringify(data, null, 2))
+                console.log('Fixtures Array: ', data.data)
+
                 setFixtures(data.data ?? [])
             } catch {
                 setError('Failed to load fixtures')
