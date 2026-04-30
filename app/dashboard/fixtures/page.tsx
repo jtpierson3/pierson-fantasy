@@ -30,6 +30,8 @@ type Round = {
     name: string
     starting_at: string
     ending_at: string
+    is_current: boolean
+    finished: boolean
 }
 
 function getScore(scores: Score[], location: 'home' | 'away') {
@@ -89,17 +91,29 @@ export default function FixturesPage() {
                 const roundsData = await roundsRes.json()
                 console.log('Rounds: ', JSON.stringify(roundsData.data?.slice(0,2), null, 2))
                 const allRounds: Round[] = roundsData.data ?? []
-                setRounds(allRounds)
+                
+                //Sort Rounds by starting_at date
+                const sortedRounds = allRounds.sort((a,b) =>
+                    new Date(a.starting_at).getTime() - new Date(b.starting_at).getTime()
+                )
+                setRounds(sortedRounds)
 
-                // Find current round based on today's date
-                const today = new Date()
-                const current = allRounds.find(r => {
-                    const start = new Date (r.starting_at)
-                    const end = new Date(r.ending_at)
-                    return today >= start && today <= end
-                }) ?? allRounds[allRounds.length - 1]
+                //First try to find is_current round
+                const currentRound = sortedRounds.find(r => r.is_current)
+                    //Then try to find round by today's date
+                    ?? sortedRounds.find(r => {
+                        const start = new Date(r.starting_at)
+                        const end = new Date(r.ending_at)
+                        const today = new Date()
+                        return today >= start && today <= end
+                    })
+                    // Fall back to the last finished round
+                    ?? sortedRounds.filter(r => r.finished).pop()
+                    // Last resort: first round
+                    ?? sortedRounds[0]
+                
 
-                setCurrentRoundId(current?.id ?? allRounds[0]?.id)
+                setCurrentRoundId(currentRound?.id ?? null)
             } catch (err) {
                 console.error('Init error: ', err)
                 setError('Failed to load season data')
