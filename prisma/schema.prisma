@@ -11,62 +11,102 @@ datasource db {
   provider = "postgresql"
 }
 
+// ===================================================
+//      Fantasy Football
+// ===================================================
+
 model User {
   id            String          @id @default(cuid())
   clerkId       String          @unique
   username      String
   email         String
   isSiteAdmin   Boolean         @default(false)
-  leagues       LeagueMember[]
-  team          Team?
+  leagues       FantasyLeagueMember[]
+  team          FantasyTeam?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
-  leagueTribe   LeagueTribe?
-  survivorPicks SurvivorPicks[]
+  survivorLeagues SurvivorFantasyLeagueMember[]
+  leagueTribe   SurvivorFantasyLeagueTribe?
 }
 
-model League {
+model FantasyLeague {
   id          String         @id @default(cuid())
   name        String
-  description String
-  leagueType  String
-  members     LeagueMember[]
+  description String?
+  members     FantasyLeagueMember[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 }
 
-model LeagueMember {
+model FantasyLeagueMember {
   id       String  @id @default(cuid())
   user     User    @relation(fields: [userId], references: [id])
   userId   String
-  league   League  @relation(fields: [leagueId], references: [id])
-  leagueId String
+  fantasyLeague   FantasyLeague  @relation(fields: [fantasyLeagueId], references: [id])
+  fantasyLeagueId String
   isAdmin  Boolean @default(false)
   points   Int     @default(0)
 
-  @@unique([userId, leagueId])
+  @@unique([userId, fantasyLeagueId])
 }
 
-model Team {
+model FantasyTeam {
   id        String       @id @default(cuid())
   name      String
   user      User         @relation(fields: [userId], references: [id])
   userId    String       @unique
-  players   TeamPlayer[]
+  players   FantasyTeamPlayer[]
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 }
 
-model TeamPlayer {
+model FantasyTeamPlayer {
   id     String @id @default(cuid())
-  team   Team   @relation(fields: [teamId], references: [id])
-  teamId String
+  fantasyTeam   FantasyTeam   @relation(fields: [fantasyTeamId], references: [id])
+  fantasyTeamId String
   fplId  Int
+}
+
+// ===========================================
+//          Football Data Models
+// ===========================================
+
+model League {
+  id        Int   @id
+  name      String
+  short_code String?
+  image_path String
+  season_id   Int
+  teams       Team[]
+  updatedAt   DateTime @updatedAt
+}
+
+model Team {
+  id      Int     @id
+  name    String
+  short_code  String?
+  image_path  String
+  league      League    @relation(fields: [leagueId], references: [id])
+  leagueId    Int
+  players     Player[]
+  updatedAt   DateTime    @updatedAt
+}
+
+model Player {
+  id      Int     @id
+  display_name    String
+  image_path  String
+  position_id Int
+  jersey_number Int?
+  date_of_birth String?
+  team      Team  @relation(fields:[teamId], references: [id])
+  teamId    Int
+  updatedAt DateTime @updatedAt
 }
 
 //------------------------------ SURVIVOR ----------------------------------
 
-model Player {
+model SurvivorPlayer {
   id           String       @id @default(cuid())
   name         String       @unique
   imageUrl     String?
@@ -105,9 +145,9 @@ model Episode {
 
 model Contestant {
   id               String            @id @default(cuid())
-  playerId         String
+  survivorPlayerId         String
   survivorSeasonId String
-  player           Player            @relation(fields: [playerId], references: [id])
+  survivorPlayer           SurvivorPlayer            @relation(fields: [survivorPlayerId], references: [id])
   survivorSeason   SurvivorSeason    @relation(fields: [survivorSeasonId], references: [id])
   status           String
   tribeMemberships TribeMembership[]
@@ -143,12 +183,34 @@ model EpisodeStat {
   event        ScoringEvent @relation(fields: [eventId], references: [id])
 }
 
-model LeagueTribe {
+model SurvivorLeague {
+  id            String        @id @default(cuid())
+  name          String
+  members       SurvivorFantasyLeagueMember[]
+  createdAt     DateTime
+  updatedAt     DateTime
+}
+
+model SurvivorFantasyLeagueMember {
+  id            String        @id @default(cuid())
+  user          User          @relation(fields: [userId], references: [id])
+  userId        String
+  survivorLeague  SurvivorLeague @relation(fields: [survivorLeagueId], references: [id])
+  survivorLeagueId  String
+  isAdmin       Boolean       @default(false)
+  points        Int           @default(0)
+
+  @@unique([userId, survivorLeagueId])
+}
+
+model SurvivorFantasyLeagueTribe {
   id      String          @id @default(cuid())
   name    String
   user    User            @relation(fields: [userId], references: [id])
   userId  String          @unique
   players SurvivorPicks[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 }
 
 model SurvivorPicks {
@@ -156,7 +218,6 @@ model SurvivorPicks {
   userId       String
   leagueId     String
   contestantId String
-  user         User        @relation(fields: [userId], references: [id])
-  leagueTribe  LeagueTribe @relation(fields: [leagueId], references: [id])
+  leagueTribe  SurvivorFantasyLeagueTribe @relation(fields: [leagueId], references: [id])
   contestant   Contestant  @relation(fields: [contestantId], references: [id])
 }
