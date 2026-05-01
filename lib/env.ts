@@ -1,3 +1,5 @@
+import 'server-only'
+
 const requiredEnvVars = [
     'DATABASE_URL',
     'CLERK_SECRET_KEY',
