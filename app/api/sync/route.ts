@@ -19,7 +19,7 @@ async function sportmonksFetch(endpoint: string) {
 export async function POST(req: Request) {
     //PROTECT THE SYNC ROUTE WITH A SECRET KEY
     const authHeader = req.headers.get('authorization')
-    if (authHeader !==`Bearer ${env.SYNC_SECRET}`) {
+    if (authHeader !== `Bearer ${env.SYNC_SECRET}`) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
