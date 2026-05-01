@@ -58,12 +58,12 @@ export type League = {
 type SportmonksResponse<T> = { data: T }
 type SportmonksListResponse<T> = { data: T[] }
 
-export async function sportmonksFetch(endpoint: string, revalidate = 60, retries = 3): Promise<unknown> {
+async function sportmonksFetch(endpoint: string, revalidate = 60, retries = 3): Promise<unknown> {
     const separator = endpoint.includes('?') ? '&' : '?'
     const fullUrl = `${BASE_URL}${endpoint}${separator}api_token=${env.SPORTMONKS_API_KEY}`
 
     const res = await fetch(fullUrl, { 
-        next: { revalidate: 60 }
+        next: { revalidate }
     })
 
     if (res.status === 429 && retries > 0) {
@@ -83,7 +83,7 @@ export async function sportmonksFetch(endpoint: string, revalidate = 60, retries
 const DAILY_RESET = 60*60*24
 const HOURLY_RESET = 60*60
 
-export async function getCurrentSeason() {
+export async function getCurrentSeason(): Promise<Season | null> {
     const data = await sportmonksFetch(
         `/leagues/${LEAGUE_ID}?include=currentseason`,
         DAILY_RESET
@@ -91,7 +91,7 @@ export async function getCurrentSeason() {
     return data.data?.currentseason ?? null
 }
 
-export async function getRounds(seasonId: number) {
+export async function getRounds(seasonId: number): Promise<Round[]> {
     const data = await sportmonksFetch(
         `/rounds/seasons/${seasonId}`,
         DAILY_RESET
@@ -99,7 +99,7 @@ export async function getRounds(seasonId: number) {
     return data.data ?? []
 }
 
-export async function getFixturesByRound(roundId: number) {
+export async function getFixturesByRound(roundId: number): Promise<Fixture[]> {
   const data = await sportmonksFetch(
     `/fixtures?filters=roundLeagues:${roundId}&include=participants;scores;venue;state;round&per_page=20`,
     HOURLY_RESET
