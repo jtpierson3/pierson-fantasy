@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react"
 import Image from 'next/image'
-import { getPositionShort, getPositionColor } from '@/lib/sportmonks'
+import { getPositionShort, getPositionColor } from '@/lib/helpers'
 import type { Player, Team } from '@prisma/client'
 
 type PlayerWithTeam = Player & { team: Team }
