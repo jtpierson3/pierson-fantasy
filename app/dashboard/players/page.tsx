@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { prisma } from '@/lib/prisma'
-import PlayerList from './PlayerList'
+import PlayerList from './playerList'
 
 function PlayersSkeleton() {
   return(
