@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import type { Fixture, Round } from '@/lib/sportmonks'
+import Image from 'next/image'
 
 type Props = {
   rounds: Round[]
@@ -176,7 +177,7 @@ export default function FixtureList({ rounds, initialFixtures, initialRoundId, s
                       {home?.name ?? 'TBD'}
                     </span>
                     {home?.image_path && (
-                      <img src={home.image_path} alt={home.name} className="w-6 h-6 object-contain" />
+                      <Image src={home.image_path} alt={home.name} width={24} height={24} className="object-contain" />
                     )}
                   </div>
 
@@ -196,7 +197,7 @@ export default function FixtureList({ rounds, initialFixtures, initialRoundId, s
                   {/* Away */}
                   <div className="flex items-center gap-2 flex-1">
                     {away?.image_path && (
-                      <img src={away.image_path} alt={away.name} className="w-6 h-6 object-contain" />
+                      <Image src={away.image_path} alt={away.name} width={24} height={24} className="object-contain" />
                     )}
                     <span className={`text-sm ${isFinished && awayScore! > homeScore! ? 'font-medium text-gray-900' : 'text-gray-600'}`}>
                       {away?.name ?? 'TBD'}
