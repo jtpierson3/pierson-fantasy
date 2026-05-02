@@ -48,7 +48,7 @@ async function MyTeamContent() {
       <div className="p-6">
         <h1 className="text-xl font-medium text-gray-900 mb-2">My Team</h1>
         <p className ="text-sm text-gray-500">
-          You don't have a team yet. Talk to an admin to assign you a team.
+          You dont have a team yet. Talk to an admin to assign you a team.
         </p>
       </div>
     )
