@@ -49,7 +49,7 @@ export default function MyTeam({ fantasyTeam }: Props) {
 
             {/* Tab Content */}
             {activeTab === 'lineup' && <LatestLineup team={team} />}
-            {activeTab === 'performance' && <TeamStats team={team}  onUpdate={setTeam} />}
+            {activeTab === 'performance' && <TeamStats team={team} />}
             {activeTab === 'set-lineup' && <SetLineup team={team} onUpdate={setTeam}/>}
         </div>
     )
