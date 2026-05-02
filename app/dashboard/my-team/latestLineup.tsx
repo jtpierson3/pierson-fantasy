@@ -3,9 +3,7 @@
 import Image from 'next/image'
 import type { FantasyTeamWithPlayers, PlayerWithDetails } from './types'
 import { parseFormation } from './types'
-import { getPositionColor, getPositionShort } from '@/lib/helpers'
 import PlayerCard from '@/app/components/playerCard'
-import PlayerListRow from '@/app/components/PlayerListRow'
 
 type Props = {
     team: FantasyTeamWithPlayers

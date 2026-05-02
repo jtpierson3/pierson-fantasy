@@ -1,65 +1,79 @@
 'use client'
 
-import Image from 'next/image'
+import { useState, useMemo } from 'react'
 import type { FantasyTeamWithPlayers, PlayerWithDetails } from './types'
 import { getPositionColor, getPositionShort } from '@/lib/helpers'
 import PlayerListRow from '@/app/components/PlayerListRow'
-import { Play } from 'next/font/google'
 
 type Props = {
     team: FantasyTeamWithPlayers
 }
 
-function Section({
-    title,
-    players, 
-    label,
-}: {
-    title: string
-    players: PlayerWithDetails[]
-    label: string
-}) {
-    return (
-        <div className="bg-white border border-gray-100 rounded-xl overflow-hidden mb-4">
-            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{title}</p>
-                <p className="text-xs text-gray-400">{players.length} players</p>
-            </div>
-            {players.map(fp => (
-                <PlayerListRow 
-                    key={fp.id}
-                    player={fp.player}
-                    team={fp.player.team}
-                    isIR={fp.rosterSlot === 'IR'}
-                />
-            ))}
-        </div>
-    )
-}
+type PositionFilter = 'ALL' | 'GK' | 'DEF' | 'MID' | 'ATT'
+
+const POSITION_FILTERS: { id: PositionFilter; label: string; positionId: number | null }[] = [
+    { id: 'ALL', label: 'All', positionId: null },
+    { id: 'GK', label: 'GK', positionId: 24 },
+    { id: 'DEF', label: 'DEF', positionId: 25 },
+    { id: 'MID', label: 'MID', positionId: 26 },
+    { id: 'ATT', label: 'ATT', positionId: 27 },
+]
 
 export default function TeamStats({ team }: Props) {
-    const starters = team.players.filter(p => p.rosterSlot === 'STARTER')
-    const subs = team.players.filter(p => p.rosterSlot === 'SUB')
-    const reserves = team.players.filter(
-        p => p.rosterSlot === 'RESERVE' || p.rosterSlot === 'IR'
-    )
+    const [search, setSearch] = useState('')
+    const [positionFilter, setPositionFilter] = useState<PositionFilter>('ALL')
 
-    const totalPoints = 0 // will be wired up when scoring is implemented
+    const filterd = useMemo(() => {
+        return team.players.filter(fp => {
+            const matchesSearch = fp.player.display_name
+                .toLowerCase()
+                .includes(search.toLowerCase())
+            const matchesPosition = 
+                positionFilter === 'ALL' ||
+                fp.player.position_id === POSITION_FILTERS.find(f => f.id === positionFilter)?.positionId
+            return matchesSearch && matchesPosition
+        })
+    }, [team.players, search, positionFilter])
+
+    const totalPoints = 0 // wired up when scoring is implemented
 
     return (
         <div className="max-w-2xl">
+            {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-medium text-gray-900">Team Stats</h2>
-                <div className="text-right">
-                    <p className="text-xs text-gray-400">Total points</p>
-                    <p className="text-lg font-medium text-gray-900">{totalPoints}</p>
-                </div>
-
             </div>
 
-            <Section title="Starters" players={starters} label="Starter" />
-            <Section title="Subs" players={subs} label="Subs" />
-            <Section title="Reserves & IR" players={reserves} label="Reserve" />
+            {/* Filters */}
+            <div className="flex flex-wrap gap-3 mb-4">
+                {/* Search */}
+                <input 
+                    type="text"
+                    placeholder="Search Team..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600 w-48"
+                />
+
+                {/* Position Filters */}
+                <div className="flex items-center gap-1">
+                    {POSITION_FILTERS.map(pos => (
+                        <button
+                            key={pos.id}
+                            onClick={() => setPositionFilter(pos.id)}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                                positionFilter === pos.id
+                                    ? 'bg-green-800 text-white'
+                                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'    
+                            }`}
+                        >
+                            {pos.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Advanced Filtering */}
         </div>
     )
 }
