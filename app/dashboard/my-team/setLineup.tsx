@@ -27,27 +27,7 @@ type Props = {
     onUpdate: (team: FantasyTeamWithPlayers) => void
 }
 
-function DraggablePitchPlayer({ fp }: { fp: PlayerWithDetails }) {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-        id: fp.id,
-    })
 
-    return (
-        <div
-            ref={setNodeRef}
-            style={{
-                transform: CSS.Transform.toString(transform),
-                transition,
-                opacity: isDragging ? 0.4 : 1
-            }}
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing"
-        >
-            <PlayerCard player={fp.player} />
-        </div>
-    )
-}
 
 export default function SetLineup({ team, onUpdate }: Props) {
 
