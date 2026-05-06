@@ -74,7 +74,7 @@ async function main() {
         },
         update: {},
         create: {
-            name: `{user.username}'s Team`,
+            name: `${user.username}'s Team`,
             formation: '4-3-3',
             userId: user.id,
             fantasyLeagueId: fantasyLeague.id

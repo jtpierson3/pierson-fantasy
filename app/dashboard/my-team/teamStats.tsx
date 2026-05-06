@@ -19,11 +19,18 @@ const POSITION_FILTERS: { id: PositionFilter; label: string; positionId: number 
     { id: 'ATT', label: 'ATT', positionId: 27 },
 ]
 
+const POSITION_GROUPS = [
+    { label: 'Goalkeepers', positionId: 24 },
+    { label: 'Defenders', positionId: 25 },
+    { label: 'Midfielders', positionId: 26 },
+    { label: 'Attackers', positionId: 27 },
+]
+
 export default function TeamStats({ team }: Props) {
     const [search, setSearch] = useState('')
     const [positionFilter, setPositionFilter] = useState<PositionFilter>('ALL')
 
-    const filterd = useMemo(() => {
+    const filtered = useMemo(() => {
         return team.players.filter(fp => {
             const matchesSearch = fp.player.display_name
                 .toLowerCase()
@@ -74,6 +81,57 @@ export default function TeamStats({ team }: Props) {
             </div>
 
             {/* Advanced Filtering */}
+            <details className="mb-4 bg-white border border-gray-100 rounded-xl overflow-hidden">
+                <summary className="px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide cursor-pointer hover:bg-gray-50 transition-colors list-none flex items-center justify-between">
+                    Advanced Filtering
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" className="text-gray-300">
+                        <path d="m6 8L1 3h10L6 8z"/>
+                    </svg>
+                </summary>
+                <div className="px-4 py-3 border-t border-gray-100">
+                    <p className="text-xs text-gray-400">
+                        Advanced filtering by points, goals, assists, and more will be available.
+                    </p>
+                </div>
+            </details>
+
+            {/* Player Count */}
+            <p className="text-xs text-gray-400 mb-3">
+                {filtered.length} of {team.players.length} players
+            </p>
+
+            {/* No Results */}
+            {filtered.length === 0 && (
+                <p className="text-sm text-gray-400 text-center py-8">
+                    No players found matching your search.
+                </p>
+            )}
+
+            {/* Grouped by Position */}
+            {POSITION_GROUPS.map(group => {
+                const groupPlayers = filtered.filter(
+                    fp => fp.player.position_id == group.positionId
+                )
+                if (groupPlayers.length === 0) return null
+
+                return (
+                    <div key={group.positionId} className="bg-white border border-gray-100 rounded-xl overflow-hidden mb-4">
+                        <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                {group.label}
+                            </p>
+                            <p className="text-xs text-gray-400">{groupPlayers.length} players</p>
+                        </div>
+                        {groupPlayers.map(fp => (
+                            <PlayerListRow 
+                                key={fp.id}
+                                player={fp.player}
+                                isIR={fp.rosterSlot === 'IR'}
+                            />
+                        ))}
+                    </div>
+                )
+            })}
         </div>
     )
 }

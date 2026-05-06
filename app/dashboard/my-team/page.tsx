@@ -29,7 +29,7 @@ async function MyTeamContent() {
   if (!user) redirect('/sign-in')
 
   const fantasyTeam = await prisma.fantasyTeam.findFirst({
-    where: { userId: user.id},
+    where: { userId: user.id },
     include: {
       players: {
         include: {
