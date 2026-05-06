@@ -11,7 +11,7 @@ import {
 } from './types'
 import Standings from './standings'
 import CurrentMatchup from './currentMatchup'
-//import Schedule from './schedule'
+import RecentResults from './recentResults'
 
 type Props = {
     league: LeagueWithData
@@ -67,13 +67,11 @@ export default function LeagueDashboard({ league, currentTeamId}: Props) {
                         currentTeamId={currentTeamId}
                         onClick={() => currentMatchup && router.push(`/dashboard/league/matchup/${currentMatchup.id}`)}
                     />
-                   {/* 
-                    <Schedule 
+                    <RecentResults 
                         matchups={scheduleMatchups}
                         currentTeamId={currentTeamId}
-                        onViewAll{() => router.push('dashboard/league/schedule')}
+                        onViewAll={() => router.push('dashboard/league/schedule')}
                     />
-                    */}
                 </div>
             </div>
         </div>

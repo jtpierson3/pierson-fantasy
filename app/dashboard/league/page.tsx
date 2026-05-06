@@ -37,7 +37,7 @@ async function LeagueContent() {
       <div className="p-6">
         <h1 className="text-xl font-medium text-gray-900 mb-2">League</h1>
         <p className="text-sm text-gray-500">
-          You don't have a team yet. Please notify the league admin.
+          You do not have a team yet. Please notify the league admin.
         </p>
       </div>
     )
