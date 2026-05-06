@@ -41,9 +41,10 @@ model FantasyLeague {
   name         String
   description  String?
   members      FantasyLeagueMember[]
+  teams        FantasyTeam[]
+  gameweeks    FantasyGameweek[]
   createdAt    DateTime              @default(now())
   updatedAt    DateTime              @updatedAt
-  fantasyTeams FantasyTeam[]
 }
 
 model FantasyLeagueMember {
@@ -62,11 +63,19 @@ model FantasyTeam {
   id              String              @id @default(cuid())
   name            String
   formation       String              @default("4-3-3")
+  wins            Int                 @default(0)
+  losses          Int                 @default(0)
+  draws           Int                 @default(0)
+  totalLeaguePoints Int               @default(0)
+  totalFantasyPoints  Int             @default(0)
+  standingsChange Int                 @default(0)
   user            User                @relation(fields: [userId], references: [id])
   userId          String              @unique
   fantasyLeague   FantasyLeague       @relation(fields: [fantasyLeagueId], references: [id])
   fantasyLeagueId String
   players         FantasyTeamPlayer[]
+  homeMatchups    FantasyMatchup[]    @relation("HomeMatchups")
+  awayMatchups    FantasyMatchup[]    @relation("AwayMatchups")
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 
@@ -84,6 +93,35 @@ model FantasyTeamPlayer {
   addedAt       DateTime    @default(now())
 
   @@unique([fantasyTeamId, playerId])
+}
+
+model FantasyGameweek {
+  id              String        @id @default(cuid())
+  fantasyLeague   FantasyLeague @relation(fields: [fantasyLeagueId], references: [id])
+  fantasyLeagueId String
+  gameweekNumber  Int
+  startDate       DateTime
+  endDate         DateTime
+  isComplete      Boolean     @default(false)
+  isCurrent       Boolean     @default(false)
+  matchups          FantasyMatchup[]
+  createdAt       DateTime    @default(now())
+
+  @@unique([fantasyLeagueId, gameweekNumber])
+}
+
+model FantasyMatchup {
+  id            String        @id @default(cuid())
+  gameweek      FantasyGameweek @relation(fields: [gameweekId], references: [id])
+  gameweekId    String
+  homeTeam      FantasyTeam     @relation("HomeMatchups", fields: [homeTeamId], references: [id] )
+  homeTeamId    String
+  awayTeam      FantasyTeam     @relation("AwayMatchups", fields: [awayTeamId], references: [id] )
+  awayTeamId    String
+  homePoints    Int       @default(0)
+  awayPoints    Int       @default(0)
+  isComplete    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
 }
 
 // ===========================================
