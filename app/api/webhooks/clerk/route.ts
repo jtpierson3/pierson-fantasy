@@ -43,20 +43,31 @@ export async function POST(req: Request) {
     // the app or on Clerk's website.
     if (evt.type === 'user.created') {
         const { id, email_addresses, username } = evt.data
-
         const email = email_addresses?.[0]?.email_address
 
         if (!email) {
             return NextResponse.json({ error: 'No email found' }, { status: 400 })
         }
 
-        await prisma.user.create({
-            data: {
-                clerkId: id,
-                email,
-                username: username ?? email_addresses[0].email_address.split('@')[0],
-            },
+        // Check if user was pre-created by admin
+        const existingUser = await prisma.user.findFirst({
+            where: { email }
         })
+
+        if (existingUser) {
+            await prisma.user.update({
+                where: {id: existingUser.id },
+                data: { clerkId: id }
+            })
+        } else {
+            await prisma.user.create({
+                data: {
+                    clerkId: id,
+                    email,
+                    username: username ?? email_addresses[0].email_address.split('@')[0],
+                },
+            })
+        }
     }
 
     if (evt.type === 'user.deleted') {

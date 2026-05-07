@@ -35,6 +35,11 @@ type AllUser = {
     leagues: { fantasyLeague: {name: string} }[]
 }
 
+type AddUserForm = {
+    email: string
+    username: string
+}
+
 type Props = {
     leagueMembers: LeagueMember[]
     allUsers: AllUser[]
@@ -64,6 +69,39 @@ export default function UsersTable({
     const [confirm, setConfirm] = useState<ConfirmDialog>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [showAddUser, setShowAddUser] = useState(false)
+    const [addUserForm, setAddUserForm] = useState<AddUserForm>({ email: '', username: ''})
+    const [addUserError, setAddUserError] = useState<string | null>(null)
+    const [addUserLoading, setAddUserLoading] = useState(false)
+
+    const handleAddUser = useCallback(async () => {
+        if (!addUserForm.email || !addUserForm.username) {
+            setAddUserError('Email and username are required')
+            return
+        }
+
+        setAddUserLoading(true)
+        setAddUserError(null)
+
+        try {
+            const res = await fetch('/api/admin/users/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(addUserForm)
+            })
+
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error ?? 'Failed to add user')
+
+            setShowAddUser(false)
+            setAddUserForm({ email: '', username: ''})
+            router.refresh()
+        } catch (err) {
+            setAddUserError(err instanceof Error ? err.message : 'Failed to add user')
+        } finally {
+            setAddUserLoading(false)
+        }
+    }, [addUserForm, router])
 
     const handleRemoveFromLeague = useCallback((member: LeagueMember) => {
         setConfirm({
@@ -159,6 +197,16 @@ export default function UsersTable({
                         {showAllUsers ? 'All site users' : `Members of ${leagueName}`}
                     </p>
                 </div>
+
+                {/* Toggle for site admins */}
+                {isSiteAdmin && (
+                    <button
+                        onClick={() => setShowAddUser(true)}
+                        className="px-4 py-2 text-sm rounded-lg bg-green-700 text-white hover:bg-green-600 transition-colors font-medium"
+                    >
+                        + Add User
+                    </button>
+                )}
 
                 {/* Toggle for site admins */}
                 {isSiteAdmin && (
@@ -323,6 +371,77 @@ export default function UsersTable({
                                 {loading ? 'Processing...' : confirm.confirmLabel}
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Add User Modal */}
+            {showAddUser && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 max-w-md w-full shadow-xl">
+                        <h3 className="text-base font-medium text-white mb-1">Add User</h3>
+                        <p className="text-sm text-gray-400 mb-6">
+                            The user will be added to the allow list and sent an invite email.
+                        </p>
+                    </div>
+
+                    <div className="flex flex-col gap-4">
+                        {/* Username */}
+                        <div>
+                            <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                                Username
+                            </label>
+                            <input 
+                                type="text"
+                                value={addUserForm.username}
+                                onChange={e => setAddUserForm(prev => ({ ...prev, username: e.target.value }))}
+                                placeholder="johndoe"
+                                className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600 focus:border-green-600"
+                            />
+                        </div>
+
+                        {/* Email */}
+                        <div>
+                            <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                                Email Address
+                            </label>
+                            <input 
+                                type="text"
+                                value={addUserForm.email}
+                                onChange={e => setAddUserForm(prev => ({ ...prev, email: e.target.value }))}
+                                placeholder="johndoe@example.com"
+                                className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600 focus:border-green-600"
+                            />
+                        </div>
+
+                        {/* Error */}
+                        {addUserError && (
+                            <p className="text-xs text-red-400 bg-red-900/30 border border-red-800 rounded-lg px-3 py-2">
+                                {addUserError}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-3 justify-end mt-6">
+                        <button
+                            onClick={() => {
+                                setShowAddUser(false)
+                                setAddUserForm({ email: '', username: ''})
+                                setAddUserError(null)
+                            }}
+                            disabled={addUserLoading}
+                            className="px-4 py-2 text-sm rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors disabled:opacity-50"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleAddUser}
+                            disabled={addUserLoading}
+                            className="px-4 py-2 text-sm rounded-lg bg-green-700 text-white hover:bg-green=600 transition-colors disabled:opacity-50 font-medium"
+                        >
+                            {addUserLoading ? 'Adding...' : 'Add User' }
+                        </button>
                     </div>
                 </div>
             )}
