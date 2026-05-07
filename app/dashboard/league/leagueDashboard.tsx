@@ -12,6 +12,7 @@ import {
 import Standings from './standings'
 import CurrentMatchup from './currentMatchup'
 import RecentResults from './recentResults'
+import GameweekMatchups from './gameweekMatchups'
 
 type Props = {
     league: LeagueWithData
@@ -71,6 +72,10 @@ export default function LeagueDashboard({ league, currentTeamId}: Props) {
                         matchups={scheduleMatchups}
                         currentTeamId={currentTeamId}
                         onViewAll={() => router.push('dashboard/league/schedule')}
+                    />
+                    <GameweekMatchups 
+                        gameweeks={league.gameweeks}
+                        currentTeamId={currentTeamId}
                     />
                 </div>
             </div>
