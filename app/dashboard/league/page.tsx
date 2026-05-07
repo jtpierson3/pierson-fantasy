@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { redirect } from "next/navigation"
 import LeagueDashboard from "./leagueDashboard"
-import { turborepoTraceAccess } from "next/dist/build/turborepo-access-trace"
+import { LeagueWithData } from "./types"
 
 function LeagueSkeleton() {
   return (
@@ -96,7 +96,7 @@ async function LeagueContent() {
 
   return (
     <LeagueDashboard 
-      league={league as any}
+      league={league as unknown as LeagueWithData}
       currentTeamId={fantasyTeam.id}
     />
   )
