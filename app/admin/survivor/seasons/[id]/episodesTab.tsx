@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link  from 'next/link'
 
 type Episode = {
   id: string
@@ -224,6 +225,12 @@ export default function EpisodesTab({ season }: Props) {
               )}
             </div>
             <div className="col-span-2 flex justify-end gap-1.5">
+              <Link
+                href={`/admin/survivor/seasons/${season.id}/episodes/${episode.id}`}
+                className="px-2 py-1 text-xs rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700 transition-colors"
+              >
+                Manage
+              </Link>
               <button
                 onClick={() => openEdit(episode)}
                 className="px-2 py-1 text-xs rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700 transition-colors"
