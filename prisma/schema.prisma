@@ -33,18 +33,18 @@ model User {
   createdAt       DateTime                      @default(now())
   updatedAt       DateTime                      @updatedAt
   survivorLeagues SurvivorFantasyLeagueMember[]
-  leagueTribe     SurvivorFantasyLeagueTribe?
+  leagueTribe     SurvivorFantasyLeagueTribe[]
 }
 
 model FantasyLeague {
-  id           String                @id @default(cuid())
-  name         String
-  description  String?
-  members      FantasyLeagueMember[]
-  teams        FantasyTeam[]
-  gameweeks    FantasyGameweek[]
-  createdAt    DateTime              @default(now())
-  updatedAt    DateTime              @updatedAt
+  id          String                @id @default(cuid())
+  name        String
+  description String?
+  members     FantasyLeagueMember[]
+  teams       FantasyTeam[]
+  gameweeks   FantasyGameweek[]
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
 }
 
 model FantasyLeagueMember {
@@ -60,24 +60,24 @@ model FantasyLeagueMember {
 }
 
 model FantasyTeam {
-  id              String              @id @default(cuid())
-  name            String
-  formation       String              @default("4-3-3")
-  wins            Int                 @default(0)
-  losses          Int                 @default(0)
-  draws           Int                 @default(0)
-  totalLeaguePoints Int               @default(0)
-  totalFantasyPoints  Int             @default(0)
-  standingsChange Int                 @default(0)
-  user            User                @relation(fields: [userId], references: [id])
-  userId          String              @unique
-  fantasyLeague   FantasyLeague       @relation(fields: [fantasyLeagueId], references: [id])
-  fantasyLeagueId String
-  players         FantasyTeamPlayer[]
-  homeMatchups    FantasyMatchup[]    @relation("HomeMatchups")
-  awayMatchups    FantasyMatchup[]    @relation("AwayMatchups")
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  id                 String              @id @default(cuid())
+  name               String
+  formation          String              @default("4-3-3")
+  wins               Int                 @default(0)
+  losses             Int                 @default(0)
+  draws              Int                 @default(0)
+  totalLeaguePoints  Int                 @default(0)
+  totalFantasyPoints Int                 @default(0)
+  standingsChange    Int                 @default(0)
+  user               User                @relation(fields: [userId], references: [id])
+  userId             String              @unique
+  fantasyLeague      FantasyLeague       @relation(fields: [fantasyLeagueId], references: [id])
+  fantasyLeagueId    String
+  players            FantasyTeamPlayer[]
+  homeMatchups       FantasyMatchup[]    @relation("HomeMatchups")
+  awayMatchups       FantasyMatchup[]    @relation("AwayMatchups")
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 
   @@unique([userId, fantasyLeagueId])
 }
@@ -96,32 +96,32 @@ model FantasyTeamPlayer {
 }
 
 model FantasyGameweek {
-  id              String        @id @default(cuid())
-  fantasyLeague   FantasyLeague @relation(fields: [fantasyLeagueId], references: [id])
+  id              String           @id @default(cuid())
+  fantasyLeague   FantasyLeague    @relation(fields: [fantasyLeagueId], references: [id])
   fantasyLeagueId String
   gameweekNumber  Int
   startDate       DateTime
   endDate         DateTime
-  isComplete      Boolean     @default(false)
-  isCurrent       Boolean     @default(false)
-  matchups          FantasyMatchup[]
-  createdAt       DateTime    @default(now())
+  isComplete      Boolean          @default(false)
+  isCurrent       Boolean          @default(false)
+  matchups        FantasyMatchup[]
+  createdAt       DateTime         @default(now())
 
   @@unique([fantasyLeagueId, gameweekNumber])
 }
 
 model FantasyMatchup {
-  id            String        @id @default(cuid())
-  gameweek      FantasyGameweek @relation(fields: [gameweekId], references: [id])
-  gameweekId    String
-  homeTeam      FantasyTeam     @relation("HomeMatchups", fields: [homeTeamId], references: [id] )
-  homeTeamId    String
-  awayTeam      FantasyTeam     @relation("AwayMatchups", fields: [awayTeamId], references: [id] )
-  awayTeamId    String
-  homePoints    Int       @default(0)
-  awayPoints    Int       @default(0)
-  isComplete    Boolean   @default(false)
-  createdAt     DateTime  @default(now())
+  id         String          @id @default(cuid())
+  gameweek   FantasyGameweek @relation(fields: [gameweekId], references: [id])
+  gameweekId String
+  homeTeam   FantasyTeam     @relation("HomeMatchups", fields: [homeTeamId], references: [id])
+  homeTeamId String
+  awayTeam   FantasyTeam     @relation("AwayMatchups", fields: [awayTeamId], references: [id])
+  awayTeamId String
+  homePoints Int             @default(0)
+  awayPoints Int             @default(0)
+  isComplete Boolean         @default(false)
+  createdAt  DateTime        @default(now())
 }
 
 // ===========================================
@@ -173,13 +173,20 @@ model SurvivorPlayer {
 }
 
 model SurvivorSeason {
-  id          String       @id @default(cuid())
-  number      Int
-  title       String
-  imageUrl    String?
-  contestants Contestant[]
-  episodes    Episode[]
-  tribes      Tribe[]
+  id            String           @id @default(cuid())
+  number        Int
+  title         String
+  theme         String?
+  location      String?
+  imageUrl      String?
+  airDate       DateTime?
+  finaleDate    DateTime?
+  isActive      Boolean          @default(false)
+  contestants   Contestant[]
+  episodes      Episode[]
+  tribes        Tribe[]
+  scoringEvents ScoringEvent[]
+  leagues       SurvivorLeague[]
 }
 
 model Tribe {
@@ -196,21 +203,28 @@ model Episode {
   number           Int
   name             String
   airDate          DateTime
+  isAired          Boolean        @default(false)
+  isMerge          Boolean        @default(false)
+  isFinale         Boolean        @default(false)
   survivorSeasonId String
   survivorSeason   SurvivorSeason @relation(fields: [survivorSeasonId], references: [id])
   stats            EpisodeStat[]
+
+  @@unique([survivorSeasonId, number])
 }
 
 model Contestant {
-  id               String            @id @default(cuid())
-  survivorPlayerId String
-  survivorSeasonId String
-  survivorPlayer   SurvivorPlayer    @relation(fields: [survivorPlayerId], references: [id])
-  survivorSeason   SurvivorSeason    @relation(fields: [survivorSeasonId], references: [id])
-  status           String
-  tribeMemberships TribeMembership[]
-  episodeStats     EpisodeStat[]
-  survivorPicks    SurvivorPicks[]
+  id                String            @id @default(cuid())
+  survivorPlayerId  String
+  survivorSeasonId  String
+  survivorPlayer    SurvivorPlayer    @relation(fields: [survivorPlayerId], references: [id])
+  survivorSeason    SurvivorSeason    @relation(fields: [survivorSeasonId], references: [id])
+  status            String
+  eliminatedEpisode Int?
+  placement         Int?
+  tribeMemberships  TribeMembership[]
+  episodeStats      EpisodeStat[]
+  survivorPicks     SurvivorPicks[]
 }
 
 model TribeMembership {
@@ -224,11 +238,13 @@ model TribeMembership {
 }
 
 model ScoringEvent {
-  id       String        @id @default(cuid())
-  label    String
-  points   Int
-  category String
-  stats    EpisodeStat[]
+  id               String          @id @default(cuid())
+  label            String
+  points           Int
+  category         String
+  stats            EpisodeStat[]
+  survivorSeason   SurvivorSeason? @relation(fields: [survivorSeasonId], references: [id])
+  survivorSeasonId String?
 }
 
 model EpisodeStat {
@@ -242,11 +258,14 @@ model EpisodeStat {
 }
 
 model SurvivorLeague {
-  id        String                        @id @default(cuid())
-  name      String
-  members   SurvivorFantasyLeagueMember[]
-  createdAt DateTime
-  updatedAt DateTime
+  id               String                        @id @default(cuid())
+  name             String
+  survivorSeason   SurvivorSeason                @relation(fields: [survivorSeasonId], references: [id])
+  survivorSeasonId String
+  members          SurvivorFantasyLeagueMember[]
+  tribes           SurvivorFantasyLeagueTribe[]
+  createdAt        DateTime
+  updatedAt        DateTime
 }
 
 model SurvivorFantasyLeagueMember {
@@ -262,20 +281,28 @@ model SurvivorFantasyLeagueMember {
 }
 
 model SurvivorFantasyLeagueTribe {
-  id        String          @id @default(cuid())
-  name      String
-  user      User            @relation(fields: [userId], references: [id])
-  userId    String          @unique
-  players   SurvivorPicks[]
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  id               String          @id @default(cuid())
+  name             String
+  user             User            @relation(fields: [userId], references: [id])
+  userId           String          @unique
+  survivorLeague   SurvivorLeague  @relation(fields: [survivorLeagueId], references: [id])
+  survivorLeagueId String
+  players          SurvivorPicks[]
+  hasUsedMergeSwap Boolean         @default(false)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@unique([userId, survivorLeagueId])
 }
 
 model SurvivorPicks {
   id           String                     @id @default(cuid())
-  userId       String
-  leagueId     String
-  contestantId String
-  leagueTribe  SurvivorFantasyLeagueTribe @relation(fields: [leagueId], references: [id])
+  tribe        SurvivorFantasyLeagueTribe @relation(fields: [tribeId], references: [id])
+  tribeId      String
   contestant   Contestant                 @relation(fields: [contestantId], references: [id])
+  contestantId String
+  isSwap       Boolean                    @default(false)
+  addedAt      DateTime                   @default(now())
+
+  @@unique([tribeId, contestantId])
 }
