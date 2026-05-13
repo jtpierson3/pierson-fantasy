@@ -18,6 +18,7 @@ const LEAGUE_ADMIN_LINKS = [
 
 const SITE_ADMIN_LINKS = [
     { href: '/admin/sync', label: 'Sync'},
+    { href: '/admin/survivor', label: 'Survivor', }
 ]
 
 export default function AdminNav({ isSiteAdmin, username}: Props) {
