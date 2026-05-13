@@ -199,16 +199,18 @@ model Tribe {
 }
 
 model Episode {
-  id               String         @id @default(cuid())
+  id               String          @id @default(cuid())
   number           Int
   name             String
   airDate          DateTime
-  isAired          Boolean        @default(false)
-  isMerge          Boolean        @default(false)
-  isFinale         Boolean        @default(false)
+  isAired          Boolean         @default(false)
+  isMerge          Boolean         @default(false)
+  isFinale         Boolean         @default(false)
   survivorSeasonId String
-  survivorSeason   SurvivorSeason @relation(fields: [survivorSeasonId], references: [id])
+  survivorSeason   SurvivorSeason  @relation(fields: [survivorSeasonId], references: [id])
   stats            EpisodeStat[]
+  challenges       Challenge[]
+  tribalCouncils   TribalCouncil[]
 
   @@unique([survivorSeasonId, number])
 }
@@ -225,6 +227,13 @@ model Contestant {
   tribeMemberships  TribeMembership[]
   episodeStats      EpisodeStat[]
   survivorPicks     SurvivorPicks[]
+  challengeResults  ChallengeResult[] @relation("IndividualWinner")
+  challengeTeams    ChallengeTeam[]   @relation("ChallengeTeamContestants")
+  votesGiven        VotingRecord[]    @relation("Voter")
+  votesReceived     VotingRecord[]    @relation("VotedFor")
+  eliminations      TribalCouncil[]   @relation("Eliminated")
+
+  @@unique([survivorPlayerId, survivorSeasonId])
 }
 
 model TribeMembership {
@@ -252,6 +261,8 @@ model EpisodeStat {
   episodeId    String
   contestantId String
   eventId      String
+  order        Int          @default(0)
+  description  String?
   episode      Episode      @relation(fields: [episodeId], references: [id])
   contestant   Contestant   @relation(fields: [contestantId], references: [id])
   event        ScoringEvent @relation(fields: [eventId], references: [id])
@@ -305,4 +316,64 @@ model SurvivorPicks {
   addedAt      DateTime                   @default(now())
 
   @@unique([tribeId, contestantId])
+}
+
+model Challenge {
+  id           String            @id @default(cuid())
+  episode      Episode           @relation(fields: [episodeId], references: [id])
+  episodeId    String
+  name         String?
+  type         String
+  isIndividual Boolean           @default(true)
+  isFiremaking Boolean           @default(false)
+  reward       String?
+  teams        ChallengeTeam[]
+  results      ChallengeResult[]
+  order        Int               @default(0)
+  createdAt    DateTime          @default(now())
+}
+
+model ChallengeTeam {
+  id           String           @id @default(cuid())
+  challenge    Challenge        @relation(fields: [challengeId], references: [id])
+  challengeId  String
+  name         String?
+  color        String?
+  constestants Contestant[]     @relation("ChallengeTeamContestants")
+  result       ChallengeResult?
+}
+
+model ChallengeResult {
+  id           String         @id @default(cuid())
+  challenge    Challenge      @relation(fields: [challengeId], references: [id])
+  challengeId  String
+  contestant   Contestant?    @relation("IndividualWinner", fields: [contestantId], references: [id])
+  contestantId String?
+  team         ChallengeTeam? @relation(fields: [teamId], references: [id])
+  teamId       String?        @unique
+  placement    Int
+}
+
+model TribalCouncil {
+  id           String         @id @default(cuid())
+  episode      Episode        @relation(fields: [episodeId], references: [id])
+  episodeId    String
+  order        Int            @default(1)
+  isFiremaking Boolean        @default(false)
+  notes        String?
+  votes        VotingRecord[]
+  eliminated   Contestant?    @relation("Eliminated", fields: [eliminatedId], references: [id])
+  eliminatedId String?
+  createdAt    DateTime       @default(now())
+}
+
+model VotingRecord {
+  id              String        @id @default(cuid())
+  TribalCouncil   TribalCouncil @relation(fields: [tribalCouncilId], references: [id])
+  tribalCouncilId String
+  voter           Contestant    @relation("Voter", fields: [voterId], references: [id])
+  voterId         String
+  votedFor        Contestant    @relation("VotedFor", fields: [votedForId], references: [id])
+  votedForId      String
+  isRevoked       Boolean       @default(false)
 }
