@@ -64,21 +64,6 @@ type Season = {
   episodes: Episode[]
 }
 
-type League = {
-  id: string
-  name: string
-  survivorSeason: Season
-  members: { id: string; user: User }[]
-  tribes: Tribe[]
-}
-
-type PastLeague = {
-  id: string
-  name: string
-  survivorSeason: Season
-  tribes: Tribe[]
-}
-
 type Props = {
   league: Prisma.SurvivorLeagueGetPayload<{
     include: {
@@ -122,14 +107,6 @@ type Props = {
         }
     }
   }>[]
-}
-
-const STATUS_STYLES: Record<string, string> = {
-  active: '',
-  eliminated: 'opacity-40 grayscale',
-  jury: 'ring-2 ring-blue-400',
-  finalist: 'ring-2 ring-purple-400',
-  winner: 'ring-2 ring-yellow-400',
 }
 
 const STATUS_BADGE: Record<string, string> = {

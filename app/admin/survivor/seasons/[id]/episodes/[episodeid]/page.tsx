@@ -6,7 +6,7 @@ import EpisodeDetail from './episodeDetail'
 export default async function EpisodeDetailPage({
   params,
 }: {
-  params: { id: string; episodeId: string }
+  params: Promise<{ id: string; episodeId: string }>
 }) {
   const { userId } = await auth()
   if (!userId) notFound()
@@ -19,7 +19,7 @@ export default async function EpisodeDetailPage({
   const { id, episodeId } = await params
 
   const episode = await prisma.episode.findUnique({
-    where: { id: params.episodeId },
+    where: { id: episodeId },
     include: {
       survivorSeason: {
         include: {

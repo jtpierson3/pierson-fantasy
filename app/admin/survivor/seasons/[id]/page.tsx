@@ -6,7 +6,7 @@ import SeasonDetail from './seasonDetail'
 export default async function SeasonDetailPage({
     params,
 }: {
-    params: { id: string }
+    params: Promise<{ id: string }>
 }) {
     const { id } = await params
     const { userId } = await auth()
@@ -18,7 +18,7 @@ export default async function SeasonDetailPage({
     if (!currentUser?.isSiteAdmin) notFound()
 
     const season = await prisma.survivorSeason.findUnique({
-        where: { id: params.id },
+        where: { id: id },
         include: {
             contestants: {
                 include: {

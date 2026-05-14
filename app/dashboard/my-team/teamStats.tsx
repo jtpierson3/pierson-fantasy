@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import type { FantasyTeamWithPlayers, PlayerWithDetails } from './types'
-import { getPositionColor, getPositionShort } from '@/lib/helpers'
+import type { FantasyTeamWithPlayers } from './types'
 import PlayerListRow from '@/app/components/PlayerListRow'
 
 type Props = {
