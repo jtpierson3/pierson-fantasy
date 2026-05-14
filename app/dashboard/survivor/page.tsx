@@ -71,7 +71,7 @@ async function SurvivorContent() {
         },
         orderBy: { createdAt: 'desc' }
     })
-    return <SurvivorDashboard leagues={leagues as any} userId={user.id} />
+    return <SurvivorDashboard leagues={leagues} userId={user.id} />
 }
 
 export default function SurvivorPage() {
