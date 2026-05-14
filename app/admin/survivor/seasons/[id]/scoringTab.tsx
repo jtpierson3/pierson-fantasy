@@ -25,6 +25,13 @@ type EventForm = {
   category: string
 }
 
+type SeasonOption = {
+  id: string
+  number: number
+  title: string
+  scoringEvents: ScoringEvent[]
+}
+
 const emptyForm: EventForm = {
   label: '',
   points: '',
@@ -64,7 +71,7 @@ export default function ScoringTab({ season }: Props) {
   const [confirmLoading, setConfirmLoading] = useState(false)
   const [showCopyModal, setShowCopyModal] = useState(false)
   const [copyFromSeasonId, setCopyFromSeasonId] = useState('')
-  const [availableSeasons, setAvailableSeasons] = useState<{ id: string; number: number; title: string; scoringEvents: ScoringEvent[]}[]>([])
+  const [availableSeasons, setAvailableSeasons] = useState<SeasonOption[]>([])
   const [loadingSeasons, setLoadingSeasons] = useState(false)
   const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set())
   const [copyLoading, setCopyLoading] = useState(false)
@@ -78,7 +85,7 @@ export default function ScoringTab({ season }: Props) {
         const res = await fetch('/api/admin/survivor/scoring/seasons')
         const data = await res.json()
 
-        const other = data.seasons.filter((s: any) => s.id !== season.id)
+        const other = data.seasons.filter((s: SeasonOption) => s.id !== season.id)
         setAvailableSeasons(other)
     }catch {
         setCopyError('Failed to load seasons')

@@ -2,6 +2,23 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import SeasonDetail from './seasonDetail'
+import type { Prisma } from '@prisma/client'
+
+type SeasonWithDetails = Prisma.SurvivorSeasonGetPayload<{
+  include: {
+    contestants: {
+      include: {
+        survivorPlayer: true
+        tribeMemberships: {
+          include: { tribe: true }
+        }
+      }
+    }
+    tribes: true
+    episodes: true
+    scoringEvents: true
+  }
+}>
 
 export default async function SeasonDetailPage({
     params,
@@ -47,5 +64,5 @@ export default async function SeasonDetailPage({
         orderBy: { name: 'asc' }
     })
 
-    return <SeasonDetail season={season as any} allPlayers={allPlayers} />
+    return <SeasonDetail season={season as SeasonWithDetails} allPlayers={allPlayers} />
 }

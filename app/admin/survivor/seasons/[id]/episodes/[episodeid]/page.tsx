@@ -2,6 +2,52 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import EpisodeDetail from './episodeDetail'
+import type { Prisma } from '@prisma/client'
+
+type EpisodeWithDetails = Prisma.EpisodeGetPayload<{
+  include: {
+    survivorSeason: { include: { tribes: true } }
+    stats: {
+      include: {
+        contestant: { include: { survivorPlayer: true } }
+        event: true
+      }
+    }
+    challenges: {
+      include: {
+        teams: {
+          include: {
+            contestants: { include: { survivorPlayer: true } }
+            result: true
+          }
+        }
+        results: {
+          include: {
+            contestant: { include: { survivorPlayer: true } }
+          }
+        }
+      }
+    }
+    tribalCouncils: {
+      include: {
+        votes: {
+          include: {
+            voter: { include: { survivorPlayer: true } }
+            votedFor: { include: { survivorPlayer: true } }
+          }
+        }
+        eliminated: { include: { survivorPlayer: true } }
+      }
+    }
+  }
+}>
+
+type ContestantWithDetails = Prisma.ContestantGetPayload<{
+  include: {
+    survivorPlayer: true
+    tribeMemberships: { include: { tribe: true } }
+  }
+}>
 
 export default async function EpisodeDetailPage({
   params,
@@ -16,7 +62,7 @@ export default async function EpisodeDetailPage({
   })
   if (!currentUser?.isSiteAdmin) notFound()
 
-  const { id, episodeId } = await params
+  const { episodeId } = await params
 
   const episode = await prisma.episode.findUnique({
     where: { id: episodeId },
@@ -96,8 +142,8 @@ export default async function EpisodeDetailPage({
 
   return (
     <EpisodeDetail
-      episode={episode as any}
-      contestants={contestants as any}
+      episode={episode as EpisodeWithDetails}
+      contestants={contestants as ContestantWithDetails[]}
       scoringEvents={scoringEvents}
     />
   )

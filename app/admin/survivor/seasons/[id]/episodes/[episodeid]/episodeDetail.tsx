@@ -70,7 +70,7 @@ type Episode = {
   id: string
   number: number
   name: string
-  airDate: string
+  airDate: Date
   isAired: boolean
   isMerge: boolean
   isFinale: boolean
