@@ -4,7 +4,12 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { UserButton } from '@clerk/nextjs'
 
-const navItems = [
+type Props = {
+    hasFootball: boolean
+    hasSurvivor: boolean
+}
+
+const FOOTBALL_NAV = [
     {
         href: '/dashboard',
         label: 'Dashboard',
@@ -60,7 +65,19 @@ const navItems = [
     },
 ]
 
-const accountItems = [
+const SURVIVOR_NAV = [
+    {
+        href: '/dashboard/survivor',
+        label: 'Survivor',
+        icon: (
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 1l1.5 4.5H14l-3.75 2.75 1.5 4.5L8 10l-3.75 2.75 1.5-4.5L2 5.5h4..5z"/>
+            </svg>
+        )
+    }
+]
+
+const ACCOUNT_NAV = [
     {
         href: '/dashboard/settings',
         label: 'Settings',
@@ -73,8 +90,28 @@ const accountItems = [
     },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({hasFootball, hasSurvivor }: Props) {
     const pathname = usePathname()
+
+    const navItem = (item: { href: string; label: string; icon: React.ReactNode}) => {
+        const isActive = pathname === item.href
+        return (
+            <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+                    isActive
+                        ? 'bg-green-50 text-green-800 font-medium'
+                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+            >
+                <span className={isActive ? 'text-green-800' : 'text-gray-400'}>
+                    {item.icon}
+                </span>
+                {item.label}
+            </Link>
+        )
+    }
 
     return(
         <aside className="w-56 bg-white border-r border-gray-100 flex flex-col h-full">
@@ -92,42 +129,31 @@ export default function Sidebar() {
             </div>
 
             { /* Nav */ }
-            <nav className="flex-1 p-2 space-y-0.5">
-                {navItems.map((item) => {
-                    const isActive = pathname === item.href
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={"flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${isActive? 'bg-green-50 text-green-800 font-medium': 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}"}
-                        >
-                            <span className={isActive ? 'text-green-800' : 'text-gray-400'}>
-                                {item.icon}
-                            </span>
-                            {item.label}
-                        </Link>
-                    )
-                })}
+            <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
+                {/* Football Section */}
+                {hasFootball && (
+                    <div className="mb-2">
+                        <p className="px-3 pb-1 pt-2 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                            Football
+                        </p>
+                        {FOOTBALL_NAV.map(navItem)}
+                    </div>
+                )}
 
-                <div className="pt-4">
-                    <p className="px-3 pb-1 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                {hasSurvivor && (
+                    <div className="mb-2">
+                        <p className="px-3 pb-1 pt-2 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                            Survivor
+                        </p>
+                        {SURVIVOR_NAV.map(navItem)}
+                    </div>
+                )}
+
+                <div className="mb-2">
+                    <p className="px-3 pb-1 pt-2 text-xs font-medium text-gray-400 uppercase tracking-wider">
                         Account
                     </p>
-                    {accountItems.map((item) => {
-                        const isActive = pathname === item.href 
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className={"flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${isActive ? 'bg-green-50 text-green-800 font-medium' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-400'}"}
-                            >
-                                <span className={isActive ? 'text-green-800' : 'text-gray-400'}>
-                                    {item.icon}
-                                </span>
-                                {item.label}
-                            </Link>
-                        )
-                    })}
+                    {ACCOUNT_NAV.map(navItem)}                    
                 </div>
             </nav>
 
