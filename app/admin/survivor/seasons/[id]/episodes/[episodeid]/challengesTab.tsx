@@ -70,6 +70,18 @@ const emptyForm: ChallengeForm = {
   reward: '',
 }
 
+type ChallengeBody = {
+  episodeId: string
+  name: string
+  type: string
+  isIndividual: boolean
+  isFiremaking: boolean
+  reward: string | null
+  order: number
+  tribeIds?: string[]
+  customTeams?: CustomTeam[]
+}
+
 type CustomTeam = {
   name: string
   color: string
@@ -118,13 +130,13 @@ export default function ChallengesTab({ episode, contestants }: Props) {
   const [selectedWinnerTeamId, setSelectedWinnerTeamId] = useState<string>('')
   const [savingWinners, setSavingWinners] = useState<string | null>(null)
 
-  const tribes = (episode as any).survivorSeason?.tribes ?? []
+  const tribes = episode.survivorSeason?.tribes ?? []
 
   const handleCreateChallenge = useCallback(async () => {
     setFormLoading(true)
     setFormError(null)
     try {
-      const body: any = {
+      const body: ChallengeBody = {
         episodeId: episode.id,
         ...form,
         reward: form.reward || null,

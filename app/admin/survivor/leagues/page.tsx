@@ -2,6 +2,15 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import SurvivorLeaguesManager from './survivorLeagueManager'
+import type { Prisma } from '@prisma/client'
+
+type LeagueWithDetails = Prisma.SurvivorLeagueGetPayload<{
+  include: {
+    survivorSeason: true
+    members: { include: { user: true } }
+    tribes: true
+  }
+}>
 
 export default async function SurvivorLeaguesPage() {
     const { userId } = await auth()
@@ -33,7 +42,7 @@ export default async function SurvivorLeaguesPage() {
 
     return (
         <SurvivorLeaguesManager 
-            leagues={leagues as any}
+            leagues={leagues as LeagueWithDetails[]}
             seasons={seasons}
             allUsers={allUsers}
             currentUserId={currentUser.id}

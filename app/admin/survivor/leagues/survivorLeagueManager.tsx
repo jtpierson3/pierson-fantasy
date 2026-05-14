@@ -26,6 +26,7 @@ type Member = {
 type Tribe = {
   id: string
   name: string
+  userId: string
 }
 
 type League = {
@@ -343,7 +344,7 @@ export default function SurvivorLeaguesManager({
 
                 {league.members.map(member => {
                   const memberTribe = league.tribes.find(
-                    (t: any) => t.userId === member.user.id
+                    (t: Tribe) => t.userId === member.user.id
                   )
                   return (
                     <div
@@ -361,7 +362,7 @@ export default function SurvivorLeaguesManager({
                       </div>
                       <div className="col-span-3">
                         <p className="text-sm text-gray-400 truncate">
-                          {(memberTribe as any)?.name ?? '—'}
+                          {memberTribe?.name ?? '—'}
                         </p>
                       </div>
                       <div className="col-span-1">

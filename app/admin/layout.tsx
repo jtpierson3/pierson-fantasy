@@ -1,6 +1,6 @@
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-import { redirect, notFound } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import AdminNav from './adminNav'
 
 export default async function AdminLayout({
