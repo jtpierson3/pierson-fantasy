@@ -371,7 +371,7 @@ export default function ScoringTab({ season }: Props) {
             <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 max-w-lg w-full shadow-xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-base font-medium text-white mb-1">Copy Scoring Events</h3>
             <p className="text-sm text-gray-400 mb-6">
-                Select a season to copy events from. All events are pre-selected — deselect any you don't want.
+                Select a season to copy events from. All events are pre-selected — deselect any you don&apos;t want.
             </p>
 
             {loadingSeasons ? (

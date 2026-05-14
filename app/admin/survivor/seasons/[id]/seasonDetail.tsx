@@ -6,6 +6,7 @@ import TribesTab from './tribesTab'
 import EpisodesTab from './episodesTab'
 import ScoringTab from './scoringTab'
 import Link from 'next/link'
+import { Prisma } from '@prisma/client'
 
 type Tab = 'contestants' | 'tribes' | 'episodes' | 'scoring'
 
@@ -17,8 +18,22 @@ const TABS: { id: Tab; label: string }[] = [
 ]
 
 type Props = {
-    season: any
-    allPlayers: { id: string; name: string; imageUrl: string | null}[]
+  season: Prisma.SurvivorSeasonGetPayload<{
+    include: {
+      contestants: {
+        include: {
+          survivorPlayer: true
+          tribeMemberships: {
+            include: { tribe: true }
+          }
+        }
+      }
+      tribes: true
+      episodes: true
+      scoringEvents: true
+    }
+  }>
+  allPlayers: { id: string; name: string; imageUrl: string | null }[]
 }
 
 export default function SeasonDetail({ season, allPlayers }: Props) {
