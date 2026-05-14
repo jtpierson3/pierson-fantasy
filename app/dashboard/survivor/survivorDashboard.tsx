@@ -6,12 +6,12 @@ import Image from 'next/image'
 type SurvivorPlayer = {
     id: string
     name: string
-    imageUrl: string | null
 }
 
 type Contestant = {
     id: string
     status: string
+    imageUrl: string | null
     survivorPlayer: SurvivorPlayer
 }
 
@@ -189,9 +189,9 @@ function LeagueCard({
                                     STATUS_STYLES[pick.contestant.status] ?? ''
                                 }`}
                             >
-                                {pick.contestant.survivorPlayer.imageUrl ? (
+                                {pick.contestant.imageUrl ? (
                                     <Image 
-                                        src={pick.contestant.survivorPlayer.imageUrl}
+                                        src={pick.contestant.imageUrl}
                                         alt={pick.contestant.survivorPlayer.name}
                                         fill
                                         className="object-cover"
