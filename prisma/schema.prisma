@@ -167,8 +167,8 @@ model Player {
 model SurvivorPlayer {
   id           String       @id @default(cuid())
   name         String       @unique
-  imageUrl     String?
   bio          String?
+  birthDate    DateTime?
   constestants Contestant[]
 }
 
@@ -182,6 +182,7 @@ model SurvivorSeason {
   airDate       DateTime?
   finaleDate    DateTime?
   isActive      Boolean          @default(false)
+  castawayCount Int?
   contestants   Contestant[]
   episodes      Episode[]
   tribes        Tribe[]
@@ -224,6 +225,12 @@ model Contestant {
   status            String
   eliminatedEpisode Int?
   placement         Int?
+  daysLasted        Int?
+  imageUrl          String?
+  hometown          String?
+  occupation        String?
+  profile           String?
+  description       String?
   tribeMemberships  TribeMembership[]
   episodeStats      EpisodeStat[]
   survivorPicks     SurvivorPicks[]
@@ -275,8 +282,8 @@ model SurvivorLeague {
   survivorSeasonId String
   members          SurvivorFantasyLeagueMember[]
   tribes           SurvivorFantasyLeagueTribe[]
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @default(now())
+  createdAt        DateTime                      @default(now())
+  updatedAt        DateTime                      @default(now())
 }
 
 model SurvivorFantasyLeagueMember {
@@ -334,13 +341,13 @@ model Challenge {
 }
 
 model ChallengeTeam {
-  id           String           @id @default(cuid())
-  challenge    Challenge        @relation(fields: [challengeId], references: [id])
-  challengeId  String
-  name         String?
-  color        String?
+  id          String           @id @default(cuid())
+  challenge   Challenge        @relation(fields: [challengeId], references: [id])
+  challengeId String
+  name        String?
+  color       String?
   contestants Contestant[]     @relation("ChallengeTeamContestants")
-  result       ChallengeResult?
+  result      ChallengeResult?
 }
 
 model ChallengeResult {
