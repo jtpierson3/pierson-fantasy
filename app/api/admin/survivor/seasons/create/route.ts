@@ -6,9 +6,6 @@ export async function POST(req: Request) {
     try {
         const { userId: clerkId } = await auth()
 
-
-        console.log('clerkId:', clerkId)
-
         if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
         const currentUser = await prisma.user.findUnique({ where: { clerkId } })
@@ -16,9 +13,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        console.log('currentUser:', currentUser?.id, 'isSiteAdmin:', currentUser?.isSiteAdmin)
         const body = await req.json()
-        console.log('Request body:', body)
 
         const { number, title, theme, location, imageUrl, airDate, finaleDate, isActive } = body
 
@@ -45,8 +40,6 @@ export async function POST(req: Request) {
                 isActive,
             }
         })
-
-        console.log('Season created', season.id)
 
         return NextResponse.json({ success: true, season})
         

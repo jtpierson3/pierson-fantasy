@@ -275,8 +275,8 @@ model SurvivorLeague {
   survivorSeasonId String
   members          SurvivorFantasyLeagueMember[]
   tribes           SurvivorFantasyLeagueTribe[]
-  createdAt        DateTime
-  updatedAt        DateTime
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @default(now())
 }
 
 model SurvivorFantasyLeagueMember {

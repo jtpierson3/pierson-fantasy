@@ -409,7 +409,9 @@ export default function ContestantsTab({ season, allPlayers }: Props) {
                   >
                     <option value="">No tribe</option>
                     {season.tribes.map((t: Tribe) => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
                     ))}
                   </select>
                 </div>

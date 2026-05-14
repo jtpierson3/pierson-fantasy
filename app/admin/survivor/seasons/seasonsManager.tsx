@@ -103,7 +103,7 @@ export default function SeasonsManager({ seasons }: Props) {
             const body = {
                 number: parseInt(form.number),
                 title: form.title,
-                subtitle: form.theme || null,
+                theme: form.theme || null,
                 location: form.location || null,
                 imageUrl: form.imageUrl || null,
                 airDate: form.airDate || null,
@@ -335,7 +335,7 @@ export default function SeasonsManager({ seasons }: Props) {
                                 <input 
                                     type="text"
                                     value={form.theme}
-                                    onChange={e => setForm(prev => ({ ...prev, subtitle: e.target.value }))}
+                                    onChange={e => setForm(prev => ({ ...prev, theme: e.target.value }))}
                                     className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none foucs:ring-1 focus:ring-green-600"
                                 />
                             </div>

@@ -8,6 +8,7 @@ export default async function SeasonDetailPage({
 }: {
     params: { id: string }
 }) {
+    const { id } = await params
     const { userId } = await auth()
     if (!userId) notFound()
 

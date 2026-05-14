@@ -62,6 +62,67 @@ export default function ScoringTab({ season }: Props) {
   const [formLoading, setFormLoading] = useState(false)
   const [confirm, setConfirm] = useState<ConfirmDialog>(null)
   const [confirmLoading, setConfirmLoading] = useState(false)
+  const [showCopyModal, setShowCopyModal] = useState(false)
+  const [copyFromSeasonId, setCopyFromSeasonId] = useState('')
+  const [availableSeasons, setAvailableSeasons] = useState<{ id: string; number: number; title: string; scoringEvents: ScoringEvent[]}[]>([])
+  const [loadingSeasons, setLoadingSeasons] = useState(false)
+  const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set())
+  const [copyLoading, setCopyLoading] = useState(false)
+  const [copyError, setCopyError] = useState<string | null>(null)
+
+  const handleOpenCopy = useCallback(async () => {
+    setLoadingSeasons(true)
+    setShowCopyModal(true)
+    setCopyError(null)
+    try {
+        const res = await fetch('/api/admin/survivor/scoring/seasons')
+        const data = await res.json()
+
+        const other = data.seasons.filter((s: any) => s.id !== season.id)
+        setAvailableSeasons(other)
+    }catch {
+        setCopyError('Failed to load seasons')
+    } finally {
+        setLoadingSeasons(false)
+    }
+  }, [season.id])
+
+  const handleSelectSeason = useCallback((seasonId: string) => {
+    setCopyFromSeasonId(seasonId)
+    const selected = availableSeasons.find(s => s.id === seasonId)
+    if (selected) {
+        setSelectedEventIds(new Set(selected.scoringEvents.map(e => e.id)))
+    }
+  }, [availableSeasons])
+
+  const handleCopy = useCallback(async () => {
+    if (!copyFromSeasonId || selectedEventIds.size === 0) {
+        setCopyError('Select a Season and at least one Event')
+        return
+    }
+    setCopyLoading(true)
+    setCopyError(null)
+    try {
+        const res = await fetch('/api/admin/survivor/scoring/copy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                toSeasonId: season.id,
+                eventIds: Array.from(selectedEventIds)
+            })
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error ?? 'Failed to copy events')
+        setShowCopyModal(false)
+        setCopyFromSeasonId('')
+        setSelectedEventIds(new Set())
+        router.refresh()
+    } catch (err) {
+        setCopyError(err instanceof Error ? err.message : 'Failed to copy events')
+    } finally {
+        setCopyLoading(false)
+    }
+  }, [copyFromSeasonId, selectedEventIds, season.id, router])
 
   const openAdd = useCallback(() => {
     setForm(emptyForm)
@@ -157,6 +218,12 @@ export default function ScoringTab({ season }: Props) {
     <div>
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-gray-400">{season.scoringEvents.length} scoring events</p>
+        <button
+          onClick={handleOpenCopy}
+          className="px-4 py-2 text-sm rounded-lg bg-green-700 text-white hover:bg-green-600 transition-colors font-medium"
+        >
+          Copy From Season
+        </button>
         <button
           onClick={openAdd}
           className="px-4 py-2 text-sm rounded-lg bg-green-700 text-white hover:bg-green-600 transition-colors font-medium"
@@ -290,6 +357,158 @@ export default function ScoringTab({ season }: Props) {
           </div>
         </div>
       )}
+
+      {/* Copy from season modal */}
+        {showCopyModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 max-w-lg w-full shadow-xl max-h-[90vh] overflow-y-auto">
+            <h3 className="text-base font-medium text-white mb-1">Copy Scoring Events</h3>
+            <p className="text-sm text-gray-400 mb-6">
+                Select a season to copy events from. All events are pre-selected — deselect any you don't want.
+            </p>
+
+            {loadingSeasons ? (
+                <div className="flex items-center justify-center py-8">
+                <div className="w-5 h-5 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+            ) : (
+                <div className="flex flex-col gap-4">
+                {/* Season selector */}
+                <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                    Copy from season
+                    </label>
+                    <select
+                    value={copyFromSeasonId}
+                    onChange={e => handleSelectSeason(e.target.value)}
+                    className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-green-600"
+                    >
+                    <option value="">Select a season...</option>
+                    {availableSeasons
+                        .filter(s => s.scoringEvents.length > 0)
+                        .map(s => (
+                        <option key={s.id} value={s.id}>
+                            Season {s.number} — {s.title} ({s.scoringEvents.length} events)
+                        </option>
+                        ))
+                    }
+                    </select>
+                </div>
+
+                {/* Event list */}
+                {copyFromSeasonId && (() => {
+                    const selectedSeason = availableSeasons.find(s => s.id === copyFromSeasonId)
+                    if (!selectedSeason) return null
+
+                    const grouped = CATEGORIES.map(cat => ({
+                    ...cat,
+                    events: selectedSeason.scoringEvents.filter(e => e.category === cat.value)
+                    })).filter(g => g.events.length > 0)
+
+                    return (
+                    <div className="flex flex-col gap-3">
+                        <div className="flex items-center justify-between">
+                        <p className="text-xs text-gray-400">
+                            {selectedEventIds.size} of {selectedSeason.scoringEvents.length} events selected
+                        </p>
+                        <div className="flex gap-2">
+                            <button
+                            onClick={() => setSelectedEventIds(new Set(selectedSeason.scoringEvents.map(e => e.id)))}
+                            className="text-xs text-green-400 hover:text-green-300"
+                            >
+                            Select all
+                            </button>
+                            <span className="text-gray-600">·</span>
+                            <button
+                            onClick={() => setSelectedEventIds(new Set())}
+                            className="text-xs text-gray-400 hover:text-gray-300"
+                            >
+                            Deselect all
+                            </button>
+                        </div>
+                        </div>
+
+                        {grouped.map(group => (
+                        <div key={group.value} className="bg-gray-800/50 border border-gray-700 rounded-lg overflow-hidden">
+                            <div className="px-3 py-2 border-b border-gray-700">
+                            <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${CATEGORY_STYLES[group.value]}`}>
+                                {group.label}
+                            </span>
+                            </div>
+                            {group.events.map(event => (
+                            <button
+                                key={event.id}
+                                onClick={() => setSelectedEventIds(prev => {
+                                const next = new Set(prev)
+                                if (next.has(event.id)) next.delete(event.id)
+                                else next.add(event.id)
+                                return next
+                                })}
+                                className={`w-full flex items-center justify-between px-3 py-2 border-t border-gray-700 text-left transition-colors ${
+                                selectedEventIds.has(event.id)
+                                    ? 'bg-green-900/20'
+                                    : 'hover:bg-gray-700/50'
+                                }`}
+                            >
+                                <div className="flex items-center gap-2">
+                                <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${
+                                    selectedEventIds.has(event.id)
+                                    ? 'bg-green-600 border-green-600'
+                                    : 'border-gray-600'
+                                }`}>
+                                    {selectedEventIds.has(event.id) && (
+                                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                        <path d="M2 5l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                    )}
+                                </div>
+                                <span className="text-sm text-gray-300">{event.label}</span>
+                                </div>
+                                <span className={`text-xs font-medium flex-shrink-0 ${
+                                event.points >= 0 ? 'text-green-400' : 'text-red-400'
+                                }`}>
+                                {event.points >= 0 ? '+' : ''}{event.points}
+                                </span>
+                            </button>
+                            ))}
+                        </div>
+                        ))}
+                    </div>
+                    )
+                })()}
+
+                {copyError && (
+                    <p className="text-xs text-red-400 bg-red-900/30 border border-red-800 rounded-lg px-3 py-2">
+                    {copyError}
+                    </p>
+                )}
+                </div>
+            )}
+
+            <div className="flex gap-3 justify-end mt-6">
+                <button
+                onClick={() => {
+                    setShowCopyModal(false)
+                    setCopyFromSeasonId('')
+                    setSelectedEventIds(new Set())
+                    setCopyError(null)
+                }}
+                disabled={copyLoading}
+                className="px-4 py-2 text-sm rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors disabled:opacity-50"
+                >
+                Cancel
+                </button>
+                <button
+                onClick={handleCopy}
+                disabled={copyLoading || selectedEventIds.size === 0}
+                className="px-4 py-2 text-sm rounded-lg bg-green-700 text-white hover:bg-green-600 transition-colors disabled:opacity-50 font-medium"
+                >
+                {copyLoading ? 'Copying...' : `Copy ${selectedEventIds.size} event${selectedEventIds.size !== 1 ? 's' : ''}`}
+                </button>
+            </div>
+            </div>
+        </div>
+        )}
 
       {/* Confirm dialog */}
       {confirm && (

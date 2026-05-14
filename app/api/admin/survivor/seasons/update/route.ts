@@ -25,7 +25,7 @@ export async function POST(req: Request) {
             })
         }
 
-        const season = prisma.survivorSeason.update({
+        const season = await prisma.survivorSeason.update({
             where: { id: seasonId },
             data: {
                 number,
