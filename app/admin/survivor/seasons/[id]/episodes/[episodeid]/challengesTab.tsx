@@ -12,13 +12,14 @@ type Tribe = {
 type Contestant = {
   id: string
   status: string
-  survivorPlayer: { name: string; imageUrl: string | null }
+  imageUrl: string | null
+  survivorPlayer: { name: string; }
   tribeMemberships: { tribe: Tribe; isCurrent: boolean }[]
 }
 
 type TeamMember = {
   id: string
-  survivorPlayer: { id: string; name: string; imageUrl: string | null }
+  survivorPlayer: { id: string; name: string; }
 }
 
 type ChallengeTeam = {

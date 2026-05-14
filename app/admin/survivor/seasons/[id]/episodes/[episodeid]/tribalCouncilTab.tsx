@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation'
 type Contestant = {
   id: string
   status: string
-  survivorPlayer: { name: string; imageUrl: string | null }
+  imageUrl: string | null
+  survivorPlayer: { name: string; }
   tribeMemberships: { tribe: { name: string; color: string } }[]
 }
 

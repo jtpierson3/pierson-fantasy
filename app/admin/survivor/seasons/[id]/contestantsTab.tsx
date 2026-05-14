@@ -3,12 +3,13 @@
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-//import ImageUpload from '@/app/components/ImageUpload'
+import ImageUpload from '@/app/components/ImageUpload'
 
 type Player = {
   id: string
   name: string
-  imageUrl: string | null
+  bio: string | null
+  birthDate: Date | null
 }
 
 type Tribe = {
@@ -20,8 +21,14 @@ type Tribe = {
 type Contestant = {
   id: string
   status: string
-  eliminatedEpisode: number | null
   placement: number | null
+  eliminatedEpisode: number | null
+  daysLasted: number | null
+  imageUrl: string | null
+  hometown: string | null
+  occupation: string | null
+  profile: string | null
+  description: string | null
   survivorPlayer: Player
   tribeMemberships: {
     id: string
@@ -44,21 +51,31 @@ type Props = {
 type ContestantForm = {
   survivorPlayerId: string
   newPlayerName: string
-  newPlayerImageUrl: string
   status: string
   placement: string
   eliminatedEpisode: string
+  daysLasted: string
   tribeId: string
+  imageUrl: string
+  hometown: string
+  occupation: string
+  profile: string
+  description: string
 }
 
 const emptyForm: ContestantForm = {
   survivorPlayerId: '',
   newPlayerName: '',
-  newPlayerImageUrl: '',
   status: 'active',
   placement: '',
   eliminatedEpisode: '',
+  daysLasted: '',
   tribeId: '',
+  imageUrl: '',
+  hometown: '',
+  occupation: '',
+  profile: '',
+  description: ''
 }
 
 const STATUS_OPTIONS = [
@@ -105,11 +122,16 @@ export default function ContestantsTab({ season, allPlayers }: Props) {
     setForm({
       survivorPlayerId: contestant.survivorPlayer.id,
       newPlayerName: '',
-      newPlayerImageUrl: '',
       status: contestant.status,
       placement: contestant.placement?.toString() ?? '',
       eliminatedEpisode: contestant.eliminatedEpisode?.toString() ?? '',
+      daysLasted: contestant.daysLasted?.toString() ?? '',
       tribeId: contestant.tribeMemberships.find(t => t.isCurrent)?.tribe.id ?? '',
+      imageUrl: contestant.imageUrl ?? '',
+      hometown: contestant.hometown ?? '',
+      occupation: contestant.occupation ?? '',
+      profile: contestant.profile ?? '',
+      description: contestant.description ?? ''
     })
     setFormError(null)
     setUseExistingPlayer(true)
@@ -134,11 +156,16 @@ export default function ContestantsTab({ season, allPlayers }: Props) {
         seasonId: season.id,
         survivorPlayerId: useExistingPlayer ? form.survivorPlayerId : null,
         newPlayerName: !useExistingPlayer ? form.newPlayerName : null,
-        newPlayerImageUrl: !useExistingPlayer ? form.newPlayerImageUrl : null,
         status: form.status,
         placement: form.placement ? parseInt(form.placement) : null,
         eliminatedEpisode: form.eliminatedEpisode ? parseInt(form.eliminatedEpisode) : null,
+        daysLasted: form.daysLasted ? parseInt(form.daysLasted) : null,
         tribeId: form.tribeId || null,
+        imageUrl: form.imageUrl || null,
+        hometown: form.hometown || null,
+        occupation: form.occupation || null,
+        profile: form.profile || null,
+        description: form.description || null,
         ...(editingContestant && { contestantId: editingContestant.id }),
       }
 
@@ -228,9 +255,9 @@ export default function ContestantsTab({ season, allPlayers }: Props) {
             >
               {/* Image */}
               <div className="relative h-24 bg-gray-800">
-                {contestant.survivorPlayer.imageUrl ? (
+                {contestant.imageUrl ? (
                   <Image
-                    src={contestant.survivorPlayer.imageUrl}
+                    src={contestant.imageUrl}
                     alt={contestant.survivorPlayer.name}
                     fill
                     className="object-cover"
@@ -307,150 +334,213 @@ export default function ContestantsTab({ season, allPlayers }: Props) {
             </p>
 
             <div className="flex flex-col gap-4">
-              {/* Player selection - only show on add */}
-              {!editingContestant && (
-                <>
-                  {/* Toggle existing vs new */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setUseExistingPlayer(true)}
-                      className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors ${
-                        useExistingPlayer
-                          ? 'bg-green-900 border-green-700 text-green-400'
-                          : 'border-gray-700 text-gray-400 hover:border-gray-600'
-                      }`}
-                    >
-                      Existing player
-                    </button>
-                    <button
-                      onClick={() => setUseExistingPlayer(false)}
-                      className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors ${
-                        !useExistingPlayer
-                          ? 'bg-green-900 border-green-700 text-green-400'
-                          : 'border-gray-700 text-gray-400 hover:border-gray-600'
-                      }`}
-                    >
-                      New player
-                    </button>
-                  </div>
-
-                  {useExistingPlayer ? (
-                    <div>
-                      <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                        Select player
-                      </label>
-                      <select
-                        value={form.survivorPlayerId}
-                        onChange={e => setForm(prev => ({ ...prev, survivorPlayerId: e.target.value }))}
-                        className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-green-600"
-                      >
-                        <option value="">Select a player...</option>
-                        {availablePlayers.map(p => (
-                          <option key={p.id} value={p.id}>{p.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  ) : (
+                {/* Player selection - only show on add */}
+                {!editingContestant && (
                     <>
-                      <div>
+                    <div className="flex gap-2">
+                        <button
+                        onClick={() => setUseExistingPlayer(true)}
+                        className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors ${
+                            useExistingPlayer
+                            ? 'bg-green-900 border-green-700 text-green-400'
+                            : 'border-gray-700 text-gray-400 hover:border-gray-600'
+                        }`}
+                        >
+                        Existing player
+                        </button>
+                        <button
+                        onClick={() => setUseExistingPlayer(false)}
+                        className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors ${
+                            !useExistingPlayer
+                            ? 'bg-green-900 border-green-700 text-green-400'
+                            : 'border-gray-700 text-gray-400 hover:border-gray-600'
+                        }`}
+                        >
+                        New player
+                        </button>
+                    </div>
+
+                    {useExistingPlayer ? (
+                        <div>
                         <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                          Player name
+                            Select player
+                        </label>
+                        <select
+                            value={form.survivorPlayerId}
+                            onChange={e => setForm(prev => ({ ...prev, survivorPlayerId: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-green-600"
+                        >
+                            <option value="">Select a player...</option>
+                            {availablePlayers.map(p => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                        </select>
+                        </div>
+                    ) : (
+                        <div>
+                        <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                            Player name
                         </label>
                         <input
-                          type="text"
-                          value={form.newPlayerName}
-                          onChange={e => setForm(prev => ({ ...prev, newPlayerName: e.target.value }))}
-                          placeholder="John Doe"
-                          className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600"
+                            type="text"
+                            value={form.newPlayerName}
+                            onChange={e => setForm(prev => ({ ...prev, newPlayerName: e.target.value }))}
+                            placeholder="John Doe"
+                            className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600"
                         />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                          Player image
-                        </label>
-                        {/*<ImageUpload
-                          value={form.newPlayerImageUrl}
-                          onChange={url => setForm(prev => ({ ...prev, newPlayerImageUrl: url }))}
-                          folder="survivor/players"
-                          placeholder="Upload player image"
-                        />*/}
-                      </div>
+                        </div>
+                    )}
                     </>
-                  )}
-                </>
-              )}
+                )}
 
-              {/* Status */}
-              <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                  Status
-                </label>
-                <select
-                  value={form.status}
-                  onChange={e => setForm(prev => ({ ...prev, status: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-green-600"
-                >
-                  {STATUS_OPTIONS.map(s => (
-                    <option key={s.value} value={s.value}>{s.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Tribe */}
-              {season.tribes.length > 0 && (
+                {/* Image upload */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                    Current tribe <span className="text-gray-600">(optional)</span>
-                  </label>
-                  <select
-                    value={form.tribeId}
-                    onChange={e => setForm(prev => ({ ...prev, tribeId: e.target.value }))}
+                    <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                    Season photo
+                    </label>
+                    <ImageUpload
+                    value={form.imageUrl}
+                    onChange={url => setForm(prev => ({ ...prev, imageUrl: url }))}
+                    folder="survivor/contestants"
+                    placeholder="Upload season photo"
+                    />
+                </div>
+
+                {/* Personal info */}
+                <div className="grid grid-cols-2 gap-3">
+                    <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                        Hometown <span className="text-gray-600">(optional)</span>
+                    </label>
+                    <input
+                        type="text"
+                        value={form.hometown}
+                        onChange={e => setForm(prev => ({ ...prev, hometown: e.target.value }))}
+                        placeholder="e.g. Boston, MA"
+                        className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                        Occupation <span className="text-gray-600">(optional)</span>
+                    </label>
+                    <input
+                        type="text"
+                        value={form.occupation}
+                        onChange={e => setForm(prev => ({ ...prev, occupation: e.target.value }))}
+                        placeholder="e.g. Teacher"
+                        className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600"
+                    />
+                    </div>
+                </div>
+
+                {/* Status */}
+                <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1.5">Status</label>
+                    <select
+                    value={form.status}
+                    onChange={e => setForm(prev => ({ ...prev, status: e.target.value }))}
                     className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-green-600"
-                  >
-                    <option value="">No tribe</option>
-                    {season.tribes.map((t: Tribe) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
-                      </option>
+                    >
+                    {STATUS_OPTIONS.map(s => (
+                        <option key={s.value} value={s.value}>{s.label}</option>
                     ))}
-                  </select>
+                    </select>
                 </div>
-              )}
 
-              {/* Placement + Eliminated episode */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                    Placement <span className="text-gray-600">(optional)</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={form.placement}
-                    onChange={e => setForm(prev => ({ ...prev, placement: e.target.value }))}
-                    placeholder="e.g. 1"
-                    className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                    Eliminated ep. <span className="text-gray-600">(optional)</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={form.eliminatedEpisode}
-                    onChange={e => setForm(prev => ({ ...prev, eliminatedEpisode: e.target.value }))}
-                    placeholder="e.g. 5"
-                    className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600"
-                  />
-                </div>
-              </div>
+                {/* Tribe */}
+                {season.tribes.length > 0 && (
+                    <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                        Current tribe <span className="text-gray-600">(optional)</span>
+                    </label>
+                    <select
+                        value={form.tribeId}
+                        onChange={e => setForm(prev => ({ ...prev, tribeId: e.target.value }))}
+                        className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-green-600"
+                    >
+                        <option value="">No tribe</option>
+                        {season.tribes.map((t: Tribe) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                    </select>
+                    </div>
+                )}
 
-              {formError && (
-                <p className="text-xs text-red-400 bg-red-900/30 border border-red-800 rounded-lg px-3 py-2">
-                  {formError}
-                </p>
-              )}
-            </div>
+                {/* Season stats */}
+                <div className="grid grid-cols-3 gap-3">
+                    <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                        Placement
+                    </label>
+                    <input
+                        type="number"
+                        value={form.placement}
+                        onChange={e => setForm(prev => ({ ...prev, placement: e.target.value }))}
+                        placeholder="e.g. 1"
+                        className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                        Days lasted
+                    </label>
+                    <input
+                        type="number"
+                        value={form.daysLasted}
+                        onChange={e => setForm(prev => ({ ...prev, daysLasted: e.target.value }))}
+                        placeholder="e.g. 39"
+                        className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600"
+                    />
+                    </div>
+                    <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                        Eliminated ep.
+                    </label>
+                    <input
+                        type="number"
+                        value={form.eliminatedEpisode}
+                        onChange={e => setForm(prev => ({ ...prev, eliminatedEpisode: e.target.value }))}
+                        placeholder="e.g. 5"
+                        className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600"
+                    />
+                    </div>
+                </div>
+
+                {/* Profile */}
+                <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                    Preseason profile <span className="text-gray-600">(optional)</span>
+                    </label>
+                    <textarea
+                    value={form.profile}
+                    onChange={e => setForm(prev => ({ ...prev, profile: e.target.value }))}
+                    placeholder="Their background, what they said before the game, how they planned to play..."
+                    rows={4}
+                    className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600 resize-none"
+                    />
+                </div>
+
+                {/* Description */}
+                <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                    Season description <span className="text-gray-600">(optional)</span>
+                    </label>
+                    <textarea
+                    value={form.description}
+                    onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="How their season played out, key moments, what led to their elimination or win..."
+                    rows={4}
+                    className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600 resize-none"
+                    />
+                </div>
+
+                {formError && (
+                    <p className="text-xs text-red-400 bg-red-900/30 border border-red-800 rounded-lg px-3 py-2">
+                    {formError}
+                    </p>
+                )}
+                </div>
 
             <div className="flex gap-3 justify-end mt-6">
               <button

@@ -10,7 +10,10 @@ export async function POST(req: Request) {
     const currentUser = await prisma.user.findUnique({ where: { clerkId } })
     if (!currentUser?.isSiteAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { contestantId, status, placement, eliminatedEpisode, tribeId } = await req.json()
+    const { contestantId, status, placement, eliminatedEpisode, 
+      daysLasted, tribeId, imageUrl, hometown, occupation,
+      profile, description
+    } = await req.json()
 
     await prisma.contestant.update({
       where: { id: contestantId },
@@ -18,6 +21,12 @@ export async function POST(req: Request) {
         status,
         placement: placement ?? null,
         eliminatedEpisode: eliminatedEpisode ?? null,
+        daysLasted: daysLasted ?? null,
+        imageUrl: imageUrl ?? null,
+        hometown: hometown ?? null,
+        occupation: occupation ?? null,
+        profile: profile ?? null,
+        description: description ?? null,
       }
     })
 

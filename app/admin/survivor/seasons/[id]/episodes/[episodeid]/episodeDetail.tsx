@@ -25,7 +25,8 @@ type ScoringEvent = {
 type Contestant = {
   id: string
   status: string
-  survivorPlayer: { id: string; name: string; imageUrl: string | null }
+  imageUrl: string | null
+  survivorPlayer: { id: string; name: string; }
   tribeMemberships: { tribe: { id: string; name: string; color: string }; isCurrent: boolean }[]
 }
 
@@ -63,7 +64,7 @@ type Stat = {
 
 type TeamMember = {
   id: string
-  survivorPlayer: { id: string; name: string; imageUrl: string | null }
+  survivorPlayer: { id: string; name: string; }
 }
 
 type Episode = {

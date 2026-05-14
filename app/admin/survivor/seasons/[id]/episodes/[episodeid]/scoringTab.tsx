@@ -7,7 +7,8 @@ import Image from 'next/image'
 type Contestant = {
   id: string
   status: string
-  survivorPlayer: { id: string; name: string; imageUrl: string | null }
+  imageUrl: string | null
+  survivorPlayer: { id: string; name: string; }
   tribeMemberships: { tribe: { name: string; color: string } }[]
 }
 
@@ -248,9 +249,9 @@ export default function ScoringTab({ episode, contestants, scoringEvents }: Prop
                   >
                     {/* Image */}
                     <div className="relative w-8 h-8 flex-shrink-0">
-                      {contestant.survivorPlayer.imageUrl ? (
+                      {contestant.imageUrl ? (
                         <Image
-                          src={contestant.survivorPlayer.imageUrl}
+                          src={contestant.imageUrl}
                           alt={contestant.survivorPlayer.name}
                           fill
                           className="object-cover rounded-full"

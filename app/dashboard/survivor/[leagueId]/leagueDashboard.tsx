@@ -8,7 +8,6 @@ import type { Prisma } from '@prisma/client'
 type SurvivorPlayer = {
   id: string
   name: string
-  imageUrl: string | null
 }
 
 type ScoringEvent = {
@@ -297,9 +296,9 @@ export default function LeagueDashboard({ league, userId, pastLeagues }: Props) 
                           isEliminated ? 'border-gray-300' :
                           'border-green-200'
                         }`}>
-                          {pick.contestant.survivorPlayer.imageUrl ? (
+                          {pick.contestant.imageUrl ? (
                             <Image
-                              src={pick.contestant.survivorPlayer.imageUrl}
+                              src={pick.contestant.imageUrl}
                               alt={pick.contestant.survivorPlayer.name}
                               fill
                               className={`object-cover ${isEliminated ? 'grayscale' : ''}`}

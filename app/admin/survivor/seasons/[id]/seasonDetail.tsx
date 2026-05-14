@@ -33,7 +33,7 @@ type Props = {
       scoringEvents: true
     }
   }>
-  allPlayers: { id: string; name: string; imageUrl: string | null }[]
+  allPlayers: { id: string; name: string; bio: string | null, birthDate: Date | null }[]
 }
 
 export default function SeasonDetail({ season, allPlayers }: Props) {

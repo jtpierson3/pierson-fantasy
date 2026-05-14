@@ -11,8 +11,9 @@ export async function POST(req: Request) {
     if (!currentUser?.isSiteAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const {
-      seasonId, survivorPlayerId, newPlayerName, newPlayerImageUrl,
-      status, placement, eliminatedEpisode, tribeId
+      seasonId, survivorPlayerId, newPlayerName,
+      status, placement, eliminatedEpisode, daysLasted,
+      tribeId, imageUrl, hometown, occupation, profile, description
     } = await req.json()
 
     let playerId = survivorPlayerId
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
     // Create new player if needed
     if (!playerId && newPlayerName) {
       const newPlayer = await prisma.survivorPlayer.create({
-        data: { name: newPlayerName, imageUrl: newPlayerImageUrl || null }
+        data: { name: newPlayerName }
       })
       playerId = newPlayer.id
     }
@@ -34,6 +35,12 @@ export async function POST(req: Request) {
         status,
         placement: placement ?? null,
         eliminatedEpisode: eliminatedEpisode ?? null,
+        daysLasted: daysLasted ?? null,
+        imageUrl: imageUrl ?? null,
+        hometown: hometown ?? null,
+        occupation: occupation ?? null,
+        profile: profile ?? null,
+        description: description ?? null,
       }
     })
 
