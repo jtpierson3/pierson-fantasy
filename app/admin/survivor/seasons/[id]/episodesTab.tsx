@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import React from 'react'
 import { useRouter } from 'next/navigation'
 import Link  from 'next/link'
 
@@ -46,6 +47,24 @@ type ConfirmDialog = {
   message: string
   onConfirm: () => void
 } | null
+
+function Toggle( { label, value, onChange }: { 
+    label: string 
+    value: boolean 
+    onChange: () => void 
+}): React.JSX.Element {
+  return (
+    <div className="flex items-center gap-3">
+      <button
+        onClick={onChange}
+        className={`relative w-10 h-5 rounded-full transition-colors ${value ? 'bg-green-600' : 'bg-gray-700'}`}
+      >
+        <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${value ? 'translate-x-5' : 'translate-x-0.5'}`} />
+      </button>
+      <span className="text-sm text-gray-300">{label}</span>
+    </div>
+  )
+}
 
 export default function EpisodesTab({ season }: Props) {
   const router = useRouter()
@@ -147,18 +166,6 @@ export default function EpisodesTab({ season }: Props) {
       }
     })
   }, [router])
-
-  const Toggle = ({ label, value, onChange }: { label: string; value: boolean; onChange: () => void }) => (
-    <div className="flex items-center gap-3">
-      <button
-        onClick={onChange}
-        className={`relative w-10 h-5 rounded-full transition-colors ${value ? 'bg-green-600' : 'bg-gray-700'}`}
-      >
-        <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${value ? 'translate-x-5' : 'translate-x-0.5'}`} />
-      </button>
-      <span className="text-sm text-gray-300">{label}</span>
-    </div>
-  )
 
   const isOpen = showAdd || !!editingEpisode
 

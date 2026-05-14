@@ -16,11 +16,16 @@ type Contestant = {
   tribeMemberships: { tribe: Tribe; isCurrent: boolean }[]
 }
 
+type TeamMember = {
+  id: string
+  survivorPlayer: { id: string; name: string; imageUrl: string | null }
+}
+
 type ChallengeTeam = {
   id: string
   name: string | null
   color: string | null
-  contestants: Contestant[]
+  contestants: TeamMember[] 
   result: { placement: number } | null
 }
 
@@ -38,7 +43,7 @@ type Challenge = {
     placement: number
     contestantId: string | null
     teamId: string | null
-    contestant: Contestant | null
+    contestant: TeamMember | null
   }[]
 }
 

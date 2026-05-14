@@ -15,10 +15,101 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'scoring', label: 'Scoring' },
 ]
 
+type ScoringEvent = {
+  id: string
+  label: string
+  points: number
+  category: string
+}
+
+type Contestant = {
+  id: string
+  status: string
+  survivorPlayer: { id: string; name: string; imageUrl: string | null }
+  tribeMemberships: { tribe: { id: string; name: string; color: string }; isCurrent: boolean }[]
+}
+
+type TribalCouncil = {
+  id: string
+  order: number
+  isFiremaking: boolean
+  notes: string | null
+  eliminatedId: string | null
+  eliminated: { survivorPlayer: { name: string } } | null
+  votes: {
+    id: string
+    voterId: string
+    votedForId: string
+    isRevoked: boolean
+    voter: { survivorPlayer: { name: string } }
+    votedFor: { survivorPlayer: { name: string } }
+  }[]
+}
+
+type Stat = {
+  id: string
+  contestantId: string
+  eventId: string
+  order: number
+  description: string | null
+  contestant: { survivorPlayer: { name: string } }
+  event: { 
+    id: string
+    label: string
+    points: number
+    category: string
+  }
+}
+
+type TeamMember = {
+  id: string
+  survivorPlayer: { id: string; name: string; imageUrl: string | null }
+}
+
+type Episode = {
+  id: string
+  number: number
+  name: string
+  airDate: string
+  isAired: boolean
+  isMerge: boolean
+  isFinale: boolean
+  survivorSeasonId: string
+  survivorSeason: {
+    number: number
+    tribes: { id: string; name: string; color: string }[]
+  }
+  stats: Stat[]
+  challenges: {
+    id: string
+    name: string | null
+    type: string
+    isIndividual: boolean
+    isFiremaking: boolean
+    reward: string | null
+    order: number
+    teams: {
+      id: string
+      name: string | null
+      color: string | null
+      contestants: TeamMember[]
+      result: { placement: number } | null
+    }[]
+    results: {
+      id: string
+      placement: number
+      contestantId: string | null
+      teamId: string | null
+      contestant: TeamMember | null
+    }[]
+  }[]
+  tribalCouncils: TribalCouncil[]
+}
+
 type Props = {
-  episode: any
-  contestants: any[]
-  scoringEvents: any[]
+  episode: Episode
+  contestants: Contestant[]
+  scoringEvents: ScoringEvent[]
 }
 
 export default function EpisodeDetail({ episode, contestants, scoringEvents }: Props) {
@@ -118,10 +209,24 @@ export default function EpisodeDetail({ episode, contestants, scoringEvents }: P
   )
 }
 
-function EpisodeOverview({ episode, contestants, scoringEvents }: Props) {
+function EpisodeOverview({ episode }: Props) {
   const totalStats = episode.stats.length
-  const totalPoints = episode.stats.reduce((sum: number, s: any) => sum + s.event.points, 0)
-  const contestantsScored = new Set(episode.stats.map((s: any) => s.contestantId)).size
+  const contestantsScored = new Set(episode.stats.map(s => s.contestantId)).size
+
+  // Group stats by contestant for top scorers
+  const scoresByContestant = episode.stats.reduce<Record<string, { name: string; points: number }>>(
+    (acc, s) => {
+      const id = s.contestantId
+      if (!acc[id]) acc[id] = { name: s.contestant.survivorPlayer.name, points: 0 }
+      acc[id].points += s.event.points
+      return acc
+    },
+    {}
+  )
+
+  const topScorers = Object.entries(scoresByContestant)
+    .sort(([, a], [, b]) => b.points - a.points)
+    .slice(0, 5)
 
   return (
     <div className="grid grid-cols-3 gap-4">
@@ -155,23 +260,12 @@ function EpisodeOverview({ episode, contestants, scoringEvents }: Props) {
           <p className="text-sm text-gray-500">No scoring entered yet</p>
         ) : (
           <div className="flex flex-col gap-2">
-            {Object.entries(
-              episode.stats.reduce((acc: Record<string, { name: string; points: number }>, s: any) => {
-                const id = s.contestantId
-                if (!acc[id]) acc[id] = { name: s.contestant.survivorPlayer.name, points: 0 }
-                acc[id].points += s.event.points
-                return acc
-              }, {})
-            )
-              .sort(([, a]: any, [, b]: any) => b.points - a.points)
-              .slice(0, 5)
-              .map(([id, data]: any) => (
-                <div key={id} className="flex justify-between items-center">
-                  <span className="text-sm text-gray-300 truncate">{data.name}</span>
-                  <span className="text-sm font-medium text-green-400">+{data.points}</span>
-                </div>
-              ))
-            }
+            {topScorers.map(([id, data]) => (
+              <div key={id} className="flex justify-between items-center">
+                <span className="text-sm text-gray-300 truncate">{data.name}</span>
+                <span className="text-sm font-medium text-green-400">+{data.points}</span>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -179,19 +273,19 @@ function EpisodeOverview({ episode, contestants, scoringEvents }: Props) {
       {/* Eliminated */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
         <p className="text-xs text-gray-400 uppercase tracking-wide mb-3">Eliminated</p>
-        {episode.tribalCouncils.filter((t: any) => t.eliminated).length === 0 ? (
+        {episode.tribalCouncils.filter(t => t.eliminated).length === 0 ? (
           <p className="text-sm text-gray-500">No eliminations recorded</p>
         ) : (
           <div className="flex flex-col gap-2">
             {episode.tribalCouncils
-              .filter((t: any) => t.eliminated)
-              .map((t: any) => (
+              .filter(t => t.eliminated)
+              .map(t => (
                 <div key={t.id} className="flex items-center gap-2">
                   <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-900 text-red-400 border border-red-700">
                     {t.isFiremaking ? 'Firemaking' : `TC ${t.order}`}
                   </span>
                   <span className="text-sm text-white">
-                    {t.eliminated.survivorPlayer.name}
+                    {t.eliminated?.survivorPlayer.name}
                   </span>
                 </div>
               ))
