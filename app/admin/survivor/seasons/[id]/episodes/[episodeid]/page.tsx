@@ -16,10 +16,16 @@ export default async function EpisodeDetailPage({
   })
   if (!currentUser?.isSiteAdmin) notFound()
 
+  const { id, episodeId } = await params
+
   const episode = await prisma.episode.findUnique({
     where: { id: params.episodeId },
     include: {
-      survivorSeason: true,
+      survivorSeason: {
+        include: {
+            tribes: true
+        }
+      },
       stats: {
         include: {
           contestant: {

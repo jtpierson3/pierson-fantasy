@@ -339,7 +339,7 @@ model ChallengeTeam {
   challengeId  String
   name         String?
   color        String?
-  constestants Contestant[]     @relation("ChallengeTeamContestants")
+  contestants Contestant[]     @relation("ChallengeTeamContestants")
   result       ChallengeResult?
 }
 

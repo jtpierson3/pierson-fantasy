@@ -10,34 +10,39 @@ export async function POST(req: Request) {
     const currentUser = await prisma.user.findUnique({ where: { clerkId } })
     if (!currentUser?.isSiteAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { tribalCouncilId, votes, eliminatedId } = await req.json()
+    const { tribalCouncilId, votes, eliminatedId, advantages } = await req.json()
 
     // Clear existing votes
     await prisma.votingRecord.deleteMany({ where: { tribalCouncilId } })
 
-    // Create new votes
+    // Create votes with revocation status
     if (votes.length > 0) {
       await prisma.votingRecord.createMany({
-        data: votes.map(({ voterId, votedForId }: { voterId: string; votedForId: string }) => ({
+        data: votes.map(({ voterId, votedForId, isRevoked }: {
+          voterId: string
+          votedForId: string
+          isRevoked: boolean
+        }) => ({
           tribalCouncilId,
           voterId,
           votedForId,
-          isRevoked: false,
+          isRevoked,
         }))
       })
     }
 
-    // Update eliminated
+    // Update eliminated and contestant status
     await prisma.tribalCouncil.update({
       where: { id: tribalCouncilId },
       data: { eliminatedId: eliminatedId || null }
     })
 
-    // If eliminated, update contestant status
     if (eliminatedId) {
       await prisma.contestant.update({
         where: { id: eliminatedId },
-        data: { status: 'eliminated' }
+        data: {
+          status: 'eliminated',
+        }
       })
     }
 

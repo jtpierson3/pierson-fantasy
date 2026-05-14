@@ -63,6 +63,7 @@ export default function ScoringTab({ episode, contestants, scoringEvents }: Prop
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [order, setOrder] = useState<string>('')
 
   const selectedEvent = scoringEvents.find(e => e.id === selectedEventId)
 
@@ -120,6 +121,7 @@ export default function ScoringTab({ episode, contestants, scoringEvents }: Prop
           eventId: selectedEventId,
           contestantIds: Array.from(selectedContestantIds),
           description: description || null,
+          order: order ? parseInt(order) : undefined,
         })
       })
 
@@ -290,13 +292,25 @@ export default function ScoringTab({ episode, contestants, scoringEvents }: Prop
 
             {/* Description + Save */}
             <div className="px-4 pb-4 flex flex-col gap-3">
-              <input
-                type="text"
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                placeholder="Optional description (e.g. played on self)"
-                className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600"
-              />
+              <div className="flex gap-3">
+                <div className="w-24">
+                    <input 
+                        type="number"
+                        value={order}
+                        onChange={e => setOrder(e.target.value)}
+                        placeholder="Order #"
+                        className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Episode Order</p>
+                </div>
+                <input
+                    type="text"
+                    value={description}
+                    onChange={e => setDescription(e.target.value)}
+                    placeholder="Optional description (e.g. played on self)"
+                    className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600"
+                />
+              </div>
 
               {error && (
                 <p className="text-xs text-red-400 bg-red-900/30 border border-red-800 rounded-lg px-3 py-2">

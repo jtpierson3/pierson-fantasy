@@ -10,11 +10,66 @@ export async function POST(req: Request) {
     const currentUser = await prisma.user.findUnique({ where: { clerkId } })
     if (!currentUser?.isSiteAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { episodeId, name, type, isIndividual, isFiremaking, reward, order } = await req.json()
+    const {
+      episodeId, name, type, isIndividual, isFiremaking,
+      reward, order, tribeIds, customTeams
+    } = await req.json()
 
     const challenge = await prisma.challenge.create({
-      data: { episodeId, name: name || null, type, isIndividual, isFiremaking, reward: reward || null, order }
+      data: {
+        episodeId,
+        name: name || null,
+        type,
+        isIndividual,
+        isFiremaking,
+        reward: reward || null,
+        order,
+      }
     })
+
+    // Create teams from existing tribes
+    if (!isIndividual && tribeIds?.length) {
+      for (const tribeId of tribeIds) {
+        const tribe = await prisma.tribe.findUnique({
+          where: { id: tribeId },
+          include: {
+            memberships: {
+              where: { isCurrent: true },
+              include: { contestant: true }
+            }
+          }
+        })
+
+        if (tribe) {
+          await prisma.challengeTeam.create({
+            data: {
+              challengeId: challenge.id,
+              name: tribe.name,
+              color: tribe.color,
+              contestants: {
+                connect: tribe.memberships.map(m => ({ id: m.contestantId }))
+              }
+            }
+          })
+        }
+      }
+    }
+
+    // Create custom teams
+    if (!isIndividual && customTeams?.length) {
+      for (const team of customTeams) {
+        await prisma.challengeTeam.create({
+          data: {
+            challengeId: challenge.id,
+            name: team.name,
+            color: team.color,
+            contestants: {
+              connect: team.contestantIds.map((id: string) => ({ id }))
+            }
+          }
+        })
+      }
+    }
 
     return NextResponse.json({ success: true, challenge })
   } catch (err) {
