@@ -3,6 +3,28 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import SurvivorDashboard from './survivorDashboard'
+import type { Prisma } from '@prisma/client'
+
+type Props = {
+    leagues: Prisma.SurvivorLeagueGetPayload<{
+        include: {
+            survivorSeason: true
+            members: { include: { user: true } }
+            tribes: {
+                include: {
+                    players: {
+                        include: {
+                            contestant: {
+                                include: { survivorPlayer: true }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }>[]
+    userId: string
+}
 
 function SurvivorSkeleton() {
     return (

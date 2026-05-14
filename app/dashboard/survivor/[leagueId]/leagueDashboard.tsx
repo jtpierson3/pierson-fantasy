@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
+import type { Prisma } from '@prisma/client'
 
 type SurvivorPlayer = {
   id: string
@@ -79,9 +80,48 @@ type PastLeague = {
 }
 
 type Props = {
-  league: League
+  league: Prisma.SurvivorLeagueGetPayload<{
+    include: {
+        survivorSeason: { include: { episodes: true } }
+        members: { include: { user: true } }
+        tribes: {
+            include: {
+                user: true
+                players: {
+                    include: {
+                        contestant: {
+                            include: {
+                                survivorPlayer: true
+                                episodeStats: { include: { event: true; episode: true } }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+  }>
   userId: string
-  pastLeagues: PastLeague[]
+  pastLeagues: Prisma.SurvivorLeagueGetPayload<{
+    include: {
+        survivorSeason: { include: { episodes: true } }
+        tribes: {
+            include: {
+                user: true
+                players: {
+                    include: {
+                        contestant: {
+                            include: {
+                                survivorPlayer: true
+                                episodeStats: { include: { event: true; episode: true } }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+  }>[]
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -253,7 +293,7 @@ export default function LeagueDashboard({ league, userId, pastLeagues }: Props) 
             {!hasPicks ? (
               <div className="p-6 text-center">
                 <p className="text-sm text-gray-400 mb-3">
-                  You haven't picked your tribe yet
+                  You have not picked your tribe yet
                 </p>
                 <button
                   onClick={() => router.push(`/dashboard/survivor/${league.id}/tribe`)}
@@ -428,7 +468,7 @@ export default function LeagueDashboard({ league, userId, pastLeagues }: Props) 
                     .map(e => e.id)
                 )
                 const pastPoints = myPastTribe
-                  ? calculateTribePoints(myPastTribe as any, pastAiredIds)
+                  ? calculateTribePoints(myPastTribe, pastAiredIds)
                   : 0
 
                 return (

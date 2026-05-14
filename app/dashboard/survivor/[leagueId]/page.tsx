@@ -2,7 +2,65 @@ import { Suspense } from 'react'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { notFound, redirect } from 'next/navigation'
+import type { Prisma } from '@prisma/client'
 import LeagueDashboard from './leagueDashboard'
+
+type LeagueWithDetails = Prisma.SurvivorLeagueGetPayload<{
+    include: {
+        survivorSeason: {
+            include: { episodes: true }
+        }
+        members :{ include: { user: true } }
+        tribes: {
+            include: {
+                user: true
+                players: {
+                    include: {
+                        contestant: {
+                            include: {
+                                survivorPlayer: true
+                                episodeStats: {
+                                    include: {
+                                        event: true
+                                        episode: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}>
+
+type PastLeagueWithDetails = Prisma.SurvivorLeagueGetPayload<{
+    include: {
+        survivorSeason: {
+            include: { episodes: true }
+        }
+        tribes: {
+            include: {
+                user: true
+                players: {
+                    include: {
+                        contestant: {
+                            include: {
+                                survivorPlayer: true
+                                episodeStats: {
+                                    include: {
+                                        event: true
+                                        episode: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}>
 
 function LeagueSkeleton() {
     return (
@@ -88,9 +146,9 @@ async function LeagueContent({ leagueId }: { leagueId: string}) {
 
     return (
         <LeagueDashboard 
-            league={league as any}
+            league={league as LeagueWithDetails}
             userId={user.id}
-            pastLeagues={pastLeagues as any}
+            pastLeagues={pastLeagues as PastLeagueWithDetails[]}
         />
     )
 }
