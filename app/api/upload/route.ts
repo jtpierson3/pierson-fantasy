@@ -19,6 +19,14 @@ export async function POST(req: Request) {
         const file = form.get('file') as File
         const folder = (form.get('folder') as string) ?? 'general'
 
+        console.log("Upload Attempt: ", {
+            fileName: file?.name,
+            fileType: file?.type,
+            fileSize: file?.size,
+            folder,
+            hasBlobToken: !!process.env.BLOB_READ_WRITE_TOKEN
+        })
+
         if (!file) {
             return NextResponse.json({ error: 'No file provided ' }, { status: 400 })
         }
