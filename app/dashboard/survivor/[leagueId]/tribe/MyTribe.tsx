@@ -174,7 +174,7 @@ export default function MyTribe({ leagueId, tribe, season, airedEpisodeIds }: Pr
       {!hasPicks ? (
         <div className="bg-white border border-gray-100 rounded-xl p-8 text-center mb-6">
           <p className="text-sm text-gray-400 mb-4">
-            You haven't picked your tribe yet
+            You haven&apos;t picked your tribe yet
           </p>
           <button
             onClick={() => router.push(`/dashboard/survivor/${leagueId}/tribe/pick`)}
