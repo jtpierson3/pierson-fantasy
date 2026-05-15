@@ -385,29 +385,6 @@ export default function ContestantsTab({ season, allPlayers }: Props) {
                             <option key={p.id} value={p.id}>{p.name}</option>
                             ))}
                         </select>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                            Date of Birth <span className="text-gray-600">(optional)</span>
-                          </label>
-                          <input 
-                            type="date"
-                            value={form.newPlayerBirthDate}
-                            onChange={e => setForm(prev => ({ ...prev, newPlayerBirthDate: e.target.value}))}
-                            className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-green-600"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                            Bio <span className="text-gray-600">(optional)</span>
-                          </label>
-                          <textarea
-                            value={form.newPlayerBio}
-                            onChange={e => setForm(prev => ({ ...prev, newPlayerBio: e.target.value }))}
-                            placeholder="Player Bio"
-                            rows={3}
-                            className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600"
-                          />
-                        </div>
                         </div>
                     ) : (
                       <>
@@ -422,29 +399,6 @@ export default function ContestantsTab({ season, allPlayers }: Props) {
                             placeholder="John Doe"
                             className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600"
                         />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                            Date of Birth <span className="text-gray-600">(optional)</span>
-                          </label>
-                          <input 
-                            type="date"
-                            value={form.newPlayerBirthDate}
-                            onChange={e => setForm(prev => ({ ...prev, newPlayerBirthDate: e.target.value}))}
-                            className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-green-600"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                            Bio <span className="text-gray-600">(optional)</span>
-                          </label>
-                          <textarea
-                            value={form.newPlayerBio}
-                            onChange={e => setForm(prev => ({ ...prev, newPlayerBio: e.target.value }))}
-                            placeholder="Player Bio"
-                            rows={3}
-                            className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600"
-                          />
                         </div>
                       </>
                     )}
@@ -466,6 +420,29 @@ export default function ContestantsTab({ season, allPlayers }: Props) {
 
                 {/* Personal info */}
                 <div className="grid grid-cols-2 gap-3">
+                <div>
+                      <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                        Date of Birth <span className="text-gray-600">(optional)</span>
+                       </label>
+                      <input 
+                        type="date"
+                        value={form.newPlayerBirthDate}
+                        onChange={e => setForm(prev => ({ ...prev, newPlayerBirthDate: e.target.value}))}
+                        className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-green-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                        Bio <span className="text-gray-600">(optional)</span>
+                      </label>
+                      <textarea
+                        value={form.newPlayerBio}
+                        onChange={e => setForm(prev => ({ ...prev, newPlayerBio: e.target.value }))}
+                        placeholder="Player Bio"
+                        rows={3}
+                        className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600"
+                      />
+                    </div>
                     <div>
                     <label className="block text-xs font-medium text-gray-400 mb-1.5">
                         Hometown <span className="text-gray-600">(optional)</span>
