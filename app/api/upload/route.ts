@@ -3,6 +3,8 @@ import { auth } from '@clerk/nextjs/server'
 import { put } from '@vercel/blob'
 import { prisma } from '@/lib/prisma'
 
+export const runtime = 'nodejs'
+
 export async function POST(req: Request) {
     try{
         const { userId: clerkId } = await auth()
@@ -19,14 +21,6 @@ export async function POST(req: Request) {
         const file = form.get('file') as File
         const folder = (form.get('folder') as string) ?? 'general'
 
-        console.log("Upload Attempt: ", {
-            fileName: file?.name,
-            fileType: file?.type,
-            fileSize: file?.size,
-            folder,
-            hasBlobToken: !!process.env.BLOB_READ_WRITE_TOKEN
-        })
-
         if (!file) {
             return NextResponse.json({ error: 'No file provided ' }, { status: 400 })
         }
@@ -42,6 +36,8 @@ export async function POST(req: Request) {
         const blob = await put(`${folder}/${Date.now()}-${file.name}`, file, {
             access: 'public'
         })
+
+        return NextResponse.json(({ url: blob.url }))
 
     } catch (err) {
         console.error('[upload] error: ', err)
