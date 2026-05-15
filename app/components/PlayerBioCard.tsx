@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useState } from 'react'
 import type { Prisma } from '@prisma/client'
+import FormattedText from './FormattedText'
 
 type ContestantWithDetails = Prisma.ContestantGetPayload<{
   include: {
@@ -173,9 +174,10 @@ export default function PlayerBioCard({ player, contestants, featuredContestantI
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">
               Preseason Profile
             </p>
-            <p className="text-sm text-gray-600 leading-relaxed">
-              {featuredContestant.profile}
-            </p>
+            <FormattedText
+              text={featuredContestant.profile}
+              className="text-sm text-gray-600 leading-relaxed"
+            />
           </div>
         )}
       </div>
