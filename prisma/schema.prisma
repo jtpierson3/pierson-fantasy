@@ -169,7 +169,7 @@ model SurvivorPlayer {
   name         String       @unique
   bio          String?
   birthDate    DateTime?
-  constestants Contestant[]
+  contestants Contestant[]
 }
 
 model SurvivorSeason {
