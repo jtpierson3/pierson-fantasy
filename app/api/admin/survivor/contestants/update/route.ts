@@ -10,9 +10,9 @@ export async function POST(req: Request) {
     const currentUser = await prisma.user.findUnique({ where: { clerkId } })
     if (!currentUser?.isSiteAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { contestantId, status, placement, eliminatedEpisode, 
+    const { contestantId, status, placement, eliminatedEpisode,
       daysLasted, tribeId, imageUrl, hometown, occupation,
-      profile, description
+      profile, description, newPlayerBio, newPlayerBirthDate
     } = await req.json()
 
     await prisma.contestant.update({
@@ -29,6 +29,22 @@ export async function POST(req: Request) {
         description: description ?? null,
       }
     })
+
+    // Update Player Bio and BirthDate if provided
+    const contestant = await prisma.contestant.findUnique({
+      where: {id: contestantId},
+      select: {survivorPlayerId: true}
+    })
+
+    if (contestant && (newPlayerBio !== undefined || newPlayerBirthDate !== undefined)) {
+      await prisma.survivorPlayer.update({
+        where: { id: contestant.survivorPlayerId },
+        data: {
+          bio: newPlayerBio || null,
+          birthDate: newPlayerBirthDate ? new Date(newPlayerBirthDate) : null
+        }
+      })
+    }
 
     // Update tribe membership
     if (tribeId) {

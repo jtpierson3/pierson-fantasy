@@ -3,11 +3,13 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import type { Prisma } from '@prisma/client'
+import PlayerBioCard from '@/app/components/PlayerBioCard'
 
 type PlayerWithDetails = Prisma.SurvivorPlayerGetPayload<{
   include: {
     contestants: {
       include: {
+        survivorPlayer: true
         survivorSeason: true
         tribeMemberships: {
           include: { tribe: true }
@@ -62,76 +64,10 @@ export default function PlayerBio({ player }: Props) {
         <span className="text-gray-900">{player.name}</span>
       </div>
 
-      {/* Header */}
-      <div className="flex gap-6 mb-8">
-        {/* Photo — use most recent season image */}
-        <div className="relative w-36 h-36 rounded-2xl overflow-hidden flex-shrink-0 bg-gray-100">
-          {player.contestants[0]?.imageUrl ? (
-            <Image
-              src={player.contestants[0].imageUrl}
-              alt={player.name}
-              fill
-              className="object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <span className="text-4xl text-gray-400">{player.name[0]}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Basic info */}
-        <div className="flex-1">
-          <h1 className="text-2xl font-medium text-gray-900 mb-1">{player.name}</h1>
-
-          {/* Personal details from most recent season */}
-          {player.contestants[0] && (
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 mb-3">
-              {player.contestants[0].occupation && (
-                <span>{player.contestants[0].occupation}</span>
-              )}
-              {player.contestants[0].hometown && (
-                <span>📍 {player.contestants[0].hometown}</span>
-              )}
-              {player.birthDate && (
-                <span>🎂 {new Date(player.birthDate).toLocaleDateString('en-US', {
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric'
-                })}</span>
-              )}
-            </div>
-          )}
-
-          {/* Career stats */}
-          <div className="flex gap-4">
-            <div className="text-center">
-              <p className="text-lg font-medium text-gray-900">{totalSeasons}</p>
-              <p className="text-xs text-gray-400">Season{totalSeasons !== 1 ? 's' : ''}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-medium text-gray-900">{totalDays}</p>
-              <p className="text-xs text-gray-400">Days played</p>
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-medium text-gray-900">{totalChallengeWins}</p>
-              <p className="text-xs text-gray-400">Challenge wins</p>
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-medium text-gray-900">{totalVotesAgainst}</p>
-              <p className="text-xs text-gray-400">Votes against</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bio */}
-      {player.bio && (
-        <div className="bg-white border border-gray-100 rounded-xl p-5 mb-6">
-          <h2 className="text-sm font-medium text-gray-900 mb-2">About</h2>
-          <p className="text-sm text-gray-600 leading-relaxed">{player.bio}</p>
-        </div>
-      )}
+      <PlayerBioCard
+        player={player}
+        contestants={player.contestants}
+      />
 
       {/* Season history */}
       <h2 className="text-sm font-medium text-gray-900 mb-3">Season History</h2>

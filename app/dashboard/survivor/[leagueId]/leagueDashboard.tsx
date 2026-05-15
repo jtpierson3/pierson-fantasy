@@ -272,7 +272,7 @@ export default function LeagueDashboard({ league, userId, pastLeagues }: Props) 
                   You have not picked your tribe yet
                 </p>
                 <button
-                  onClick={() => router.push(`/dashboard/survivor/${league.id}/tribe`)}
+                  onClick={() => router.push(`/dashboard/survivor/${league.id}/tribe/pick`)}
                   className="px-4 py-2 text-sm rounded-lg bg-green-700 text-white hover:bg-green-600 transition-colors font-medium"
                 >
                   Pick your tribe

@@ -14,19 +14,21 @@ export default async function PlayerBioPage({
         include: {
             contestants: {
             include: {
+                survivorPlayer: true,
                 survivorSeason: true,
                 tribeMemberships: {
-                include: { tribe: true }
+                    where: { isCurrent: true },
+                    include: { tribe: true }
                 },
                 episodeStats: {
-                include: { event: true }
+                    include: { event: true }
                 },
                 challengeResults: {
-                where: { placement: 1 },
-                include: { challenge: true }
+                    where: { placement: 1 },
+                    include: { challenge: true }
                 },
                 votesReceived: {
-                where: { isRevoked: false }
+                    where: { isRevoked: false }
                 },
             },
             orderBy: { survivorSeason: { number: 'desc' } }

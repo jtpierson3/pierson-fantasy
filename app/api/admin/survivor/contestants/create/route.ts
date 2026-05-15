@@ -11,8 +11,8 @@ export async function POST(req: Request) {
     if (!currentUser?.isSiteAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const {
-      seasonId, survivorPlayerId, newPlayerName,
-      status, placement, eliminatedEpisode, daysLasted,
+      seasonId, survivorPlayerId, newPlayerName, newPlayerBio,
+      newPlayerBirthDate, status, placement, eliminatedEpisode, daysLasted,
       tribeId, imageUrl, hometown, occupation, profile, description
     } = await req.json()
 
@@ -21,9 +21,23 @@ export async function POST(req: Request) {
     // Create new player if needed
     if (!playerId && newPlayerName) {
       const newPlayer = await prisma.survivorPlayer.create({
-        data: { name: newPlayerName }
+        data: { 
+          name: newPlayerName,
+          bio: newPlayerBio || null,
+          birthDate: newPlayerBirthDate ? new Date(newPlayerBirthDate) : null
+        }
       })
       playerId = newPlayer.id
+    }
+
+    if (playerId && (newPlayerBio || newPlayerBirthDate)) {
+      await prisma.survivorPlayer.update({
+        where: { id: playerId },
+        data: {
+          bio: newPlayerBio || undefined,
+          birthDate: newPlayerBirthDate ? new Date(newPlayerBirthDate) : undefined
+        }
+      })
     }
 
     if (!playerId) return NextResponse.json({ error: 'Player is required' }, { status: 400 })
