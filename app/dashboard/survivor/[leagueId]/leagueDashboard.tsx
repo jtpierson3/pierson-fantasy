@@ -32,6 +32,7 @@ type EpisodeStat = {
 type Contestant = {
   id: string
   status: string
+  imageUrl: string | null
   survivorPlayer: SurvivorPlayer
   episodeStats: EpisodeStat[]
 }
@@ -222,6 +223,7 @@ export default function LeagueDashboard({ league, userId, pastLeagues }: Props) 
               return (
                 <div
                   key={tribe.id}
+                  onClick={() => router.push(`/dashboard/survivor/${league.id}/tribe/${tribe.id}`)}
                   className={`grid grid-cols-12 gap-2 px-4 py-3 border-b border-gray-50 last:border-0 text-sm transition-colors ${
                     isMe ? 'bg-green-50' : 'hover:bg-gray-50'
                   }`}
