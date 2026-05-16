@@ -10,22 +10,37 @@ export async function POST(req: Request) {
     const currentUser = await prisma.user.findUnique({ where: { clerkId } })
     if (!currentUser?.isSiteAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { challengeId, contestantIds, winningTeamId } = await req.json()
+    const { challengeId, contestantIds, participantIds, useAllParticipants, winningTeamId } = await req.json()
 
     // Clear existing results
     await prisma.challengeResult.deleteMany({ where: { challengeId } })
 
     if (contestantIds?.length) {
-      // Individual winners
+      // Store winners as placement 1
       await prisma.challengeResult.createMany({
-        data: contestantIds.map((contestantId: string, index: number) => ({
+        data: contestantIds.map((contestantId: string) => ({
           challengeId,
           contestantId,
-          placement: index + 1,
+          placement: 1,
         }))
       })
+
+      // Store specific non-winning participants as placement 2
+      if (!useAllParticipants && participantIds?.length) {
+        const nonWinners = participantIds.filter(
+          (id: string) => !contestantIds.includes(id)
+        )
+        if (nonWinners.length > 0) {
+          await prisma.challengeResult.createMany({
+            data: nonWinners.map((contestantId: string) => ({
+              challengeId,
+              contestantId,
+              placement: 2,
+            }))
+          })
+        }
+      }
     } else if (winningTeamId) {
-      // Team winner
       await prisma.challengeResult.create({
         data: {
           challengeId,

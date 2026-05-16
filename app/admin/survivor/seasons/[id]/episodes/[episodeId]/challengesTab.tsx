@@ -19,14 +19,14 @@ type Contestant = {
 
 type TeamMember = {
   id: string
-  survivorPlayer: { id: string; name: string; }
+  survivorPlayer: { name: string; }
 }
 
 type ChallengeTeam = {
   id: string
   name: string | null
   color: string | null
-  contestants: TeamMember[] 
+  contestants: TeamMember[]
   result: { placement: number } | null
 }
 
@@ -63,6 +63,7 @@ type Props = {
 type ChallengeForm = {
   name: string
   type: string
+  order: string
   isIndividual: boolean
   isFiremaking: boolean
   reward: string
@@ -74,18 +75,7 @@ const emptyForm: ChallengeForm = {
   isIndividual: true,
   isFiremaking: false,
   reward: '',
-}
-
-type ChallengeBody = {
-  episodeId: string
-  name: string
-  type: string
-  isIndividual: boolean
-  isFiremaking: boolean
-  reward: string | null
-  order: number
-  tribeIds?: string[]
-  customTeams?: CustomTeam[]
+  order: ''
 }
 
 type CustomTeam = {
@@ -96,17 +86,23 @@ type CustomTeam = {
 
 const TEAM_COLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#e67e22']
 
-const Toggle = ({ label, value, onChange }: { label: string; value: boolean; onChange: () => void }) => (
-  <div className="flex items-center gap-3">
-    <button
-      onClick={onChange}
-      className={`relative w-10 h-5 rounded-full transition-colors ${value ? 'bg-green-600' : 'bg-gray-700'}`}
-    >
-      <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${value ? 'translate-x-5' : 'translate-x-0.5'}`} />
-    </button>
-    <span className="text-sm text-gray-300">{label}</span>
-  </div>
-)
+function Toggle({ label, value, onChange }: {
+  label: string
+  value: boolean
+  onChange: () => void
+}): React.JSX.Element {
+  return (
+    <div className="flex items-center gap-3">
+      <button
+        onClick={onChange}
+        className={`relative w-10 h-5 rounded-full transition-colors ${value ? 'bg-green-600' : 'bg-gray-700'}`}
+      >
+        <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${value ? 'translate-x-5' : 'translate-x-0.5'}`} />
+      </button>
+      <span className="text-sm text-gray-300">{label}</span>
+    </div>
+  )
+}
 
 type ConfirmDialog = {
   title: string
@@ -136,20 +132,35 @@ export default function ChallengesTab({ episode, contestants }: Props) {
   const [selectedWinnerTeamId, setSelectedWinnerTeamId] = useState<string>('')
   const [savingWinners, setSavingWinners] = useState<string | null>(null)
 
+  // Participants
+  const [useAllParticipants, setUseAllParticipants] = useState<Record<string, boolean>>({})
+  const [challengeParticipants, setChallengeParticipants] = useState<Record<string, Set<string>>>({})
+
   const tribes = episode.survivorSeason?.tribes ?? []
 
   const handleCreateChallenge = useCallback(async () => {
     setFormLoading(true)
     setFormError(null)
     try {
+      type ChallengeBody = {
+        episodeId: string
+        name: string
+        type: string
+        isIndividual: boolean
+        isFiremaking: boolean
+        reward: string | null
+        order: number
+        tribeIds?: string[]
+        customTeams?: CustomTeam[]
+      }
+
       const body: ChallengeBody = {
         episodeId: episode.id,
         ...form,
         reward: form.reward || null,
-        order: episode.challenges.length + 1,
+        order: form.order ? parseInt(form.order) : episode.challenges.length + 1,
       }
 
-      // Add team data if team challenge
       if (!form.isIndividual) {
         if (useExistingTribes) {
           body.tribeIds = selectedTribeIds
@@ -207,9 +218,22 @@ export default function ChallengesTab({ episode, contestants }: Props) {
   const handleSaveWinners = useCallback(async (challenge: Challenge) => {
     setSavingWinners(challenge.id)
     try {
+      const isSpecificParticipants = useAllParticipants[challenge.id] === false
+      const participantIds = isSpecificParticipants
+        ? Array.from(challengeParticipants[challenge.id] ?? [])
+        : []
+
       const body = challenge.isIndividual
-        ? { challengeId: challenge.id, contestantIds: Array.from(selectedWinnerIds) }
-        : { challengeId: challenge.id, winningTeamId: selectedWinnerTeamId }
+        ? {
+            challengeId: challenge.id,
+            contestantIds: Array.from(selectedWinnerIds),
+            participantIds,
+            useAllParticipants: !isSpecificParticipants,
+          }
+        : {
+            challengeId: challenge.id,
+            winningTeamId: selectedWinnerTeamId
+          }
 
       const res = await fetch('/api/admin/survivor/challenges/set-winners', {
         method: 'POST',
@@ -225,7 +249,7 @@ export default function ChallengesTab({ episode, contestants }: Props) {
     } finally {
       setSavingWinners(null)
     }
-  }, [selectedWinnerIds, selectedWinnerTeamId, router])
+  }, [selectedWinnerIds, selectedWinnerTeamId, useAllParticipants, challengeParticipants, router])
 
   const toggleTribe = (tribeId: string) => {
     setSelectedTribeIds(prev =>
@@ -238,7 +262,6 @@ export default function ChallengesTab({ episode, contestants }: Props) {
   const toggleContestantInTeam = (teamIndex: number, contestantId: string) => {
     setCustomTeams(prev => prev.map((team, i) => {
       if (i !== teamIndex) {
-        // Remove from other teams
         return { ...team, contestantIds: team.contestantIds.filter(id => id !== contestantId) }
       }
       const has = team.contestantIds.includes(contestantId)
@@ -307,7 +330,7 @@ export default function ChallengesTab({ episode, contestants }: Props) {
               </button>
             </div>
 
-            {/* Teams display */}
+            {/* Teams display for team challenges */}
             {!challenge.isIndividual && challenge.teams.length > 0 && (
               <div className="px-4 py-3 border-b border-gray-800">
                 <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Teams</p>
@@ -346,70 +369,156 @@ export default function ChallengesTab({ episode, contestants }: Props) {
               </div>
             )}
 
-            {/* Winners */}
+            {/* Winners section */}
             <div className="p-4">
               {/* Existing winners */}
               {challenge.results.filter(r => r.placement === 1).length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-3">
-                  <p className="text-xs text-gray-400 w-full">Current winner(s):</p>
-                  {challenge.results
-                    .filter(r => r.placement === 1)
-                    .map(r => (
-                      <div key={r.id} className="flex items-center gap-2 bg-green-900/30 border border-green-700 rounded-lg px-3 py-1.5">
-                        <span className="text-sm text-green-400">
-                          {r.contestant?.survivorPlayer.name ?? 'Team winner'}
-                        </span>
-                      </div>
-                    ))
-                  }
+                <div className="mb-3">
+                  <p className="text-xs text-gray-400 mb-1.5">Current winner(s):</p>
+                  <div className="flex flex-wrap gap-2">
+                    {challenge.results
+                      .filter(r => r.placement === 1)
+                      .map(r => (
+                        <div key={r.id} className="flex items-center gap-2 bg-green-900/30 border border-green-700 rounded-lg px-3 py-1.5">
+                          <span className="text-sm text-green-400">
+                            {r.contestant?.survivorPlayer.name ?? 'Team winner'}
+                          </span>
+                        </div>
+                      ))
+                    }
+                  </div>
+                  {/* Show specific participants if stored */}
+                  {challenge.results.filter(r => r.placement === 2).length > 0 && (
+                    <p className="text-xs text-gray-500 mt-1.5">
+                      Other participants: {challenge.results
+                        .filter(r => r.placement === 2)
+                        .map(r => r.contestant?.survivorPlayer.name.split(' ')[0])
+                        .join(', ')
+                      }
+                    </p>
+                  )}
                 </div>
               )}
 
-              {/* Set winner */}
-              <p className="text-xs text-gray-400 mb-2">Set winner:</p>
+              {/* Individual challenge — participant + winner selection */}
+              {challenge.isIndividual && (
+                <>
+                  {/* Participants toggle */}
+                  <div className="flex gap-2 mb-3">
+                    <button
+                      onClick={() => setUseAllParticipants(prev => ({ ...prev, [challenge.id]: true }))}
+                      className={`px-3 py-1 text-xs rounded-lg border transition-colors ${
+                        useAllParticipants[challenge.id] !== false
+                          ? 'bg-gray-700 border-gray-600 text-white'
+                          : 'border-gray-700 text-gray-400 hover:border-gray-600'
+                      }`}
+                    >
+                      All participate
+                    </button>
+                    <button
+                      onClick={() => setUseAllParticipants(prev => ({ ...prev, [challenge.id]: false }))}
+                      className={`px-3 py-1 text-xs rounded-lg border transition-colors ${
+                        useAllParticipants[challenge.id] === false
+                          ? 'bg-gray-700 border-gray-600 text-white'
+                          : 'border-gray-700 text-gray-400 hover:border-gray-600'
+                      }`}
+                    >
+                      Select participants
+                    </button>
+                  </div>
 
-              {challenge.isIndividual ? (
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {contestants.map(c => (
-                    <button
-                      key={c.id}
-                      onClick={() => {
-                        setSelectedWinnerIds(prev => {
-                          const next = new Set(prev)
-                          if (next.has(c.id)) next.delete(c.id)
-                          else next.add(c.id)
-                          return next
-                        })
-                      }}
-                      className={`px-2 py-1 rounded-lg text-xs border transition-colors ${
-                        selectedWinnerIds.has(c.id)
-                          ? 'bg-green-900/40 border-green-600 text-green-400'
-                          : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
-                      }`}
-                    >
-                      {c.survivorPlayer.name.split(' ')[0]}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex gap-2 flex-wrap mb-3">
-                  {challenge.teams.map(team => (
-                    <button
-                      key={team.id}
-                      onClick={() => setSelectedWinnerTeamId(team.id)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-colors ${
-                        selectedWinnerTeamId === team.id
-                          ? 'bg-green-900/40 border-green-600 text-green-400'
-                          : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
-                      }`}
-                    >
-                      {team.color && (
-                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: team.color }} />
-                      )}
-                      {team.name ?? 'Team'}
-                    </button>
-                  ))}
-                </div>
+                  {/* Specific participant picker */}
+                  {useAllParticipants[challenge.id] === false && (
+                    <div className="mb-3">
+                      <p className="text-xs text-gray-400 mb-2">Who participated?</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {contestants.map(c => {
+                          const isSelected = challengeParticipants[challenge.id]?.has(c.id) ?? false
+                          return (
+                            <button
+                              key={c.id}
+                              onClick={() => {
+                                setChallengeParticipants(prev => {
+                                  const current = new Set(prev[challenge.id] ?? [])
+                                  if (current.has(c.id)) current.delete(c.id)
+                                  else current.add(c.id)
+                                  return { ...prev, [challenge.id]: current }
+                                })
+                                if (selectedWinnerIds.has(c.id)) {
+                                  setSelectedWinnerIds(prev => {
+                                    const next = new Set(prev)
+                                    next.delete(c.id)
+                                    return next
+                                  })
+                                }
+                              }}
+                              className={`px-2 py-1 rounded-lg text-xs border transition-colors ${
+                                isSelected
+                                  ? 'bg-gray-700 border-gray-600 text-white'
+                                  : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
+                              }`}
+                            >
+                              {c.survivorPlayer.name.split(' ')[0]}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Winner picker — filtered to participants if specific mode */}
+                  <p className="text-xs text-gray-400 mb-2">Set winner:</p>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {(useAllParticipants[challenge.id] === false
+                      ? contestants.filter(c => challengeParticipants[challenge.id]?.has(c.id))
+                      : contestants
+                    ).map(c => (
+                      <button
+                        key={c.id}
+                        onClick={() => {
+                          setSelectedWinnerIds(prev => {
+                            const next = new Set(prev)
+                            if (next.has(c.id)) next.delete(c.id)
+                            else next.add(c.id)
+                            return next
+                          })
+                        }}
+                        className={`px-2 py-1 rounded-lg text-xs border transition-colors ${
+                          selectedWinnerIds.has(c.id)
+                            ? 'bg-green-900/40 border-green-600 text-green-400'
+                            : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
+                        }`}
+                      >
+                        {c.survivorPlayer.name.split(' ')[0]}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {/* Team challenge winner picker */}
+              {!challenge.isIndividual && (
+                <>
+                  <p className="text-xs text-gray-400 mb-2">Set winner:</p>
+                  <div className="flex gap-2 flex-wrap mb-3">
+                    {challenge.teams.map(team => (
+                      <button
+                        key={team.id}
+                        onClick={() => setSelectedWinnerTeamId(team.id)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-colors ${
+                          selectedWinnerTeamId === team.id
+                            ? 'bg-green-900/40 border-green-600 text-green-400'
+                            : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
+                        }`}
+                      >
+                        {team.color && (
+                          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: team.color }} />
+                        )}
+                        {team.name ?? 'Team'}
+                      </button>
+                    ))}
+                  </div>
+                </>
               )}
 
               <button
@@ -444,6 +553,19 @@ export default function ChallengesTab({ episode, contestants }: Props) {
                   value={form.name}
                   onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="e.g. Muddy Waters"
+                  className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                  Order <span className="text-gray-600">(optional — defaults to next)</span>
+                </label>
+                <input
+                  type="number"
+                  value={form.order}
+                  onChange={e => setForm(prev => ({ ...prev, order: e.target.value }))}
+                  placeholder={`e.g. ${episode.challenges.length + 1}`}
                   className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600"
                 />
               </div>
