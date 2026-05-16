@@ -238,7 +238,43 @@ export default function LeagueDashboard({ league, userId, pastLeagues }: Props) 
                     <p className={`font-medium truncate ${isMe ? 'text-green-800' : 'text-gray-900'}`}>
                       {tribe.name}
                     </p>
-                    <p className="text-xs text-gray-400 truncate">{tribe.user.username}</p>
+                    {/* Contestant Circle */}
+                    {tribe.players.length > 0 && (
+                      <div className="flex -space-x-1.5 mt-1">
+                        {tribe.players.slice(0,6).map(pick => (
+                          <div
+                            key={pick.id}
+                            className={`relative w-5 h-5 rounded-full border-2 overflow-hidden flex-shrink-0 ${
+                              pick.contestant.status === 'eliminated'
+                              ? 'border-red-400 grayscale-opacity-50'
+                              : pick.contestant.status === 'winner'
+                              ? 'border-yellow-400'
+                              : pick.contestant.status === 'finalist'
+                              ? 'border-purple-400'
+                              : pick.contestant.status === 'jury'
+                              ? 'border-blue-400 grayscale-opacity-50'
+                              : 'border-green-400'
+                            }`}
+                          >
+                            {pick.contestant.imageUrl ? (
+                              <Image 
+                                src={pick.contestant.imageUrl}
+                                alt={pick.contestant.survivorPlayer.name}
+                                fill
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-200 flex-items-center justify-center">
+                                <span className="text-gray-500" style={{ fontSize: '6px'}}>
+                                  {pick.contestant.survivorPlayer.name[0]}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+
+                      </div>
+                    )}
                   </div>
                   <div className={`col-span-4 text-right font-medium ${isMe ? 'text-green-800' : 'text-gray-900'}`}>
                     {points}
