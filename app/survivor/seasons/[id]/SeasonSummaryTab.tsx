@@ -124,7 +124,7 @@ export default function SeasonSummaryTab({ episodes, contestants, seasonId }: Pr
     .sort((a, b) => (b.placement ?? 0) - (a.placement ?? 0))
 
   const elimOrderMap = new Map<string, number>()
-  let juryCount = 0
+  const juryCount = 0
   eliminated.forEach((c, i) => {
     elimOrderMap.set(c.id, i + 1)
   })
