@@ -15,7 +15,9 @@ export async function POST(req: Request) {
 
         const body = await req.json()
 
-        const { number, title, theme, location, imageUrl, airDate, finaleDate, isActive } = body
+        const { number, title, theme, location, imageUrl, airDate, finaleDate, isActive,
+            summary, production, twists
+         } = body
 
         if (!number || !title) {
             return NextResponse.json({ error: 'Number and title are required' }, { status: 400 })
@@ -38,6 +40,9 @@ export async function POST(req: Request) {
                 airDate: airDate ? new Date(airDate): null,
                 finaleDate: finaleDate ? new Date(finaleDate) : null,
                 isActive,
+                summary: summary || null,
+                production: production || null,
+                twists: twists || null
             }
         })
 

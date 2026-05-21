@@ -181,6 +181,9 @@ model SurvivorSeason {
   imageUrl      String?
   airDate       DateTime?
   finaleDate    DateTime?
+  summary       String?
+  production    String?
+  twists        String?
   isActive      Boolean          @default(false)
   castawayCount Int?
   contestants   Contestant[]

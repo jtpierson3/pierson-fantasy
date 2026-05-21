@@ -12,7 +12,9 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const { seasonId, number, title, theme, location, imageUrl, airDate, finaleDate, isActive } = await req.json()
+        const { seasonId, number, title, theme, location, imageUrl, airDate, finaleDate, isActive,
+            summary, production, twists
+         } = await req.json()
 
         if (!number || !title) {
             return NextResponse.json({ error: 'Number and title are required' }, { status: 400 })
@@ -36,6 +38,9 @@ export async function POST(req: Request) {
                 airDate: airDate ? new Date(airDate): null,
                 finaleDate: finaleDate ? new Date(finaleDate) : null,
                 isActive,
+                summary: summary || null,
+                production: production || null,
+                twists: twists || null
             }
         })
 
