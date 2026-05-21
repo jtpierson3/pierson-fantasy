@@ -158,12 +158,7 @@ export default function SeasonSummaryTab({ episodes, contestants, seasonId }: Pr
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="text-left px-3 py-2 font-medium text-gray-500 w-40">Episode</th>
               <th className="text-left px-3 py-2 font-medium text-gray-500 w-24">Air Date</th>
-              <th className="text-left px-3 py-2 font-medium text-gray-500 w-32">
-                <div>Reward</div>
-              </th>
-              <th className="text-left px-3 py-2 font-medium text-gray-500 w-32">
-                <div>Immunity</div>
-              </th>
+              <th className="text-left px-3 py-2 font-medium text-gray-500 w-64">Challenges</th>
               <th className="text-left px-3 py-2 font-medium text-gray-500 w-24">Exiled</th>
               <th className="text-left px-3 py-2 font-medium text-gray-500 w-24">Journey</th>
               <th className="text-left px-3 py-2 font-medium text-gray-500 w-32">Eliminated</th>
@@ -255,81 +250,41 @@ export default function SeasonSummaryTab({ episodes, contestants, seasonId }: Pr
                     })}
                   </td>
 
-                  {/* Reward + Immunity Columns */}
-                    {combinedChallenges.length > 0 ? (
-                    // Combined challenge spans both reward and immunity columns
-                    <td className="px-3 py-2" colSpan={2}>
-                        <div className="flex flex-col gap-1">
-                        {combinedChallenges.map(challenge => {
+                  {/* Single challenges cell — sorted by order */}
+                    <td className="px-3 py-2">
+                    <div className="flex flex-col gap-1.5">
+                        {[...episode.challenges]
+                        .sort((a, b) => a.order - b.order)
+                        .map(challenge => {
                             const winners = getChallengeWinners(challenge)
-                            if (!winners?.length) return null
+                            const label = challenge.type === 'reward'
+                            ? 'Reward'
+                            : challenge.type === 'immunity'
+                            ? 'Immunity'
+                            : 'Reward + Immunity'
+
                             return (
                             <div key={challenge.id} className="flex flex-col gap-0.5">
-                                <span className="text-gray-400 text-xs mb-0.5">Reward + Immunity</span>
-                                {winners.map((w, i) => w && (
-                                <span
+                                <span className="text-gray-400" style={{ fontSize: '10px' }}>{label}</span>
+                                {winners && winners.length > 0 ? (
+                                winners.map((w, i) => w && (
+                                    <span
                                     key={i}
                                     className="px-1.5 py-0.5 rounded text-white text-xs font-medium"
                                     style={{ backgroundColor: w.tribe?.color ?? '#6b7280' }}
-                                >
+                                    >
                                     {w.name}
-                                </span>
-                                ))}
+                                    </span>
+                                ))
+                                ) : (
+                                <span className="text-gray-400 text-xs">—</span>
+                                )}
                             </div>
                             )
-                        })}
-                        </div>
+                        })
+                        }
+                    </div>
                     </td>
-                    ) : (
-                    <>
-                        {/* Reward only */}
-                        <td className="px-3 py-2">
-                        <div className="flex flex-col gap-1">
-                            {rewardChallenges.map(challenge => {
-                            const winners = getChallengeWinners(challenge)
-                            if (!winners?.length) return null
-                            return (
-                                <div key={challenge.id} className="flex flex-col gap-0.5">
-                                {winners.map((w, i) => w && (
-                                    <span
-                                    key={i}
-                                    className="px-1.5 py-0.5 rounded text-white text-xs font-medium"
-                                    style={{ backgroundColor: w.tribe?.color ?? '#6b7280' }}
-                                    >
-                                    {w.name}
-                                    </span>
-                                ))}
-                                </div>
-                            )
-                            })}
-                        </div>
-                        </td>
-
-                        {/* Immunity only */}
-                        <td className="px-3 py-2">
-                        <div className="flex flex-col gap-1">
-                            {immunityChallenges.map(challenge => {
-                            const winners = getChallengeWinners(challenge)
-                            if (!winners?.length) return null
-                            return (
-                                <div key={challenge.id} className="flex flex-col gap-0.5">
-                                {winners.map((w, i) => w && (
-                                    <span
-                                    key={i}
-                                    className="px-1.5 py-0.5 rounded text-white text-xs font-medium"
-                                    style={{ backgroundColor: w.tribe?.color ?? '#6b7280' }}
-                                    >
-                                    {w.name}
-                                    </span>
-                                ))}
-                                </div>
-                            )
-                            })}
-                        </div>
-                        </td>
-                    </>
-                    )}
-
 
                   {/* Exiled */}
                   <td className="px-3 py-2">
