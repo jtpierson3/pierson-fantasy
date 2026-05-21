@@ -74,6 +74,17 @@ const SURVIVOR_NAV = [
                 <path d="M8 1l1.5 4.5H14l-3.75 2.75 1.5 4.5L8 10l-3.75 2.75 1.5-4.5L2 5.5h4..5z"/>
             </svg>
         )
+    },
+    {
+        href: '/survivor/seasons',
+        label: 'Seasons',
+        icon: (
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <rect x="1" y="3" width="14" height="11" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M1 7h14" stroke="currentColor" strokeWidth="1" />
+                <path d="M5 1v4Mv11 1v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+        )
     }
 ]
 
