@@ -134,13 +134,11 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
 
   // Check if contestant was at this tribal
   function wasAtTribal(contestantId: string, column: TribalColumn): boolean {
-    if (column.eliminated?.id === contestantId) return false
     return column.votes.some(v => v.voterId === contestantId)
   }
 
   // Check if vote was stolen
   function hadVoteStolen(contestantId: string, column: TribalColumn): boolean {
-    if (column.eliminated?.id === contestantId) return false
     const wasPresent = wasAtTribal(contestantId, column)
     const didVote = column.votes.some(v => v.voterId === contestantId)
     return wasPresent && !didVote
@@ -312,7 +310,6 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
                   {/* Vote cells */}
                   {columns.map(col => {
                     const votes = getVoteForContestant(contestant.id, col)
-                    const isElimThisEp = col.eliminated?.id === contestant.id
                     const stolenVote = hadVoteStolen(contestant.id, col)
                     const wasPresent = wasAtTribal(contestant.id, col)
 
