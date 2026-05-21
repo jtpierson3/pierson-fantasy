@@ -101,7 +101,7 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
   // Sort contestants: alphabetical first, then eliminated in order
   const eliminated = contestants
     .filter(c => c.placement !== null && !['winner', 'finalist', 'active'].includes(c.status))
-    .sort((a, b) => (b.placement ?? 0) - (a.placement ?? 0))
+    .sort((a, b) => (a.placement ?? 0) - (b.placement ?? 0))
 
   const active = contestants
     .filter(c => ['winner', 'finalist', 'active'].includes(c.status))
@@ -219,12 +219,6 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
                         >
                           {col.eliminated.survivorPlayer.name.split(' ')[0]}
                         </span>
-                        {col.isFiremaking && (
-                          <span className="text-orange-500">🔥</span>
-                        )}
-                        {isNoVote && (
-                          <span className="text-gray-400 text-xs">No Vote</span>
-                        )}
                       </div>
                     )}
                   </th>
