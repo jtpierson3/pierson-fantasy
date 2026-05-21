@@ -247,10 +247,11 @@ export default function SeasonSummaryTab({ episodes, contestants, seasonId }: Pr
 
                   {/* Reward challenge */}
                   <td className="px-3 py-2">
-                    {combinedChallenges.length > 0 ? null : (
+                    {combinedChallenges.length === 0 && (
                       <div className="flex flex-col gap-1">
                         {rewardChallenges.map(challenge => {
                           const winners = getChallengeWinners(challenge)
+                          if (!winners?.length) return null
                           return (
                             <div key={challenge.id} className="flex flex-col gap-0.5">
                               {winners?.map((w, i) => w && (
@@ -269,6 +270,30 @@ export default function SeasonSummaryTab({ episodes, contestants, seasonId }: Pr
                         })}
                       </div>
                     )}
+                    {combinedChallenges.length > 0 && (
+                      <div className="flex flex-col gap-1">
+                        {rewardChallenges.map(challenge => {
+                          const winners = getChallengeWinners(challenge)
+                          if (!winners?.length) return null
+                          return (
+                            <div key={challenge.id} className="flex flex-col gap-0.5">
+                              <span className="text-gray-400 text-xs">Reward +</span>
+                              {winners?.map((w, i) => w && (
+                                <span
+                                  key={i}
+                                  className="px-1.5 py-0.5 rounded text-white text-xs font-medium"
+                                  style={{
+                                    backgroundColor: w.tribe?.color ?? '#6b7280'
+                                  }}
+                                >
+                                  {w.name}
+                                </span>
+                              ))}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}    
                   </td>
 
                   {/* Immunity challenge — spans both columns if combined */}
@@ -277,9 +302,10 @@ export default function SeasonSummaryTab({ episodes, contestants, seasonId }: Pr
                       <div className="flex flex-col gap-1">
                         {combinedChallenges.map(challenge => {
                           const winners = getChallengeWinners(challenge)
+                          if (!winners?.length) return null
                           return (
                             <div key={challenge.id} className="flex flex-col gap-0.5">
-                              <span className="text-gray-400 text-xs mb-0.5">Reward + Immunity</span>
+                              <span className="text-gray-400 text-xs mb-0.5"> Immunity</span>
                               {winners?.map((w, i) => w && (
                                 <span
                                   key={i}
@@ -301,6 +327,7 @@ export default function SeasonSummaryTab({ episodes, contestants, seasonId }: Pr
                       <div className="flex flex-col gap-1">
                         {immunityChallenges.map(challenge => {
                           const winners = getChallengeWinners(challenge)
+                          if (!winners?.length) return null
                           return (
                             <div key={challenge.id} className="flex flex-col gap-0.5">
                               {winners?.map((w, i) => w && (
