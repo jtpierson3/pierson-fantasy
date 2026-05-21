@@ -23,7 +23,58 @@ type SeasonWithDetails = Prisma.SurvivorSeasonGetPayload<{
         episodeStats: { include: { event: true } }
       }
     }
-    episodes: true
+    episodes: {
+        include: {
+            challenges: {
+                include: {
+                    results: {
+                        include: {
+                            contestant: {
+                                include: {
+                                    survivorPlayer: true
+                                    tribeMemberships: { include: { tribe: true } }
+                                }
+                            }
+                            team: true
+                        }
+                    }
+                    teams: {
+                        include: {
+                            contestants: { include: { survivorPlayer: true } }
+                            result: true
+                        }
+                    }
+                }
+            }
+            tribalCouncils: {
+                include: {
+                    votes: {
+                        include: {
+                            voter: { include: { survivorPlayer: true } }
+                            votedFor: { include: { survivorPlayer: true } }
+                        }
+                    }
+                    eliminated: {
+                        include: {
+                            survivorPlayer: true
+                            tribeMemberships: { include: { tribe: true } }
+                        }
+                    }
+                }
+            }
+            stats: {
+                include: {
+                    contestant: {
+                        include: {
+                            survivorPlayer: true
+                            tribeMemberships: { include: { tribe: true } }
+                        }
+                    }
+                    event: true
+                }
+            }
+        }
+    }
     tribes: true
     scoringEvents: true
   }
@@ -279,15 +330,15 @@ export default function SeasonDetail({ season }: Props) {
           )}
           {activeTab === 'summary' && (
             <SeasonSummaryTab 
-                episodes={season.episodes as any}
-                contestants={season.contestants as any}
+                episodes={season.episodes}
+                contestants={season.contestants}
                 seasonId={season.id}
             />
           )}
           {activeTab === 'voting' && (
             <VotingHistoryTab 
-                episodes={season.episodes as any}
-                contestants={season.contestants as any}
+                episodes={season.episodes}
+                contestants={season.contestants}
             />
           )}
       </div>

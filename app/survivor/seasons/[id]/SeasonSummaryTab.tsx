@@ -61,6 +61,10 @@ type ContestantWithDetails = Prisma.ContestantGetPayload<{
   include: {
     survivorPlayer: true
     tribeMemberships: { include: { tribe: true } }
+    challengeResults: {
+        where: { placement: 1}
+        include: { challenge: true}
+    }
     votesReceived: { where: { isRevoked: false } }
     episodeStats: { include: { event: true } }
   }
