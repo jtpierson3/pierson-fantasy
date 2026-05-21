@@ -316,25 +316,6 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
                     const stolenVote = hadVoteStolen(contestant.id, col)
                     const wasPresent = wasAtTribal(contestant.id, col)
 
-                    // Eliminated this episode — show their name with tribe bg
-                    if (isElimThisEp) {
-                      const tribe = contestant.tribeMemberships[0]?.tribe
-                      return (
-                        <td
-                          key={col.tribalCouncilId}
-                          className="px-2 py-2 text-center"
-                          style={{ backgroundColor: tribe?.color ? `${tribe.color}33` : '#f3f4f6' }}
-                        >
-                          <span
-                            className="font-medium"
-                            style={{ color: tribe?.color ?? '#374151' }}
-                          >
-                            {contestant.survivorPlayer.name.split(' ')[0]}
-                          </span>
-                        </td>
-                      )
-                    }
-
                     // Wasn't at this tribal
                     if (!wasPresent) {
                       return (
