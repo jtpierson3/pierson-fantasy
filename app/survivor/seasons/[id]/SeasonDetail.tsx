@@ -6,6 +6,7 @@ import Image from 'next/image'
 import type { Prisma } from '@prisma/client'
 import FormattedText from '@/app/components/FormattedText'
 import CastawaysTab from './CastawaysTab'
+import SeasonSummaryTab from './SeasonSummaryTab'
 
 type SeasonWithDetails = Prisma.SurvivorSeasonGetPayload<{
   include: {
@@ -275,7 +276,13 @@ export default function SeasonDetail({ season }: Props) {
                 season={season}
             />
           )}
-          {activeTab === 'summary' && (season.summary ?? 'No season summary yet.')}
+          {activeTab === 'summary' && (
+            <SeasonSummaryTab 
+                episodes={season.episodes as any}
+                contestants={season.contestants as any}
+                seasonId={season.id}
+            />
+          )}
           {activeTab === 'voting' && 'Voting history coming soon.'}
       </div>
     </div>

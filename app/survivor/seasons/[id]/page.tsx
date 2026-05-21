@@ -12,33 +12,91 @@ async function SeasonDetailContent({ id }: { id: string }) {
         where: { id },
         include: {
             contestants: {
-                include: {
-                    survivorPlayer: true,
-                    tribeMemberships: {
-                        include: { tribe: true }
-                    },
-                    challengeResults: {
-                        where: { placement: 1 },
-                        include: { challenge: true }
-                    },
-                    votesReceived: {
-                        where: { isRevoked: false }
-                    },
-                    episodeStats: {
-                        include: { event: true }
-                    }
+            include: {
+                survivorPlayer: true,
+                tribeMemberships: {
+                include: { tribe: true }
                 },
-                orderBy: { placement: 'asc' }
+                challengeResults: {
+                where: { placement: 1 },
+                include: { challenge: true }
+                },
+                votesReceived: {
+                where: { isRevoked: false }
+                },
+                episodeStats: {
+                include: { event: true }
+                }
+            },
+            orderBy: { placement: 'asc' }
             },
             episodes: {
-                orderBy: { number: 'asc' }
+            include: {
+                challenges: {
+                include: {
+                    results: {
+                    include: {
+                        contestant: {
+                        include: { survivorPlayer: true, tribeMemberships: { where: { isCurrent: true }, include: { tribe: true } } }
+                        },
+                        team: true,
+                    },
+                    orderBy: { placement: 'asc' }
+                    },
+                    teams: {
+                    include: {
+                        contestants: {
+                        include: { survivorPlayer: true }
+                        },
+                        result: true,
+                    }
+                    }
+                },
+                orderBy: { order: 'asc' }
+                },
+                tribalCouncils: {
+                include: {
+                    votes: {
+                    include: {
+                        voter: { include: { survivorPlayer: true } },
+                        votedFor: { include: { survivorPlayer: true } },
+                    }
+                    },
+                    eliminated: {
+                    include: {
+                        survivorPlayer: true,
+                        tribeMemberships: {
+                        where: { isCurrent: true },
+                        include: { tribe: true }
+                        }
+                    }
+                    },
+                },
+                orderBy: { order: 'asc' }
+                },
+                stats: {
+                include: {
+                    contestant: {
+                    include: {
+                        survivorPlayer: true,
+                        tribeMemberships: {
+                        where: { isCurrent: true },
+                        include: { tribe: true }
+                        }
+                    }
+                    },
+                    event: true,
+                }
+                }
+            },
+            orderBy: { number: 'asc' }
             },
             tribes: {
-                orderBy: { name: 'asc' }
+            orderBy: { name: 'asc' }
             },
-            scoringEvents: true
+            scoringEvents: true,
         }
-    })
+        })
 
     if (!season) notFound()
 
