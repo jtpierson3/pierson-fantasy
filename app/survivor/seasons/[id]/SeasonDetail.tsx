@@ -7,6 +7,7 @@ import type { Prisma } from '@prisma/client'
 import FormattedText from '@/app/components/FormattedText'
 import CastawaysTab from './CastawaysTab'
 import SeasonSummaryTab from './SeasonSummaryTab'
+import VotingHistoryTab from './VotingHistoryTab'
 
 type SeasonWithDetails = Prisma.SurvivorSeasonGetPayload<{
   include: {
@@ -283,7 +284,12 @@ export default function SeasonDetail({ season }: Props) {
                 seasonId={season.id}
             />
           )}
-          {activeTab === 'voting' && 'Voting history coming soon.'}
+          {activeTab === 'voting' && (
+            <VotingHistoryTab 
+                episodes={season.episodes as any}
+                contestants={season.contestants as any}
+            />
+          )}
       </div>
     </div>
   )
