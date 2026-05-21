@@ -165,10 +165,10 @@ model Player {
 //------------------------------ SURVIVOR ----------------------------------
 
 model SurvivorPlayer {
-  id           String       @id @default(cuid())
-  name         String       @unique
-  bio          String?
-  birthDate    DateTime?
+  id          String       @id @default(cuid())
+  name        String       @unique
+  bio         String?
+  birthDate   DateTime?
   contestants Contestant[]
 }
 
@@ -200,18 +200,19 @@ model Tribe {
 }
 
 model Episode {
-  id               String          @id @default(cuid())
+  id               String            @id @default(cuid())
   number           Int
   name             String
   airDate          DateTime
-  isAired          Boolean         @default(false)
-  isMerge          Boolean         @default(false)
-  isFinale         Boolean         @default(false)
+  isAired          Boolean           @default(false)
+  isMerge          Boolean           @default(false)
+  isFinale         Boolean           @default(false)
   survivorSeasonId String
-  survivorSeason   SurvivorSeason  @relation(fields: [survivorSeasonId], references: [id])
+  survivorSeason   SurvivorSeason    @relation(fields: [survivorSeasonId], references: [id])
   stats            EpisodeStat[]
   challenges       Challenge[]
   tribalCouncils   TribalCouncil[]
+  tribeMemberships TribeMembership[]
 
   @@unique([survivorSeasonId, number])
 }
@@ -248,9 +249,11 @@ model TribeMembership {
   contestantId String
   tribeId      String
   tribeType    String
+  episodeId    String?
   isCurrent    Boolean    @default(true)
   contestant   Contestant @relation(fields: [contestantId], references: [id])
   tribe        Tribe      @relation(fields: [tribeId], references: [id])
+  episode      Episode?   @relation(fields: [episodeId], references: [id])
 }
 
 model ScoringEvent {

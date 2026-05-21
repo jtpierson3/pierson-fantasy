@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     const {
       seasonId, survivorPlayerId, newPlayerName, newPlayerBio,
       newPlayerBirthDate, status, placement, eliminatedEpisode, daysLasted,
-      tribeId, imageUrl, hometown, occupation, profile, description
+      tribeId, swapEpisodeId, imageUrl, hometown, occupation, profile, description
     } = await req.json()
 
     let playerId = survivorPlayerId
@@ -64,8 +64,9 @@ export async function POST(req: Request) {
         data: {
           contestantId: contestant.id,
           tribeId,
-          tribeType: 'starting',
+          tribeType: swapEpisodeId ? 'swap' : 'starting',
           isCurrent: true,
+          episodeId: swapEpisodeId || null
         }
       })
     }

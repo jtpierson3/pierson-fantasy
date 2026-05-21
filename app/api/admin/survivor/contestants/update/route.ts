@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     if (!currentUser?.isSiteAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { contestantId, status, placement, eliminatedEpisode,
-      daysLasted, tribeId, imageUrl, hometown, occupation,
+      daysLasted, tribeId, swapEpisodeId, imageUrl, hometown, occupation,
       profile, description, newPlayerBio, newPlayerBirthDate
     } = await req.json()
 
@@ -56,8 +56,9 @@ export async function POST(req: Request) {
         data: {
           contestantId,
           tribeId,
-          tribeType: 'current',
+          tribeType: swapEpisodeId ? 'swap' : 'starting',
           isCurrent: true,
+          episodeId: swapEpisodeId || null
         }
       })
     }

@@ -34,6 +34,7 @@ type Contestant = {
     id: string
     tribe: Tribe
     isCurrent: boolean
+    episodeId: string | null
   }[]
 }
 
@@ -41,6 +42,11 @@ type Season = {
   id: string
   contestants: Contestant[]
   tribes: Tribe[]
+  episodes: {
+    id: string
+    number: number
+    name: string
+  }[]
 }
 
 type Props = {
@@ -58,6 +64,7 @@ type ContestantForm = {
   eliminatedEpisode: string
   daysLasted: string
   tribeId: string
+  swapEpisodeId: string
   imageUrl: string
   hometown: string
   occupation: string
@@ -75,6 +82,7 @@ const emptyForm: ContestantForm = {
   eliminatedEpisode: '',
   daysLasted: '',
   tribeId: '',
+  swapEpisodeId: '',
   imageUrl: '',
   hometown: '',
   occupation: '',
@@ -123,6 +131,7 @@ export default function ContestantsTab({ season, allPlayers }: Props) {
   }, [])
 
   const openEdit = useCallback((contestant: Contestant) => {
+    const currentMembership = contestant.tribeMemberships.find(t => t.isCurrent)
     setForm({
       survivorPlayerId: contestant.survivorPlayer.id,
       newPlayerName: '',
@@ -134,7 +143,8 @@ export default function ContestantsTab({ season, allPlayers }: Props) {
       placement: contestant.placement?.toString() ?? '',
       eliminatedEpisode: contestant.eliminatedEpisode?.toString() ?? '',
       daysLasted: contestant.daysLasted?.toString() ?? '',
-      tribeId: contestant.tribeMemberships.find(t => t.isCurrent)?.tribe.id ?? '',
+      tribeId: currentMembership?.tribe.id ?? '',
+      swapEpisodeId: currentMembership?.episodeId ?? '',
       imageUrl: contestant.imageUrl ?? '',
       hometown: contestant.hometown ?? '',
       occupation: contestant.occupation ?? '',
@@ -171,6 +181,7 @@ export default function ContestantsTab({ season, allPlayers }: Props) {
         eliminatedEpisode: form.eliminatedEpisode ? parseInt(form.eliminatedEpisode) : null,
         daysLasted: form.daysLasted ? parseInt(form.daysLasted) : null,
         tribeId: form.tribeId || null,
+        swapEpisodeId: form.swapEpisodeId || null,
         imageUrl: form.imageUrl || null,
         hometown: form.hometown || null,
         occupation: form.occupation || null,
@@ -500,6 +511,27 @@ export default function ContestantsTab({ season, allPlayers }: Props) {
                         ))}
                     </select>
                     </div>
+                )}
+
+                {/* Swap Episode - only show if tribe is selected */}
+                {form.tribeId && season.episodes.length > 0 && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                      Joined this tribe on <span className="text-gray-600">(optional - leave blank if starting tribe)</span>
+                    </label>
+                    <select
+                      value={form.swapEpisodeId}
+                      onChange={e => setForm(prev => ({ ...prev, swapEpisodeId: e.target.value}))}
+                      className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-green-600"
+                    >
+                      <option value="">Starting Tribe (before episode 1)</option>
+                      {season.episodes.map(ep => (
+                        <option key={ep.id} value={ep.id}>
+                          Episode {ep.number} - {ep.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 )}
 
                 {/* Season stats */}
