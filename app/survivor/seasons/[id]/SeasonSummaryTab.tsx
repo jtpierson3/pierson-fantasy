@@ -203,7 +203,17 @@ export default function SeasonSummaryTab({ episodes, contestants, seasonId }: Pr
                     return { name: w.contestant.survivorPlayer.name.split(' ')[0], tribe }
                   }
                   if (w.team) {
-                    return { name: w.team.name ?? 'Team', tribe: null }
+                    const firstMember = challenge.teams
+                        .find(t => t.id === w.team?.id)
+                        ?.contestants[0]
+                    const tribe = firstMember
+                        ? { name: w.team.name ?? 'Team', color: '#6b7280'}
+                        : null
+                        const teamColor = challenge.teams.find(t => t.id === w.team?.id)?.color
+                    return {
+                        name: w.team.name ?? 'Team',
+                        tribe: teamColor ? { color: teamColor, name: w.team.name ?? 'Team' } : tribe
+                    }
                   }
                   return null
                 }).filter(Boolean)
@@ -245,108 +255,81 @@ export default function SeasonSummaryTab({ episodes, contestants, seasonId }: Pr
                     })}
                   </td>
 
-                  {/* Reward challenge */}
-                  <td className="px-3 py-2">
-                    {combinedChallenges.length === 0 && (
-                      <div className="flex flex-col gap-1">
-                        {rewardChallenges.map(challenge => {
-                          const winners = getChallengeWinners(challenge)
-                          if (!winners?.length) return null
-                          return (
-                            <div key={challenge.id} className="flex flex-col gap-0.5">
-                              {winners?.map((w, i) => w && (
-                                <span
-                                  key={i}
-                                  className="px-1.5 py-0.5 rounded text-white text-xs font-medium"
-                                  style={{
-                                    backgroundColor: w.tribe?.color ?? '#6b7280'
-                                  }}
-                                >
-                                  {w.name}
-                                </span>
-                              ))}
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-                    {combinedChallenges.length > 0 && (
-                      <div className="flex flex-col gap-1">
-                        {rewardChallenges.map(challenge => {
-                          const winners = getChallengeWinners(challenge)
-                          if (!winners?.length) return null
-                          return (
-                            <div key={challenge.id} className="flex flex-col gap-0.5">
-                              <span className="text-gray-400 text-xs">Reward +</span>
-                              {winners?.map((w, i) => w && (
-                                <span
-                                  key={i}
-                                  className="px-1.5 py-0.5 rounded text-white text-xs font-medium"
-                                  style={{
-                                    backgroundColor: w.tribe?.color ?? '#6b7280'
-                                  }}
-                                >
-                                  {w.name}
-                                </span>
-                              ))}
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}    
-                  </td>
-
-                  {/* Immunity challenge — spans both columns if combined */}
-                  {combinedChallenges.length > 0 ? (
+                  {/* Reward + Immunity Columns */}
+                    {combinedChallenges.length > 0 ? (
+                    // Combined challenge spans both reward and immunity columns
                     <td className="px-3 py-2" colSpan={2}>
-                      <div className="flex flex-col gap-1">
+                        <div className="flex flex-col gap-1">
                         {combinedChallenges.map(challenge => {
-                          const winners = getChallengeWinners(challenge)
-                          if (!winners?.length) return null
-                          return (
+                            const winners = getChallengeWinners(challenge)
+                            if (!winners?.length) return null
+                            return (
                             <div key={challenge.id} className="flex flex-col gap-0.5">
-                              <span className="text-gray-400 text-xs mb-0.5"> Immunity</span>
-                              {winners?.map((w, i) => w && (
+                                <span className="text-gray-400 text-xs mb-0.5">Reward + Immunity</span>
+                                {winners.map((w, i) => w && (
                                 <span
-                                  key={i}
-                                  className="px-1.5 py-0.5 rounded text-white text-xs font-medium"
-                                  style={{
-                                    backgroundColor: w.tribe?.color ?? '#6b7280'
-                                  }}
+                                    key={i}
+                                    className="px-1.5 py-0.5 rounded text-white text-xs font-medium"
+                                    style={{ backgroundColor: w.tribe?.color ?? '#6b7280' }}
                                 >
-                                  {w.name}
+                                    {w.name}
                                 </span>
-                              ))}
+                                ))}
                             </div>
-                          )
+                            )
                         })}
-                      </div>
+                        </div>
                     </td>
-                  ) : (
-                    <td className="px-3 py-2">
-                      <div className="flex flex-col gap-1">
-                        {immunityChallenges.map(challenge => {
-                          const winners = getChallengeWinners(challenge)
-                          if (!winners?.length) return null
-                          return (
-                            <div key={challenge.id} className="flex flex-col gap-0.5">
-                              {winners?.map((w, i) => w && (
-                                <span
-                                  key={i}
-                                  className="px-1.5 py-0.5 rounded text-white text-xs font-medium"
-                                  style={{
-                                    backgroundColor: w.tribe?.color ?? '#6b7280'
-                                  }}
-                                >
-                                  {w.name}
-                                </span>
-                              ))}
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </td>
-                  )}
+                    ) : (
+                    <>
+                        {/* Reward only */}
+                        <td className="px-3 py-2">
+                        <div className="flex flex-col gap-1">
+                            {rewardChallenges.map(challenge => {
+                            const winners = getChallengeWinners(challenge)
+                            if (!winners?.length) return null
+                            return (
+                                <div key={challenge.id} className="flex flex-col gap-0.5">
+                                {winners.map((w, i) => w && (
+                                    <span
+                                    key={i}
+                                    className="px-1.5 py-0.5 rounded text-white text-xs font-medium"
+                                    style={{ backgroundColor: w.tribe?.color ?? '#6b7280' }}
+                                    >
+                                    {w.name}
+                                    </span>
+                                ))}
+                                </div>
+                            )
+                            })}
+                        </div>
+                        </td>
+
+                        {/* Immunity only */}
+                        <td className="px-3 py-2">
+                        <div className="flex flex-col gap-1">
+                            {immunityChallenges.map(challenge => {
+                            const winners = getChallengeWinners(challenge)
+                            if (!winners?.length) return null
+                            return (
+                                <div key={challenge.id} className="flex flex-col gap-0.5">
+                                {winners.map((w, i) => w && (
+                                    <span
+                                    key={i}
+                                    className="px-1.5 py-0.5 rounded text-white text-xs font-medium"
+                                    style={{ backgroundColor: w.tribe?.color ?? '#6b7280' }}
+                                    >
+                                    {w.name}
+                                    </span>
+                                ))}
+                                </div>
+                            )
+                            })}
+                        </div>
+                        </td>
+                    </>
+                    )}
+
 
                   {/* Exiled */}
                   <td className="px-3 py-2">
