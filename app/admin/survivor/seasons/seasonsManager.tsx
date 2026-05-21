@@ -237,48 +237,6 @@ export default function SeasonsManager({ seasons }: Props) {
                             </div>
                         )}
 
-                        {/* Summary */}
-                        <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                                Season Summary <span className="text-gray-600">(optional)</span>
-                            </label>
-                            <textarea
-                                value={form.summary}
-                                onChange={e => setForm(prev => ({ ...prev, summary: e.target.value }))}
-                                placeholder="A written overview of the season..."
-                                rows={4}
-                                className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600 resize-none"
-                            />
-                        </div>
-
-                        {/* Production */}
-                        <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                                Production <span className="text-gray-600">(optional)</span>
-                            </label>
-                            <textarea
-                                value={form.production}
-                                onChange={e => setForm(prev => ({ ...prev, production: e.target.value }))}
-                                placeholder="Filming dates, network, executive producers..."
-                                rows={3}
-                                className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600 resize-none"
-                            />
-                        </div>
-
-                        {/* Twists */}
-                        <div>
-                            <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                                Twists & Changes <span className="text-gray-600">(optional)</span>
-                            </label>
-                            <textarea
-                                value={form.twists}
-                                onChange={e => setForm(prev => ({ ...prev, twists: e.target.value }))}
-                                placeholder="New advantages, rule changes, format changes..."
-                                rows={3}
-                                className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600 resize-none"
-                            />
-                        </div>
-
                         {/* Season Info */}
                         <div className="p-4">
                             <p className="text-xs text-gray-500 mb-1">Season {season.number}</p>
@@ -346,14 +304,12 @@ export default function SeasonsManager({ seasons }: Props) {
                                 <label className="block text-xs font-medium text-gray-400 mb-1.5">
                                     Season Image
                                 </label>
-                                {/*}
                                 <ImageUpload 
                                     value={form.imageUrl}
                                     onChange={url => setForm(prev => ({ ...prev, imageUrl: url }))}
                                     folder="survivor/seasons"
                                     placeholder="Upload Season Image"
                                 />
-                                */}
                             </div>
 
                             {/* Number + title row */}
@@ -439,6 +395,48 @@ export default function SeasonsManager({ seasons }: Props) {
                                     Active season
                                 </label>
                             </div>
+
+                                                    {/* Summary */}
+                        <div>
+                            <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                                Season Summary <span className="text-gray-600">(optional)</span>
+                            </label>
+                            <textarea
+                                value={form.summary}
+                                onChange={e => setForm(prev => ({ ...prev, summary: e.target.value }))}
+                                placeholder="A written overview of the season..."
+                                rows={4}
+                                className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600 resize-none"
+                            />
+                        </div>
+
+                        {/* Production */}
+                        <div>
+                            <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                                Production <span className="text-gray-600">(optional)</span>
+                            </label>
+                            <textarea
+                                value={form.production}
+                                onChange={e => setForm(prev => ({ ...prev, production: e.target.value }))}
+                                placeholder="Filming dates, network, executive producers..."
+                                rows={3}
+                                className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600 resize-none"
+                            />
+                        </div>
+
+                        {/* Twists */}
+                        <div>
+                            <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                                Twists & Changes <span className="text-gray-600">(optional)</span>
+                            </label>
+                            <textarea
+                                value={form.twists}
+                                onChange={e => setForm(prev => ({ ...prev, twists: e.target.value }))}
+                                placeholder="New advantages, rule changes, format changes..."
+                                rows={3}
+                                className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600 resize-none"
+                            />
+                        </div>
 
                             {formError && (
                                 <p className="text-xs text-red-400 bg-red-900/30 border border-red-800 rounded-lg px-3 py-2">
