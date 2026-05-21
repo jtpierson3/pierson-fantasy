@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import type { Prisma } from '@prisma/client'
 import FormattedText from '@/app/components/FormattedText'
+import CastawaysTab from './CastawaysTab'
 
 type SeasonWithDetails = Prisma.SurvivorSeasonGetPayload<{
   include: {
@@ -242,13 +243,40 @@ export default function SeasonDetail({ season }: Props) {
 
       {/* Tab content — placeholder for now */}
       <div className="bg-white border border-gray-100 rounded-xl p-6">
-        <p className="text-sm text-gray-400">
-          {activeTab === 'production' && (season.production ?? 'No production notes yet.')}
-          {activeTab === 'twists' && (season.twists ?? 'No twists or changes recorded yet.')}
-          {activeTab === 'castaways' && 'Castaways section coming next.'}
+        {activeTab === 'production' && (
+            <div>
+                <h2 className="text-sm font-medium text-gray-900 mb-4">Production</h2>
+                {season.production ? (
+                    <FormattedText 
+                        text={season.production}
+                        className="text-sm text-gray-600 leading-relaxed"
+                    />
+                ) : (
+                    <p className="text-sm text-gray-400">No production notes yet.</p>
+                )}
+            </div>
+        )}
+        {activeTab === 'twists' && (
+            <div>
+                <h2 className="text-sm font-medium text-gray-900 mb-4">Twists & Changes</h2>
+                {season.twists ? (
+                    <FormattedText 
+                        text={season.twists}
+                        className="text-sm text-gray-600 leading-relaxed"
+                    />
+                ) : (
+                    <p className="text-sm text-gray-400">No twists and changes yet.</p>
+                )}
+            </div>
+        )}
+          {activeTab === 'castaways' && (
+            <CastawaysTab 
+                contestants={season.contestants}
+                season={season}
+            />
+          )}
           {activeTab === 'summary' && (season.summary ?? 'No season summary yet.')}
           {activeTab === 'voting' && 'Voting history coming soon.'}
-        </p>
       </div>
     </div>
   )

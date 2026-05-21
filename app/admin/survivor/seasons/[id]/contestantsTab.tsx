@@ -96,6 +96,8 @@ const STATUS_OPTIONS = [
   { value: 'jury', label: 'Jury' },
   { value: 'finalist', label: 'Finalist' },
   { value: 'winner', label: 'Winner' },
+  { value: 'medevac', label: 'Medevac'},
+  { value: 'quit', label: 'Quit'}
 ]
 
 const STATUS_STYLES: Record<string, string> = {

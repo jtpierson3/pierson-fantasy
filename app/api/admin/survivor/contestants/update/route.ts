@@ -48,19 +48,29 @@ export async function POST(req: Request) {
 
     // Update tribe membership
     if (tribeId) {
-      await prisma.tribeMembership.updateMany({
-        where: { contestantId, isCurrent: true },
-        data: { isCurrent: false }
+      const currentMembership = await prisma.tribeMembership.findFirst({
+        where: { contestantId, isCurrent: true}
       })
-      await prisma.tribeMembership.create({
-        data: {
-          contestantId,
-          tribeId,
-          tribeType: swapEpisodeId ? 'swap' : 'starting',
-          isCurrent: true,
-          episodeId: swapEpisodeId || null
-        }
-      })
+
+      const tribeChanged = currentMembership?.tribeId !== tribeId
+      const episodeChanged = currentMembership?.episodeId !== swapEpisodeId
+
+      if (tribeChanged  || (swapEpisodeId && episodeChanged)) {
+        await prisma.tribeMembership.updateMany({
+          where: { contestantId, isCurrent: true },
+          data: { isCurrent: false }
+        })
+        await prisma.tribeMembership.create({
+          data: {
+            contestantId,
+            tribeId,
+            tribeType: swapEpisodeId ? 'swap' : 'starting',
+            isCurrent: true,
+            episodeId: swapEpisodeId || null
+          }
+        })
+      }
+      
     }
 
     return NextResponse.json({ success: true })
