@@ -158,8 +158,8 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
   return (
     <div>
       <h2 className="text-sm font-medium text-gray-900 mb-4">Voting History</h2>
-      <div className="overflow-x-auto">
-        <table className="border-collapse text-xs">
+      <div className="overflow-x-auto max-w-full">
+        <table className="border-collapse min-w-max text-xs">
           {/* Three-row header */}
           <thead>
             {/* Row 1 — Episode numbers */}

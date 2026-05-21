@@ -295,7 +295,7 @@ export default function SeasonDetail({ season }: Props) {
       </div>
 
       {/* Tab content — placeholder for now */}
-      <div className="bg-white border border-gray-100 rounded-xl p-6">
+      <div className="bg-white border border-gray-100 rounded-xl p-6 overflow-hidden">
         {activeTab === 'production' && (
             <div>
                 <h2 className="text-sm font-medium text-gray-900 mb-4">Production</h2>
