@@ -10,11 +10,11 @@ export async function POST(req: Request) {
     const currentUser = await prisma.user.findUnique({ where: { clerkId } })
     if (!currentUser?.isSiteAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { episodeId, number, name, airDate, isAired, isMerge, isFinale } = await req.json()
+    const { episodeId, number, name, airDate, isAired, isMerge, isFinale, description } = await req.json()
 
     await prisma.episode.update({
       where: { id: episodeId },
-      data: { number, name, airDate: new Date(airDate), isAired, isMerge, isFinale }
+      data: { number, name, airDate: new Date(airDate), isAired, isMerge, isFinale, description }
     })
 
     return NextResponse.json({ success: true })

@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     const currentUser = await prisma.user.findUnique({ where: { clerkId } })
     if (!currentUser?.isSiteAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { seasonId, number, name, airDate, isAired, isMerge, isFinale } = await req.json()
+    const { seasonId, number, name, airDate, isAired, isMerge, isFinale, description} = await req.json()
 
     const episode = await prisma.episode.create({
       data: {
@@ -21,6 +21,7 @@ export async function POST(req: Request) {
         isAired,
         isMerge,
         isFinale,
+        description
       }
     })
 

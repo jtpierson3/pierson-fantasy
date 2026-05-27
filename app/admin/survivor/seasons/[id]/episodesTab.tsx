@@ -13,6 +13,7 @@ type Episode = {
   isAired: boolean
   isMerge: boolean
   isFinale: boolean
+  description: string | null
 }
 
 type Season = {
@@ -31,6 +32,7 @@ type EpisodeForm = {
   isAired: boolean
   isMerge: boolean
   isFinale: boolean
+  description: string
 }
 
 const emptyForm: EpisodeForm = {
@@ -40,6 +42,7 @@ const emptyForm: EpisodeForm = {
   isAired: false,
   isMerge: false,
   isFinale: false,
+  description: ''
 }
 
 type ConfirmDialog = {
@@ -93,6 +96,7 @@ export default function EpisodesTab({ season }: Props) {
       isAired: episode.isAired,
       isMerge: episode.isMerge,
       isFinale: episode.isFinale,
+      description: episode.description ?? ''
     })
     setFormError(null)
     setEditingEpisode(episode)
@@ -116,6 +120,7 @@ export default function EpisodesTab({ season }: Props) {
         isAired: form.isAired,
         isMerge: form.isMerge,
         isFinale: form.isFinale,
+        description: form.description || null,
         ...(editingEpisode && { episodeId: editingEpisode.id }),
       }
 
@@ -314,6 +319,19 @@ export default function EpisodesTab({ season }: Props) {
                   label="Finale episode"
                   value={form.isFinale}
                   onChange={() => setForm(prev => ({ ...prev, isFinale: !prev.isFinale }))}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                  Episode description
+                </label>
+                <textarea 
+                  value={form.description}
+                  onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="What happened this episode ..."
+                  rows={4}
+                  className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placehoder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600 resize-none"
                 />
               </div>
 

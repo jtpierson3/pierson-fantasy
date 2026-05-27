@@ -210,6 +210,7 @@ model Episode {
   isAired          Boolean           @default(false)
   isMerge          Boolean           @default(false)
   isFinale         Boolean           @default(false)
+  description      String?
   survivorSeasonId String
   survivorSeason   SurvivorSeason    @relation(fields: [survivorSeasonId], references: [id])
   stats            EpisodeStat[]
