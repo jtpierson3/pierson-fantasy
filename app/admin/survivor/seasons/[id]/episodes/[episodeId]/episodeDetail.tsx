@@ -89,6 +89,14 @@ type Episode = {
     isFiremaking: boolean
     reward: string | null
     order: number
+    sitOuts: {
+      id: string
+      contestantId: string
+      contestant: {
+        id: string
+        survivorPlayer: { name: string }
+      }
+    }[]
     teams: {
       id: string
       name: string | null
