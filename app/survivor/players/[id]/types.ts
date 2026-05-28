@@ -20,13 +20,13 @@ export type PlayerWithDetails = Prisma.SurvivorPlayerGetPayload<{
                     where: { isRevoked: false }
                     include: {
                         voter: { include: { survivorPlayer: true } }
-                        TribalCouncil: { include: { episode: true } }
+                        tribalCouncil: { include: { episode: true } }
                     }
                 }
                 votesGiven: {
                     include: {
                         votedFor: { include: { survivorPlayer: true } }
-                        TribalCouncil: { include: { episode: true } }
+                        tribalCouncil: { include: { episode: true } }
                     }
                 }
                 episodeStats: {
