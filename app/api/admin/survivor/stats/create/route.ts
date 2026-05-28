@@ -10,16 +10,19 @@ export async function POST(req: Request) {
     const currentUser = await prisma.user.findUnique({ where: { clerkId } })
     if (!currentUser?.isSiteAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { episodeId, eventId, contestantIds, description } = await req.json()
+    const { episodeId, eventId, contestantIds, description, order } = await req.json()
 
-    // Get current max order
-    const maxOrder = await prisma.episodeStat.findFirst({
-      where: { episodeId },
-      orderBy: { order: 'desc' },
-      select: { order: true }
-    })
+    let resolvedOrder= order
 
-    let order = (maxOrder?.order ?? 0) + 1
+    if (!resolvedOrder) {
+      const maxOrder = await prisma.episodeStat.findFirst({
+        where: { episodeId },
+        orderBy: { order: 'desc' },
+        select: { order: true }
+      })
+
+      let order = (maxOrder?.order ?? 0) + 1
+    }
 
     await prisma.episodeStat.createMany({
       data: contestantIds.map((contestantId: string) => ({
@@ -27,7 +30,7 @@ export async function POST(req: Request) {
         contestantId,
         eventId,
         description: description || null,
-        order: order++,
+        order: resolvedOrder,
       }))
     })
 
