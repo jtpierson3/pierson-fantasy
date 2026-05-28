@@ -4,8 +4,8 @@ import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { Prisma } from '@prisma/client'
-//import ProfileTab from './ProfileTab'
-//import SeasonTab from './SeasonTab'
+import ProfileTab from './ProfileTab'
+import SeasonTab from './SeasonTab'
 
 type PlayerWithDetails = Prisma.SurvivorPlayerGetPayload<{
   include: {
@@ -262,13 +262,11 @@ export default function PlayerWiki({ player }: Props) {
       {/* Tab content */}
       <div className="bg-white border border-gray-100 rounded-xl p-6">
         {activeTab === 'profile' && (
-          <div>Profile</div>
-          //<ProfileTab player={player} />
+            <ProfileTab player={player} />
         )}
         {player.contestants.map(c =>
           activeTab === c.id ? (
-            <div>Season</div>
-            //<SeasonTab key={c.id} contestant={c} player={player} />
+            <SeasonTab key={c.id} contestant={c} player={player} />
           ) : null
         )}
       </div>
