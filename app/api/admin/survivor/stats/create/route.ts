@@ -21,7 +21,7 @@ export async function POST(req: Request) {
         select: { order: true }
       })
 
-      let order = (maxOrder?.order ?? 0) + 1
+      resolvedOrder = (maxOrder?.order ?? 0) + 1
     }
 
     await prisma.episodeStat.createMany({
