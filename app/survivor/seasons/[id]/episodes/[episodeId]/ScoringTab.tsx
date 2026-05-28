@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import type { EpisodeWithDetails } from './types'
 
 type Props = {
@@ -72,9 +73,12 @@ export default function ScoringTab({ episode }: Props) {
 
                 {/* Name + tribe */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">
+                  <Link
+                    href={`/survivor/players/${contestant.survivorPlayerId}`}
+                    className="text-sm font-medium text-gray-900 hover:text-green-700 transition-colors"
+                  >
                     {contestant.survivorPlayer.name}
-                  </p>
+                  </Link>
                   {tribe && (
                     <div className="flex items-center gap-1 mt-0.5">
                       <div

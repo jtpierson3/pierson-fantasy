@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import Link from 'next/link'
 import type { EpisodeWithDetails } from './types'
 
 type Props = {
@@ -50,13 +51,14 @@ export default function TribalTab({ episode }: Props) {
                 </span>
               )}
               {tc.eliminated && (
-                <span
-                  className="text-xs px-2 py-0.5 rounded-full text-white font-medium"
+                <Link
+                  href={`/survivor/players/${tc.eliminated.survivorPlayerId}`}
+                  className="text-xs px-2 py-0.5 rounded-full text-white font-medium hover:opacity-80 transition-opacity"
                   style={{ backgroundColor: eliminatedTribe?.color ?? '#6b7280' }}
                 >
                   {tc.eliminated.survivorPlayer.name} voted out
                   {isNoVote ? ' (No Vote)' : ''}
-                </span>
+                </Link>
               )}
             </div>
 
@@ -101,9 +103,12 @@ export default function TribalTab({ episode }: Props) {
                           )}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-900">
+                          <Link 
+                            href={`/survivor/players/${target.survivorPlayerId}`}
+                            className="text-sm font-medium text-gray-900 hover:text-green-700 transition-colors"
+                          >
                             {target.survivorPlayer.name}
-                          </p>
+                          </Link>
                           <p className="text-xs text-gray-400">
                             {effectiveVotes.length} vote{effectiveVotes.length !== 1 ? 's' : ''}
                             {revokedVotes.length > 0 && (
@@ -120,7 +125,8 @@ export default function TribalTab({ episode }: Props) {
                         {votes.map(vote => {
                           const voterTribe = vote.voter.tribeMemberships[0]?.tribe
                           return (
-                            <span
+                            <Link
+                              href={`/survivor/players/${vote.voter.survivorPlayerId}`}
                               key={vote.id}
                               className={`text-xs px-2 py-0.5 rounded-lg text-white font-medium ${
                                 vote.isRevoked ? 'opacity-40 line-through' : ''
@@ -129,7 +135,7 @@ export default function TribalTab({ episode }: Props) {
                             >
                               {vote.voter.survivorPlayer.name.split(' ')[0]}
                               {vote.isRevoked && ' 🔮'}
-                            </span>
+                            </Link>
                           )
                         })}
                       </div>

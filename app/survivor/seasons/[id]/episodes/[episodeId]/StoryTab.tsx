@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import Link from 'next/link'
 import type { EpisodeWithDetails } from './types'
 
 type Props = {
@@ -74,9 +75,12 @@ export default function StoryTab({ episode }: Props) {
 
                       {/* Name + event */}
                       <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium text-gray-900">
+                        <Link
+                         href={`/survivor/players/${stat.contestant.survivorPlayerId}`}
+                         className="text-sm font-medium text-gray-900 hover:text-green-700 transition-colors"
+                        >
                           {stat.contestant.survivorPlayer.name.split(' ')[0]}
-                        </span>
+                        </Link>
                         <span className="text-sm text-gray-500 ml-1.5">
                           {stat.event.label}
                         </span>
