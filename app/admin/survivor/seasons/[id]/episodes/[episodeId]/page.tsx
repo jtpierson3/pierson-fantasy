@@ -30,7 +30,8 @@ type EpisodeWithDetails = Prisma.EpisodeGetPayload<{
         }
         results: {
           include: {
-            contestant: { include: { survivorPlayer: true } }
+            contestant: { include: { survivorPlayer: true } },
+            team: true
           }
         }
       }
