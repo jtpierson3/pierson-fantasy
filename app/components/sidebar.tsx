@@ -85,6 +85,18 @@ const SURVIVOR_NAV = [
                 <path d="M5 1v4Mv11 1v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
         )
+    },
+    {
+        href: '/survivor/players',
+        label: 'Players',
+        icon: (
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <circle cx="6" cy="4" r="2.5" />
+                <path d="M1 13c0-2.76 2.24-5 5-5s5 2.24 5 5" />
+                <circle cx="11.5" cy="5" r="2" />
+                <path d="M11.5 9c1.93 0 3.5 1.57 3.5 3.5" />
+            </svg>
+        )
     }
 ]
 
