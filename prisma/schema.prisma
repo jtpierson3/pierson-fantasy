@@ -385,7 +385,7 @@ model TribalCouncil {
 
 model VotingRecord {
   id              String        @id @default(cuid())
-  TribalCouncil   TribalCouncil @relation(fields: [tribalCouncilId], references: [id])
+  tribalCouncil   TribalCouncil @relation(fields: [tribalCouncilId], references: [id])
   tribalCouncilId String
   voter           Contestant    @relation("Voter", fields: [voterId], references: [id])
   voterId         String
