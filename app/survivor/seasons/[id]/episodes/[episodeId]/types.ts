@@ -65,7 +65,7 @@ export type EpisodeWithDetails = Prisma.EpisodeGetPayload<{
                 eliminated: {
                     include: {
                         survivorPlayer: true
-                        tribeMembership: {
+                        tribeMemberships: {
                             where: { isCurrent: true }
                             include: { tribe: true }
                         }
