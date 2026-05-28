@@ -569,11 +569,11 @@ export default function ChallengesTab({ episode, contestants }: Props) {
               {/* Sit-outs - for all challenges*/}
               <div className="px-4 py-3 border-t border-gray-800">
                 {/* Existing sit-outs */}
-                {challenge.sitOuts.length > 0 && (
+                {challenge.sitOuts?.length > 0 && (
                   <div className="mb-3">
                     <p className="text-xs text-gray-400 mb-1.5">Current Sit-outs:</p>
                     <div className="flex flex-wrap gap-1.5">
-                      {challenge.sitOuts.map(s =>(
+                      {(challenge.sitOuts ?? []).map(s =>(
                         <span
                           key={s.id}
                           className="text-xs px-2 py-0.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-300"
