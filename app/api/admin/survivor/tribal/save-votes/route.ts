@@ -44,6 +44,12 @@ export async function POST(req: Request) {
           status: 'eliminated',
         }
       })
+
+      // Mark all tribe memberships as inactive
+      await prisma.tribeMembership.updateMany({
+        where: { contestantId: eliminatedId, isCurrent: true },
+        data: { isCurrent: false }
+      })
     }
 
     return NextResponse.json({ success: true })
