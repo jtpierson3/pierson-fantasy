@@ -2,8 +2,8 @@
 
 import StoryTab from './StoryTab'
 import ScoringTab from './ScoringTab'
-//import ChallengesTab from './ChallengesTab'
-//import TribalTab from './TribalTab'
+import ChallengesTab from './ChallengesTab'
+import TribalTab from './TribalTab'
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -244,6 +244,8 @@ export default function EpisodeWiki({ episode }: Props) {
                 <div className="bg-white border border-gray-100 rounded-xl p-6 overflow-hidden">
                     {activeTab === 'story' && <StoryTab episode={episode} />}
                     {activeTab === 'scoring' && <ScoringTab episode={episode} />}
+                    {activeTab === 'challenges' && <ChallengesTab episode={episode} />}
+                    {activeTab === 'tribal' && <TribalTab episode={episode} />}
                 </div>
             </div>    
         </div>

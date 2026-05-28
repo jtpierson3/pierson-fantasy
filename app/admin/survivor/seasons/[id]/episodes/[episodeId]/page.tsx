@@ -15,6 +15,13 @@ type EpisodeWithDetails = Prisma.EpisodeGetPayload<{
     }
     challenges: {
       include: {
+        sitOuts: {
+          include: {
+            contestant: {
+              include: { survivorPlayer: true }
+            }
+          }
+        }
         teams: {
           include: {
             contestants: { include: { survivorPlayer: true } }

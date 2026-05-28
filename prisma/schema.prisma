@@ -239,6 +239,7 @@ model Contestant {
   tribeMemberships  TribeMembership[]
   episodeStats      EpisodeStat[]
   survivorPicks     SurvivorPicks[]
+  sitOuts           SitOut[]
   challengeResults  ChallengeResult[] @relation("IndividualWinner")
   challengeTeams    ChallengeTeam[]   @relation("ChallengeTeamContestants")
   votesGiven        VotingRecord[]    @relation("Voter")
@@ -343,6 +344,7 @@ model Challenge {
   reward       String?
   teams        ChallengeTeam[]
   results      ChallengeResult[]
+  sitOuts      SitOut[]
   order        Int               @default(0)
   createdAt    DateTime          @default(now())
 }
@@ -390,4 +392,14 @@ model VotingRecord {
   votedFor        Contestant    @relation("VotedFor", fields: [votedForId], references: [id])
   votedForId      String
   isRevoked       Boolean       @default(false)
+}
+
+model SitOut {
+  id           String     @id @default(cuid())
+  challengeId  String
+  contestantId String
+  challenge    Challenge  @relation(fields: [challengeId], references: [id])
+  contestant   Contestant @relation(fields: [contestantId], references: [id])
+
+  @@unique([challengeId, contestantId])
 }
