@@ -267,17 +267,17 @@ export default function SeasonSummaryTab({ episodes, contestants, seasonId }: Pr
                             <div key={challenge.id} className="flex flex-col gap-0.5">
                                 <span className="text-gray-400" style={{ fontSize: '10px' }}>{label}</span>
                                 {winners && winners.length > 0 ? (
-                                winners.map((w, i) => w && (
-                                    <span
-                                    key={i}
-                                    className="px-1.5 py-0.5 rounded text-white text-xs font-medium"
-                                    style={{ backgroundColor: w.tribe?.color ?? '#6b7280' }}
-                                    >
-                                    {w.name}
-                                    </span>
-                                ))
+                                    winners.map((w, i) => w && (
+                                        <span
+                                            key={i}
+                                            className="px-1.5 py-0.5 rounded text-white text-xs font-medium"
+                                            style={{ backgroundColor: w.tribe?.color ?? '#6b7280' }}
+                                        >
+                                            {w.name}
+                                        </span>
+                                    ))
                                 ) : (
-                                <span className="text-gray-400 text-xs">—</span>
+                                    <span className="text-gray-400 text-xs">—</span>
                                 )}
                             </div>
                             )
@@ -292,13 +292,14 @@ export default function SeasonSummaryTab({ episodes, contestants, seasonId }: Pr
                       {exiledStats.map(stat => {
                         const tribe = stat.contestant.tribeMemberships[0]?.tribe
                         return (
-                          <span
+                          <Link
+                            href={`/survivor/players/${stat.contestant.survivorPlayerId}`}
                             key={stat.id}
-                            className="px-1.5 py-0.5 rounded text-white text-xs font-medium"
+                            className="px-1.5 py-0.5 rounded text-white text-xs font-medium hover:opacity-80 transition-opacity"
                             style={{ backgroundColor: tribe?.color ?? '#6b7280' }}
                           >
                             {stat.contestant.survivorPlayer.name.split(' ')[0]}
-                          </span>
+                          </Link>
                         )
                       })}
                     </div>
@@ -310,13 +311,14 @@ export default function SeasonSummaryTab({ episodes, contestants, seasonId }: Pr
                       {journeyStats.map(stat => {
                         const tribe = stat.contestant.tribeMemberships[0]?.tribe
                         return (
-                          <span
+                          <Link
+                            href={`/survivor/players/${stat.contestant.survivorPlayerId}`}
                             key={stat.id}
-                            className="px-1.5 py-0.5 rounded text-white text-xs font-medium"
+                            className="px-1.5 py-0.5 rounded text-white text-xs font-medium hover:opacity-80 transition-opacity"
                             style={{ backgroundColor: tribe?.color ?? '#6b7280' }}
                           >
                             {stat.contestant.survivorPlayer.name.split(' ')[0]}
-                          </span>
+                          </Link>
                         )
                       })}
                     </div>
@@ -335,15 +337,16 @@ export default function SeasonSummaryTab({ episodes, contestants, seasonId }: Pr
 
                         return (
                           <div key={tc.id} className="flex flex-col gap-0.5">
-                            <span
-                              className="px-1.5 py-0.5 rounded text-white text-xs font-medium"
+                            <Link
+                              href={`/survivor/players/${tc.eliminated.survivorPlayerId}`}
+                              className="px-1.5 py-0.5 rounded text-white text-xs font-medium hover:opacity-80 transition-opacity"
                               style={{ backgroundColor: tribe?.color ?? '#6b7280' }}
                             >
                               {tc.eliminated.survivorPlayer.name.split(' ')[0]}
                               {voteCount && ` (${voteCount})`}
                               {isNoVote && ' (No Vote)'}
                               {tc.isFiremaking && ' 🔥'}
-                            </span>
+                            </Link>
                           </div>
                         )
                       })}

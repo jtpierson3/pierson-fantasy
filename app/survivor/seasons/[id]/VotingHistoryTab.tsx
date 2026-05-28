@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import Link from 'next/link'
 import type { Prisma } from '@prisma/client'
 
 type ContestantWithDetails = Prisma.ContestantGetPayload<{
@@ -211,12 +212,13 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
                             </div>
                           )}
                         </div>
-                        <span
-                          className="font-medium text-xs"
+                        <Link
+                          href={`/survivor/players/${col.eliminated.survivorPlayerId}`}
+                          className="font-medium text-xs hover:underline transition-colors"
                           style={{ color: tribe?.color ?? '#374151' }}
                         >
                           {col.eliminated.survivorPlayer.name.split(' ')[0]}
-                        </span>
+                        </Link>
                       </div>
                     )}
                   </th>
@@ -285,9 +287,12 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
                         )}
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900 whitespace-nowrap">
+                        <Link
+                            href={`/survivor/players/${contestant.survivorPlayerId}`}
+                            className="font-medium text-gray-900 whitespace-nowrap hover:text-green-700 transition-colors"
+                        >
                           {contestant.survivorPlayer.name}
-                        </p>
+                        </Link>
                         {/* Tribe badges */}
                         <div className="flex gap-0.5 mt-0.5 flex-wrap">
                           {tribes.map(tm => (
