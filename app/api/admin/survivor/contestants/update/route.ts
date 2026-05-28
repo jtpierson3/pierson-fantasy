@@ -46,6 +46,16 @@ export async function POST(req: Request) {
       })
     }
 
+    const inactiveStatuses = ['eliminated', 'jury', 'medevac', 'quit', 'finalist', 'winner']
+
+    //If contestant is no longer active mark all tribe memberships as inactive
+    if (inactiveStatuses.includes(status)) {
+      await prisma.tribeMembership.updateMany({
+        where: { contestantId, isCurrent: true },
+        data: { isCurrent: false }
+      })
+    }
+
     // Update tribe membership
     if (tribeId) {
       const currentMembership = await prisma.tribeMembership.findFirst({
