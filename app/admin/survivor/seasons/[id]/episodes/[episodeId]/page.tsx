@@ -103,6 +103,7 @@ export default async function EpisodeDetailPage({
               contestant: {
                 include: { survivorPlayer: true }
               },
+              team: true,
             },
             orderBy: { placement: 'asc' }
           }

@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     const currentUser = await prisma.user.findUnique({ where: { clerkId } })
     if (!currentUser?.isSiteAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { challengeId, contestantIds, participantIds, useAllParticipants, winningTeamId } = await req.json()
+    const { challengeId, contestantIds, participantIds, useAllParticipants, winningTeamId, runnerUpTeamId } = await req.json()
 
     // Clear existing results
     await prisma.challengeResult.deleteMany({ where: { challengeId } })
@@ -48,6 +48,17 @@ export async function POST(req: Request) {
           placement: 1,
         }
       })
+
+      // store runner-up team
+      if (runnerUpTeamId) {
+        await prisma.challengeResult.create({
+          data: {
+            challengeId,
+            teamId: runnerUpTeamId,
+            placement: 2,
+          }
+        })
+      }
     }
 
     return NextResponse.json({ success: true })

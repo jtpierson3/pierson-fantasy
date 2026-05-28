@@ -109,7 +109,8 @@ type Episode = {
       placement: number
       contestantId: string | null
       teamId: string | null
-      contestant: TeamMember | null
+      contestant: TeamMember | null,
+      team: { id: string; name: string | null; color: string | null} | null
     }[]
   }[]
   tribalCouncils: TribalCouncil[]

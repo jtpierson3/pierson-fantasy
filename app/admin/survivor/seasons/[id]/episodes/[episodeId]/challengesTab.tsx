@@ -55,6 +55,7 @@ type Challenge = {
     contestantId: string | null
     teamId: string | null
     contestant: TeamMember | null
+    team: { id: string; name: string | null; color: string | null} | null
   }[]
 }
 
@@ -141,6 +142,7 @@ export default function ChallengesTab({ episode, contestants }: Props) {
   const [selectedWinnerIds, setSelectedWinnerIds] = useState<Set<string>>(new Set())
   const [selectedWinnerTeamId, setSelectedWinnerTeamId] = useState<string>('')
   const [savingWinners, setSavingWinners] = useState<string | null>(null)
+  const [selectedRunnerUpTeamId, setSelectedRunnerUpTeamId] = useState<string>('')
 
   // Participants
   const [useAllParticipants, setUseAllParticipants] = useState<Record<string, boolean>>({})
@@ -266,7 +268,8 @@ export default function ChallengesTab({ episode, contestants }: Props) {
           }
         : {
             challengeId: challenge.id,
-            winningTeamId: selectedWinnerTeamId
+            winningTeamId: selectedWinnerTeamId,
+            runnerUpTeamId: selectedRunnerUpTeamId || null
           }
 
       const res = await fetch('/api/admin/survivor/challenges/set-winners', {
@@ -409,27 +412,35 @@ export default function ChallengesTab({ episode, contestants }: Props) {
               {challenge.results.filter(r => r.placement === 1).length > 0 && (
                 <div className="mb-3">
                   <p className="text-xs text-gray-400 mb-1.5">Current winner(s):</p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 mb-2">
                     {challenge.results
                       .filter(r => r.placement === 1)
                       .map(r => (
                         <div key={r.id} className="flex items-center gap-2 bg-green-900/30 border border-green-700 rounded-lg px-3 py-1.5">
                           <span className="text-sm text-green-400">
-                            {r.contestant?.survivorPlayer.name ?? 'Team winner'}
+                            {r.contestant?.survivorPlayer.name ?? r.team?.name ??  'Team winner'}
                           </span>
                         </div>
                       ))
                     }
                   </div>
                   {/* Show specific participants if stored */}
-                  {challenge.results.filter(r => r.placement === 2).length > 0 && (
-                    <p className="text-xs text-gray-500 mt-1.5">
-                      Other participants: {challenge.results
-                        .filter(r => r.placement === 2)
-                        .map(r => r.contestant?.survivorPlayer.name.split(' ')[0])
-                        .join(', ')
-                      }
-                    </p>
+                  {challenge.results.filter(r => r.placement === 2 && r.teamId).length > 0 && (
+                    <>
+                      <p className="text-xs text-gray-400 mb-1.5">Runner-Up</p>
+                      <div className="flex flex-wrap gap-2">
+                        {challenge.results
+                          .filter(r => r.placement === 2 && r.teamId)
+                          .map(r => (
+                            <div key={r.id} className="flex items-center gap-2 bg-blue-900/30 border border-blue-700 rounded-lg px-3 py-1.5">
+                              <span className="text-sm text-blue-400">
+                                {r.team?.name ?? 'Runner-up'}
+                              </span>
+                            </div>
+                          ))
+                        }
+                      </div>
+                    </> 
                   )}
                 </div>
               )}
@@ -552,6 +563,38 @@ export default function ChallengesTab({ episode, contestants }: Props) {
                       </button>
                     ))}
                   </div>
+
+                  {/* Runner-up : only show if more than 2 teams */}
+                  {challenge.teams.length > 2 && (
+                    <>
+                      <p className="text-xs text-gray-400 mb-2">
+                        Set Runner-Up <span className="text-gray-600">(optional)</span>
+                      </p>
+                      <div className="flex gap-2 flex-wrap mb-3">
+                        {challenge.teams
+                          .filter(t => t.id !== selectedWinnerTeamId)
+                          .map(team => (
+                            <button
+                              key={team.id}
+                              onClick={() => setSelectedRunnerUpTeamId(
+                                selectedRunnerUpTeamId === team.id ? '' : team.id
+                              )}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-colors ${
+                                selectedRunnerUpTeamId === team.id
+                                  ? 'bg-blue-900/40 border-blue-600 text-blue-400'
+                                  : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
+                              }`}
+                            >
+                              {team.color && (
+                                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: team.color }} />
+                              )}
+                              {team.name ?? 'Team'}
+                            </button>
+                          ))
+                        }
+                      </div>
+                    </>
+                  )}
                 </>
               )}
 
