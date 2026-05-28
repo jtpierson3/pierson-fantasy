@@ -1,6 +1,7 @@
 'use client'
 
 import type { EpisodeWithDetails } from './types'
+import Link from 'next/link'
 
 type Props = {
   episode: EpisodeWithDetails
@@ -103,13 +104,17 @@ export default function ChallengesTab({ episode }: Props) {
                       ?? result.team?.name
                       ?? 'Unknown'
                     return (
-                      <span
+                      <Link
+                        href={result.contestant
+                            ? `/survivor/players/${result.contestant.survivorPlayerId}`
+                            : '#'
+                        }
                         key={result.id}
-                        className="px-2.5 py-1 rounded-lg text-white text-sm font-medium"
+                        className="px-2.5 py-1 rounded-lg text-white text-sm font-medium hover:opacity-80 transition-opacity"
                         style={{ backgroundColor: tribe?.color ?? '#6b7280' }}
                       >
                         {name}
-                      </span>
+                      </Link>
                     )
                   })}
                 </div>

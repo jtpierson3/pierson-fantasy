@@ -233,11 +233,31 @@ export default function PickTribe({
                     )}
                   </div>
 
-                  {isPicked && (
-                    <span className="text-xs text-green-600 font-medium flex-shrink-0">
-                      Picked
-                    </span>
-                  )}
+                  {/* Pick Button */}
+                  <button
+                    onClick={e => {
+                      e.stopPropagation()
+                      togglePick(contestant)
+                    }}
+                    disabled={!isPicked && selectedIds.size >= 6}
+                    className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
+                      isPicked
+                        ? 'bg-green-500 text-white hover:bg-red-400'
+                        : selectedIds.size >= 6
+                        ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                        : 'bg-gray-100 text-gray-400 hover:bg-green-100 hover:text-green-600'
+                    }`}
+                  >
+                    {isPicked ? (
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                        <path d="M2 5l2.5 2.5 3.5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    ) : (
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                        <path d="M5 2v6M2 5h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                    )}
+                  </button>
                 </button>
               )
             })}
