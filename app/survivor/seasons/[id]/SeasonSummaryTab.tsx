@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import type { Prisma } from '@prisma/client'
+import { getContestantTribe } from '@/app/lib/survivorHelpers'
 
 type EpisodeWithDetails = Prisma.EpisodeGetPayload<{
   include: {
@@ -13,7 +14,7 @@ type EpisodeWithDetails = Prisma.EpisodeGetPayload<{
             contestant: {
               include: {
                 survivorPlayer: true
-                tribeMemberships: { include: { tribe: true } }
+                tribeMemberships: { include: { tribe: true }, orderBy: { id: 'asc' } }
               }
             }
             team: true
@@ -38,7 +39,7 @@ type EpisodeWithDetails = Prisma.EpisodeGetPayload<{
         eliminated: {
           include: {
             survivorPlayer: true
-            tribeMemberships: { include: { tribe: true } }
+            tribeMemberships: { include: { tribe: true }, orderBy: { id: 'asc' } }
           }
         }
       }
@@ -48,7 +49,7 @@ type EpisodeWithDetails = Prisma.EpisodeGetPayload<{
         contestant: {
           include: {
             survivorPlayer: true
-            tribeMemberships: { include: { tribe: true } }
+            tribeMemberships: { include: { tribe: true }, orderBy: { id: 'asc' } }
           }
         }
         event: true
@@ -194,7 +195,7 @@ export default function SeasonSummaryTab({ episodes, contestants, seasonId }: Pr
 
                 return winners.map(w => {
                   if (w.contestant) {
-                    const tribe = w.contestant.tribeMemberships[0]?.tribe
+                    const tribe = getContestantTribe(w.contestant)
                     return { name: w.contestant.survivorPlayer.name.split(' ')[0], tribe }
                   }
                   if (w.team) {
@@ -290,7 +291,7 @@ export default function SeasonSummaryTab({ episodes, contestants, seasonId }: Pr
                   <td className="px-3 py-2">
                     <div className="flex flex-col gap-0.5">
                       {exiledStats.map(stat => {
-                        const tribe = stat.contestant.tribeMemberships[0]?.tribe
+                        const tribe = getContestantTribe(stat.contestant)
                         return (
                           <Link
                             href={`/survivor/players/${stat.contestant.survivorPlayerId}`}
@@ -309,7 +310,7 @@ export default function SeasonSummaryTab({ episodes, contestants, seasonId }: Pr
                   <td className="px-3 py-2">
                     <div className="flex flex-col gap-0.5">
                       {journeyStats.map(stat => {
-                        const tribe = stat.contestant.tribeMemberships[0]?.tribe
+                        const tribe = getContestantTribe(stat.contestant)
                         return (
                           <Link
                             href={`/survivor/players/${stat.contestant.survivorPlayerId}`}
@@ -329,7 +330,7 @@ export default function SeasonSummaryTab({ episodes, contestants, seasonId }: Pr
                     <div className="flex flex-col gap-1">
                       {episode.tribalCouncils.map(tc => {
                         if (!tc.eliminated) return null
-                        const tribe = tc.eliminated.tribeMemberships[0]?.tribe
+                        const tribe = getContestantTribe(tc.eliminated)
                         const isNoVote = ['medevac', 'quit'].includes(tc.eliminated.status)
                         const voteCount = isNoVote
                           ? null

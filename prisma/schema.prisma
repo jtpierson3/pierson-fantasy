@@ -371,16 +371,17 @@ model ChallengeResult {
 }
 
 model TribalCouncil {
-  id           String         @id @default(cuid())
-  episode      Episode        @relation(fields: [episodeId], references: [id])
-  episodeId    String
-  order        Int            @default(1)
-  isFiremaking Boolean        @default(false)
-  notes        String?
-  votes        VotingRecord[]
-  eliminated   Contestant?    @relation("Eliminated", fields: [eliminatedId], references: [id])
-  eliminatedId String?
-  createdAt    DateTime       @default(now())
+  id            String         @id @default(cuid())
+  episode       Episode        @relation(fields: [episodeId], references: [id])
+  episodeId     String
+  order         Int            @default(1)
+  isFiremaking  Boolean        @default(false)
+  isFinalTribal Boolean        @default(false)
+  notes         String?
+  votes         VotingRecord[]
+  eliminated    Contestant?    @relation("Eliminated", fields: [eliminatedId], references: [id])
+  eliminatedId  String?
+  createdAt     DateTime       @default(now())
 }
 
 model VotingRecord {

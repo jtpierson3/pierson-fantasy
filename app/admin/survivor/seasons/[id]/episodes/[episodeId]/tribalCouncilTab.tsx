@@ -30,6 +30,7 @@ type TribalCouncil = {
   id: string
   order: number
   isFiremaking: boolean
+  isFinalTribal: boolean
   notes: string | null
   eliminatedId: string | null
   eliminated: { survivorPlayer: { name: string } } | null
@@ -69,6 +70,7 @@ export default function TribalCouncilTab({ episode, contestants }: Props) {
   const router = useRouter()
   const [showAdd, setShowAdd] = useState(false)
   const [isFiremaking, setIsFiremaking] = useState(false)
+  const [isFinalTribal, setIsFinalTribal] = useState(false)
   const [notes, setNotes] = useState('')
   const [formLoading, setFormLoading] = useState(false)
   const [confirm, setConfirm] = useState<ConfirmDialog>(null)
@@ -233,12 +235,14 @@ export default function TribalCouncilTab({ episode, contestants }: Props) {
           episodeId: episode.id,
           order: episode.tribalCouncils.length + 1,
           isFiremaking,
+          isFinalTribal,
           notes: notes || null,
         })
       })
       if (!res.ok) throw new Error('Failed to create tribal council')
       setShowAdd(false)
       setIsFiremaking(false)
+      setIsFinalTribal(false)
       setNotes('')
       router.refresh()
     } catch {
@@ -311,6 +315,11 @@ export default function TribalCouncilTab({ episode, contestants }: Props) {
                 {tribal.isFiremaking && (
                   <span className="text-xs px-2 py-0.5 rounded-full bg-orange-900 text-orange-400 border border-orange-700">
                     🔥 Firemaking
+                  </span>
+                )}
+                {tribal.isFinalTribal && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-900 text-yellow-400 border border-yellow-700">
+                    Final Tribal
                   </span>
                 )}
                 {tribal.eliminated && (
@@ -731,6 +740,15 @@ export default function TribalCouncilTab({ episode, contestants }: Props) {
                   <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${isFiremaking ? 'translate-x-5' : 'translate-x-0.5'}`} />
                 </button>
                 <span className="text-sm text-gray-300">Firemaking tribal</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setIsFinalTribal(prev => !prev)}
+                  className={`relative w-10 h-5 rounded-full transition-colors ${isFinalTribal ? 'bg-green-600' : 'bg-gray-700'}`}
+                >
+                  <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${isFinalTribal ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                </button>
+                <span className="text-sm text-gray-300">Final tribal council</span>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1.5">

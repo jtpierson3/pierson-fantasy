@@ -34,6 +34,7 @@ type TribalCouncil = {
   id: string
   order: number
   isFiremaking: boolean
+  isFinalTribal: boolean
   notes: string | null
   eliminatedId: string | null
   eliminated: { survivorPlayer: { name: string } } | null

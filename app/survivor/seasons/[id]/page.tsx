@@ -37,7 +37,7 @@ async function SeasonDetailContent({ id }: { id: string }) {
                     results: {
                     include: {
                         contestant: {
-                        include: { survivorPlayer: true, tribeMemberships: { where: { isCurrent: true }, include: { tribe: true } } }
+                        include: { survivorPlayer: true, tribeMemberships: { include: { tribe: true } } }
                         },
                         team: true,
                     },
@@ -66,7 +66,6 @@ async function SeasonDetailContent({ id }: { id: string }) {
                     include: {
                         survivorPlayer: true,
                         tribeMemberships: {
-                        where: { isCurrent: true },
                         include: { tribe: true }
                         }
                     }
@@ -80,7 +79,6 @@ async function SeasonDetailContent({ id }: { id: string }) {
                     include: {
                         survivorPlayer: true,
                         tribeMemberships: {
-                        where: { isCurrent: true },
                         include: { tribe: true }
                         }
                     }

@@ -15,7 +15,6 @@ export type EpisodeWithDetails = Prisma.EpisodeGetPayload<{
           include: {
             survivorPlayer: true
             tribeMemberships: {
-              where: { isCurrent: true }
               include: { tribe: true }
             }
           }
@@ -38,7 +37,6 @@ export type EpisodeWithDetails = Prisma.EpisodeGetPayload<{
               include: {
                 survivorPlayer: true
                 tribeMemberships: {
-                  where: { isCurrent: true }
                   include: { tribe: true }
                 }
               }
@@ -62,7 +60,6 @@ export type EpisodeWithDetails = Prisma.EpisodeGetPayload<{
               include: {
                 survivorPlayer: true
                 tribeMemberships: {
-                  where: { isCurrent: true }
                   include: { tribe: true }
                 }
               }
@@ -71,7 +68,6 @@ export type EpisodeWithDetails = Prisma.EpisodeGetPayload<{
               include: {
                 survivorPlayer: true
                 tribeMemberships: {
-                  where: { isCurrent: true }
                   include: { tribe: true }
                 }
               }
@@ -82,7 +78,6 @@ export type EpisodeWithDetails = Prisma.EpisodeGetPayload<{
           include: {
             survivorPlayer: true
             tribeMemberships: {
-              where: { isCurrent: true }
               include: { tribe: true }
             }
           }

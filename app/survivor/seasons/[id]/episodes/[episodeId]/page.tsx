@@ -31,7 +31,6 @@ async function EpisodeWikiContent({
             include: {
               survivorPlayer: true,
               tribeMemberships: {
-                where: { isCurrent: true },
                 include: { tribe: true }
               }
             }
@@ -55,7 +54,6 @@ async function EpisodeWikiContent({
                 include: {
                   survivorPlayer: true,
                   tribeMemberships: {
-                    where: { isCurrent: true },
                     include: { tribe: true }
                   }
                 }
@@ -83,7 +81,6 @@ async function EpisodeWikiContent({
                 include: {
                   survivorPlayer: true,
                   tribeMemberships: {
-                    where: { isCurrent: true },
                     include: { tribe: true }
                   }
                 }
@@ -92,7 +89,6 @@ async function EpisodeWikiContent({
                 include: {
                   survivorPlayer: true,
                   tribeMemberships: {
-                    where: { isCurrent: true },
                     include: { tribe: true }
                   }
                 }
@@ -103,7 +99,6 @@ async function EpisodeWikiContent({
             include: {
               survivorPlayer: true,
               tribeMemberships: {
-                where: { isCurrent: true },
                 include: { tribe: true }
               }
             }

@@ -181,7 +181,26 @@ export default function SeasonDetail({ season }: Props) {
               {seasonRun && (
                 <div className="flex justify-between gap-2">
                   <span className="text-gray-400 flex-shrink-0">Season run</span>
-                  <span className="text-gray-900 font-medium text-right">{seasonRun}</span>
+                  <div className="text-right">
+                    {season.airDate && (
+                        <p className="text-gray-900 font-medium">
+                            {new Date(season.airDate).toLocaleDateString('en-US', {
+                                month: 'long',
+                                day: 'numeric',
+                                year: 'numeric'
+                            })}
+                        </p>
+                    )}
+                    {season.finaleDate && (
+                        <p className="text-gray-900 font-medium">
+                            {new Date(season.finaleDate).toLocaleDateString('en-US', {
+                                month: 'long',
+                                day: 'numeric',
+                                year: 'numeric'
+                            })}
+                        </p>
+                    )}    
+                  </div>
                 </div>
               )}
 
@@ -199,10 +218,10 @@ export default function SeasonDetail({ season }: Props) {
                 </div>
               )}
 
-              {season.castawayCount && (
+              {season.contestants.length && (
                 <div className="flex justify-between gap-2">
                   <span className="text-gray-400 flex-shrink-0">Castaways</span>
-                  <span className="text-gray-900 font-medium text-right">{season.castawayCount}</span>
+                  <span className="text-gray-900 font-medium text-right">{season.contestants.length}</span>
                 </div>
               )}
 

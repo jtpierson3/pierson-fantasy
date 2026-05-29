@@ -3,11 +3,12 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import type { Prisma } from '@prisma/client'
+import { getContestantTribe } from '@/app/lib/survivorHelpers'
 
 type ContestantWithDetails = Prisma.ContestantGetPayload<{
   include: {
     survivorPlayer: true
-    tribeMemberships: { include: { tribe: true } }
+    tribeMemberships: { include: { tribe: true }, orderBy: { id: 'asc' } }
     challengeResults: {
         where: { placement: 1}
         include: { challenge: true}
@@ -30,7 +31,7 @@ type EpisodeWithDetails = Prisma.EpisodeGetPayload<{
         eliminated: {
           include: {
             survivorPlayer: true
-            tribeMemberships: { include: { tribe: true } }
+            tribeMemberships: { include: { tribe: true }, orderBy: { id: 'asc' } }
           }
         }
       }
@@ -83,7 +84,7 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
   const columns: TribalColumn[] = []
   episodes.forEach(episode => {
     episode.tribalCouncils.forEach(tc => {
-      if (!tc.eliminated) return // skip no-elimination tribals
+      if (tc.votes.length === 0 && !tc.eliminated) return // skip no-elimination tribals
       columns.push({
         episodeId: episode.id,
         episodeNumber: episode.number,
@@ -127,10 +128,11 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
   }
 
   // Get tribe color for a contestant at a given tribal
-  function getVotedForColor(votedForId: string): string {
+  function getVotedForColor(votedForId: string, episodeNumber: number): string {
     const c = contestantMap.get(votedForId)
     if (!c) return '#6b7280'
-    return c.tribeMemberships.find(tm => tm.isCurrent)?.tribe.color ?? '#6b7280'
+    const tribe = getContestantTribe(c, episodes, episodeNumber)
+    return tribe?.color ?? '#6b7280'
   }
 
   // Check if contestant was at this tribal
@@ -183,7 +185,7 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
             <tr className="border-b border-gray-200">
               <th className="px-3 py-2 bg-gray-50 sticky left-0 z-10" />
               {columns.map(col => {
-                const tribe = col.eliminated?.tribeMemberships[0]?.tribe
+                const tribe = col.eliminated?.tribeMemberships[col.eliminated?.tribeMemberships.length - 1]?.tribe
                 const isNoVote = ['medevac', 'quit'].includes(col.eliminated?.status ?? '')
                 return (
                   <th
@@ -191,7 +193,7 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
                     className="px-2 py-2 text-center min-w-[80px]"
                     style={{ backgroundColor: tribe?.color ? `${tribe.color}33` : '#f9fafb' }}
                   >
-                    {col.eliminated && (
+                    {col.eliminated ? (
                       <div className="flex flex-col items-center gap-1">
                         <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-sm">
                           {col.eliminated.imageUrl ? (
@@ -220,6 +222,13 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
                           {col.eliminated.survivorPlayer.name.split(' ')[0]}
                         </Link>
                       </div>
+                    ) : (
+                        <div className="flex flex-col items-center gap-1">
+                            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                <span className="text-gray-400 text-xs">-</span>
+                            </div>
+                            <span className="text-gray-400 text-xs">No Boot</span>
+                        </div>
                     )}
                   </th>
                 )
@@ -233,11 +242,11 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
               </th>
               {columns.map(col => {
                 const isNoVote = ['medevac', 'quit'].includes(col.eliminated?.status ?? '')
-                const voteCount = isNoVote
+                const voteCount = !col.eliminated
+                  ? 'Tie'
+                  : isNoVote
                   ? 'No Vote'
-                  : col.eliminated
-                  ? formatVoteCount(col.eliminated.id, col.votes)
-                  : ''
+                  : formatVoteCount(col.eliminated.id, col.votes)
                 return (
                   <th
                     key={col.tribalCouncilId}
@@ -350,7 +359,7 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
                       <td key={col.tribalCouncilId} className="px-2 py-2 text-center">
                         <div className="flex flex-col gap-0.5 items-center">
                           {votes.map((vote, i) => {
-                            const color = getVotedForColor(vote.votedForId)
+                            const color = getVotedForColor(vote.votedForId, col.episodeNumber)
                             return (
                               <span
                                 key={i}

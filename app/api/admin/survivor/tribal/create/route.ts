@@ -10,10 +10,10 @@ export async function POST(req: Request) {
     const currentUser = await prisma.user.findUnique({ where: { clerkId } })
     if (!currentUser?.isSiteAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { episodeId, order, isFiremaking, notes } = await req.json()
+    const { episodeId, order, isFiremaking, isFinalTribal, notes } = await req.json()
 
     const tribal = await prisma.tribalCouncil.create({
-      data: { episodeId, order, isFiremaking, notes: notes || null }
+      data: { episodeId, order, isFiremaking, isFinalTribal, notes: notes || null }
     })
 
     return NextResponse.json({ success: true, tribal })
