@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { Prisma } from '@prisma/client'
 import { getContestantTribe } from '@/app/lib/survivorHelpers'
+import { fchmod } from 'fs'
 
 type ContestantWithDetails = Prisma.ContestantGetPayload<{
   include: {
@@ -110,19 +111,37 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
     ['finalist', 'winner'].includes(c.status)
   )
 
+  const finalistColumns = finalists
+    .sort((a, b) => (b.placement ?? 0) - (a.placement ?? 0))
+    .map(finalist => ({
+        contestantId: finalist.id,
+        name: finalist.survivorPlayer.name.split(' ')[0],
+        tribe: getContestantTribe(finalist),
+        votes: finalTribal.flatMap(col =>
+            col.votes.filter(v => v.votedForId === finalist.id)
+        ),
+  }))
+
+  const columns = [...regularColumns]
+
+
   // Build contestant map for quick lookup
   const contestantMap = new Map(contestants.map(c => [c.id, c]))
 
   // Sort contestants: alphabetical first, then eliminated in order
   const eliminated = contestants
-    .filter(c => c.placement !== null && !['winner', 'finalist', 'active'].includes(c.status))
+    .filter(c => c.placement !== null && ['eliminated', 'jury', 'medevac', 'quit'].includes(c.status))
     .sort((a, b) => (a.placement ?? 0) - (b.placement ?? 0))
 
   const active = contestants
-    .filter(c => ['winner', 'finalist', 'active'].includes(c.status))
+    .filter(c => ['active'].includes(c.status))
     .sort((a, b) => a.survivorPlayer.name.localeCompare(b.survivorPlayer.name))
 
-  const sortedContestants = [...active, ...eliminated]
+  const finalistsAndWinner = contestants
+    .filter(c => ['finalist', 'winner'].includes(c.status))
+    .sort((a, b) => (a.placement ?? 0) - (b.placement ?? 0))
+
+  const sortedContestants = [...finalistsAndWinner, ...active, ...eliminated]
 
   // Track elimination order for finish label
   const elimOrderMap = new Map<string, number>()
@@ -160,7 +179,7 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
     return wasPresent && !didVote
   }
 
-  if (regularColumns.length === 0) {
+  if (columns.length === 0) {
     return (
       <div>
         <h2 className="text-sm font-medium text-gray-900 mb-4">Voting History</h2>
@@ -181,7 +200,7 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
               <th className="px-3 py-2 text-left font-medium text-gray-500 bg-gray-50 sticky left-0 z-10 min-w-[160px]">
                 Contestant
               </th>
-              {regularColumns.map(col => (
+              {columns.map(col => (
                 <th
                   key={col.tribalCouncilId}
                   className="px-2 py-2 text-center font-medium text-gray-500 bg-gray-50 min-w-[80px]"
@@ -192,12 +211,20 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
                   )}
                 </th>
               ))}
+              {finalistColumns.length > 0 && (
+                <th
+                    colSpan={finalistColumns.length}
+                    className="px-2 py-2 text-center font-medium text-yellow-700 bg-yellow-50 border-l border-yellow-200"
+                >
+                    Final
+                </th>
+              )}
             </tr>
 
             {/* Row 2 — Voted out photo + name */}
             <tr className="border-b border-gray-200">
               <th className="px-3 py-2 bg-gray-50 sticky left-0 z-10" />
-              {regularColumns.map(col => {
+              {columns.map(col => {
                 const tribe = col.eliminated?.tribeMemberships[col.eliminated?.tribeMemberships.length - 1]?.tribe
                 const isNoVote = ['medevac', 'quit'].includes(col.eliminated?.status ?? '')
                 return (
@@ -206,15 +233,7 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
                     className="px-2 py-2 text-center min-w-[80px]"
                     style={{ backgroundColor: tribe?.color ? `${tribe.color}33` : '#f9fafb' }}
                   >
-                    {col.isFinalTribal ? (
-                        <th
-                            key={col.tribalCouncilId}
-                            className="px-2 py-2 text-center min-w-[80px] bg-yellow-50"
-                        >
-                            <p className="text-xs font-midum text-yellow-700">Final Tribal</p>
-                            <p className="text-sx text-yellow-500">Jury Votes</p>
-                        </th>
-                    ) : col.eliminated ? (
+                    {col.eliminated ? (
                       <div className="flex flex-col items-center gap-1">
                         <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-sm">
                           {col.eliminated.imageUrl ? (
@@ -254,6 +273,43 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
                   </th>
                 )
               })}
+              {finalistColumns.map(f => {
+                const contestant = contestantMap.get(f.contestantId)
+                
+                return (
+                    <th
+                        key={f.contestantId}
+                        className="px-2 py-2 text-center min-w-[80px] border-l first:border-l-yellow-200"
+                        style={{ backgroundColor: f.tribe?.color ? `${f.tribe.color}33` : '#fefce8'}}
+                    >
+                        <div className="flex flex-col items-center gap-1">
+                            <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-sm">
+                                {contestant?.imageUrl ? (
+                                    <Image 
+                                        src={contestant.imageUrl}
+                                        alt={f.name}
+                                        fill
+                                        className="object-cover"
+                                    />
+                                ) : (
+                                    <div
+                                        className="w-full h-full flex items-center justify-center"
+                                        style={{ backgroundColor: f.tribe?.color ?? '#6b7280'}}
+                                    >
+                                        <span className="text-white font-medium text-xs">{f.name[0]}</span>
+                                    </div>
+                                )}
+                            </div>
+                            <span
+                                className="font-medium text-xs"
+                                style={{ color: f.tribe?.color ?? '#374151'}}
+                            >
+                                {f.name}
+                            </span>
+                        </div>
+                    </th>
+                )
+              })}
             </tr>
 
             {/* Row 3 — Vote count */}
@@ -261,22 +317,31 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
               <th className="px-3 py-2 bg-gray-50 sticky left-0 z-10 text-left text-gray-400 font-normal">
                 Vote
               </th>
-              {regularColumns.map(col => {
+              {columns.map(col => {
                 const isNoVote = ['medevac', 'quit'].includes(col.eliminated?.status ?? '')
                 const voteCount = !col.eliminated
                   ? 'Tie'
                   : isNoVote
                   ? 'No Vote'
                   : formatVoteCount(col.eliminated.id, col.votes)
-                return (
-                  <th
-                    key={col.tribalCouncilId}
-                    className="px-2 py-2 text-center font-medium text-gray-700 bg-gray-50 min-w-[80px]"
-                  >
-                    {voteCount}
-                  </th>
-                )
+
+                return(
+                    <th
+                        key={col.tribalCouncilId}
+                        className="px-2 py-2 text-center font-medium text-gray-700 bg-gray-50 min-w-[80px]"
+                    >
+                        {voteCount}
+                    </th>
+                )    
               })}
+              {finalistColumns.length > 0 && (
+                <th
+                    colSpan={finalistColumns.length}
+                    className="px-2 py-2 text-center font-medium text-yellow-600 bg-yellow-50 min-w-[80px] border-l border-yellow-200"
+                >
+                    {finalistColumns.map(f => f.votes.length).join('-')}
+                </th>
+              )}
             </tr>
           </thead>
 
@@ -295,7 +360,7 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
               return (
                 <tr
                   key={contestant.id}
-                  className={`border-b border-gray-100 ${isEliminated ? 'opacity-60' : ''}`}
+                  className={`border-b border-gray-100 `}
                 >
                   {/* Contestant column */}
                   <td className="px-3 py-2 bg-white sticky left-0 z-10 border-r border-gray-100">
@@ -343,7 +408,7 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
                   </td>
 
                   {/* Vote cells */}
-                  {regularColumns.map(col => {
+                  {columns.map(col => {
                     const votes = getVoteForContestant(contestant.id, col)
                     const stolenVote = hadVoteStolen(contestant.id, col)
                     const wasPresent = wasAtTribal(contestant.id, col)
@@ -395,6 +460,55 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
                           })}
                         </div>
                       </td>
+                    )
+                  })}
+                  {finalistColumns.map((f, index) => {
+                    const isAnyFinalist = finalistColumns.some(fc => fc.contestantId === contestant.id)
+
+                    if (isAnyFinalist) {
+                        if (index === 0 ) {
+                            return (
+                                <td
+                                    key={f.contestantId}
+                                    colSpan={finalistColumns.length}
+                                    className="px-2 py-2 text-center"
+                                    style={{ backgroundColor: f.tribe?.color ? `${f.tribe.color}44` : '#fefce8'}}
+                                >
+                                    <span className="text-xs text-gray-900 font-large">
+                                        {contestant.status.toUpperCase()}
+                                    </span>
+                                </td>
+                            )
+                        }
+
+                        return null
+                    }
+
+                    const voted = f.votes.find(v => v.voterId === contestant.id)
+                    if (voted) {
+                        return (
+                            <td
+                                key={f.contestantId}
+                                className="px-2 py-2 text-center"
+                                style={{ backgroundColor: f.tribe?.color ? `${f.tribe.color}22`: '#fefce8'}}
+                            >
+                                <span
+                                    className="text-xs px-1.5 py-0.5 rounded text-white font-medium"
+                                    style={{ backgroundColor: f.tribe?.color ?? '#6b7280' }}
+                                >
+                                    {f.name}
+                                </span>
+                            </td>
+                        )
+                    }
+
+                    return (
+                        <td
+                            key={f.contestantId}
+                            className="px-2 py-2 text-center bg-yellow-50/20"
+                        >
+                            <span className="text-gray-300">-</span>
+                        </td>
                     )
                   })}
                 </tr>
