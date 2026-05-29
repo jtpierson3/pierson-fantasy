@@ -9,6 +9,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import type { Prisma } from '@prisma/client'
 import type { EpisodeWithDetails } from './types'
+import { getContestantTribe } from '@/app/lib/survivorHelpers'
 
 type Props = {
     episode: EpisodeWithDetails
@@ -47,7 +48,7 @@ export default function EpisodeWiki({ episode }: Props) {
                                 href={`/survivor/seasons/${season.id}/episodes/${ep.id}`}
                                 className={`flex items-center gap-2 px-3 py-2 text-xs transition-colors ${
                                     ep.id === episode.id
-                                        ? 'bg-green-50 tesxt-green-800 font-medium'
+                                        ? 'bg-green-50 text-green-800 font-medium'
                                         : ep.isAired
                                         ? 'text-gray-600 hover:bg-gray-50'
                                         : 'text-gray-400 hover:bg-gray-50'
@@ -155,7 +156,11 @@ export default function EpisodeWiki({ episode }: Props) {
                                             const winnerName= winner?.contestant?.survivorPlayer.name.split(' ')[0]
                                                 ?? winner?.team?.name
                                                 ?? null
-                                            const winnerTribe = winner?.contestant?.tribeMemberships[0]?.tribe
+                                            const winnerTribe = winner?.contestant
+                                                ? getContestantTribe(winner.contestant)
+                                                : winner?.team
+                                                ? { color: winner.team.color ?? '#6b7280', name: winner.team.name ?? 'Team' }
+                                                : null
                                             
                                             if (!winnerName) return null
                                             return (

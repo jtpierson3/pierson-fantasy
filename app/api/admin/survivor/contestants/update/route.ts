@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     }
 
     // Update tribe membership
-    if (tribeId) {
+    if (tribeId && !inactiveStatuses.includes(status)) {
       const currentMembership = await prisma.tribeMembership.findFirst({
         where: { contestantId, isCurrent: true}
       })
