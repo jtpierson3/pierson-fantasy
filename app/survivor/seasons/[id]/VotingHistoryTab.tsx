@@ -52,6 +52,7 @@ type TribalColumn = {
   eliminated: EpisodeWithDetails['tribalCouncils'][0]['eliminated']
   votes: EpisodeWithDetails['tribalCouncils'][0]['votes']
   isFiremaking: boolean
+  isFinalTribal: boolean
 }
 
 function getOrdinal(n: number): string {
@@ -81,11 +82,13 @@ function formatVoteCount(
 
 export default function VotingHistoryTab({ episodes, contestants }: Props) {
   // Build tribal council columns — one per tribal council that has an elimination
-  const columns: TribalColumn[] = []
+  const regularColumns: TribalColumn[] = []
+  const finalTribal: TribalColumn[] = []
+
   episodes.forEach(episode => {
     episode.tribalCouncils.forEach(tc => {
       if (tc.votes.length === 0 && !tc.eliminated) return // skip no-elimination tribals
-      columns.push({
+      const col: TribalColumn = {
         episodeId: episode.id,
         episodeNumber: episode.number,
         tribalCouncilId: tc.id,
@@ -93,9 +96,19 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
         eliminated: tc.eliminated,
         votes: tc.votes,
         isFiremaking: tc.isFiremaking,
-      })
+        isFinalTribal: tc.isFinalTribal
+      }
+      if (tc.isFinalTribal) {
+        finalTribal.push(col)
+      } else {
+        regularColumns.push(col)
+      }
     })
   })
+
+  const finalists = contestants.filter(c => 
+    ['finalist', 'winner'].includes(c.status)
+  )
 
   // Build contestant map for quick lookup
   const contestantMap = new Map(contestants.map(c => [c.id, c]))
@@ -147,7 +160,7 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
     return wasPresent && !didVote
   }
 
-  if (columns.length === 0) {
+  if (regularColumns.length === 0) {
     return (
       <div>
         <h2 className="text-sm font-medium text-gray-900 mb-4">Voting History</h2>
@@ -168,7 +181,7 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
               <th className="px-3 py-2 text-left font-medium text-gray-500 bg-gray-50 sticky left-0 z-10 min-w-[160px]">
                 Contestant
               </th>
-              {columns.map(col => (
+              {regularColumns.map(col => (
                 <th
                   key={col.tribalCouncilId}
                   className="px-2 py-2 text-center font-medium text-gray-500 bg-gray-50 min-w-[80px]"
@@ -184,7 +197,7 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
             {/* Row 2 — Voted out photo + name */}
             <tr className="border-b border-gray-200">
               <th className="px-3 py-2 bg-gray-50 sticky left-0 z-10" />
-              {columns.map(col => {
+              {regularColumns.map(col => {
                 const tribe = col.eliminated?.tribeMemberships[col.eliminated?.tribeMemberships.length - 1]?.tribe
                 const isNoVote = ['medevac', 'quit'].includes(col.eliminated?.status ?? '')
                 return (
@@ -193,7 +206,15 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
                     className="px-2 py-2 text-center min-w-[80px]"
                     style={{ backgroundColor: tribe?.color ? `${tribe.color}33` : '#f9fafb' }}
                   >
-                    {col.eliminated ? (
+                    {col.isFinalTribal ? (
+                        <th
+                            key={col.tribalCouncilId}
+                            className="px-2 py-2 text-center min-w-[80px] bg-yellow-50"
+                        >
+                            <p className="text-xs font-midum text-yellow-700">Final Tribal</p>
+                            <p className="text-sx text-yellow-500">Jury Votes</p>
+                        </th>
+                    ) : col.eliminated ? (
                       <div className="flex flex-col items-center gap-1">
                         <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-sm">
                           {col.eliminated.imageUrl ? (
@@ -240,7 +261,7 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
               <th className="px-3 py-2 bg-gray-50 sticky left-0 z-10 text-left text-gray-400 font-normal">
                 Vote
               </th>
-              {columns.map(col => {
+              {regularColumns.map(col => {
                 const isNoVote = ['medevac', 'quit'].includes(col.eliminated?.status ?? '')
                 const voteCount = !col.eliminated
                   ? 'Tie'
@@ -322,7 +343,7 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
                   </td>
 
                   {/* Vote cells */}
-                  {columns.map(col => {
+                  {regularColumns.map(col => {
                     const votes = getVoteForContestant(contestant.id, col)
                     const stolenVote = hadVoteStolen(contestant.id, col)
                     const wasPresent = wasAtTribal(contestant.id, col)

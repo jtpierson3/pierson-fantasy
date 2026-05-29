@@ -250,7 +250,7 @@ export default function TribalCouncilTab({ episode, contestants }: Props) {
     } finally {
       setFormLoading(false)
     }
-  }, [episode.id, episode.tribalCouncils.length, isFiremaking, notes, router])
+  }, [episode.id, episode.tribalCouncils.length, isFiremaking, isFinalTribal, notes, router])
 
   const handleDeleteTribal = useCallback((tribal: TribalCouncil) => {
     setConfirm({
