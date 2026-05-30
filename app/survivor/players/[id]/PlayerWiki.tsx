@@ -122,7 +122,7 @@ export default function PlayerWiki({ player }: Props) {
                   src={mostRecent.imageUrl}
                   alt={player.name}
                   fill
-                  className="object-cover"
+                  className="object-cover object-[center_top]"
                 />
               ) : (
                 <div

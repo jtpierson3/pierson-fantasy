@@ -1,5 +1,6 @@
 'use client'
 
+import { getContestantTribe } from '@/app/lib/survivorHelpers'
 import type { EpisodeWithDetails } from './types'
 import Link from 'next/link'
 
@@ -99,7 +100,9 @@ export default function ChallengesTab({ episode }: Props) {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {winners.map(result => {
-                    const tribe = result.contestant?.tribeMemberships[0]?.tribe
+                    const tribe = result.contestant
+                        ? getContestantTribe(result.contestant, episode.survivorSeason.episodes, episode.number)
+                        : result.team
                     const name = result.contestant?.survivorPlayer.name
                       ?? result.team?.name
                       ?? 'Unknown'

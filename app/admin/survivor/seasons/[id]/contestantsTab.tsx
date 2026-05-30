@@ -283,7 +283,7 @@ export default function ContestantsTab({ season, allPlayers }: Props) {
                     src={contestant.imageUrl}
                     alt={contestant.survivorPlayer.name}
                     fill
-                    className="object-cover"
+                    className="object-cover object-[center_top]"
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full">

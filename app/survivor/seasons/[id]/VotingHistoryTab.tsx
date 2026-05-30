@@ -241,7 +241,7 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
                               src={col.eliminated.imageUrl}
                               alt={col.eliminated.survivorPlayer.name}
                               fill
-                              className="object-cover"
+                              className="object-cover object-[center_top]"
                             />
                           ) : (
                             <div
@@ -289,7 +289,7 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
                                         src={contestant.imageUrl}
                                         alt={f.name}
                                         fill
-                                        className="object-cover"
+                                        className="object-cover object-[center_top]"
                                     />
                                 ) : (
                                     <div

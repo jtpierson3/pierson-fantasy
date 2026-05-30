@@ -8,6 +8,7 @@ import FormattedText from '@/app/components/FormattedText'
 import CastawaysTab from './CastawaysTab'
 import SeasonSummaryTab from './SeasonSummaryTab'
 import VotingHistoryTab from './VotingHistoryTab'
+import ScoringTab from './ScoringTab'
 
 type SeasonWithDetails = Prisma.SurvivorSeasonGetPayload<{
   include: {
@@ -84,7 +85,7 @@ type Props = {
   season: SeasonWithDetails
 }
 
-type Tab = 'production' | 'twists' | 'castaways' | 'summary' | 'voting'
+type Tab = 'production' | 'twists' | 'castaways' | 'summary' | 'voting' | 'scoring'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'production', label: 'Production' },
@@ -92,6 +93,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'castaways', label: 'Castaways' },
   { id: 'summary', label: 'Season Summary' },
   { id: 'voting', label: 'Voting History' },
+  { id: 'scoring', label: 'Scoring'}
 ]
 
 export default function SeasonDetail({ season }: Props) {
@@ -155,7 +157,7 @@ export default function SeasonDetail({ season }: Props) {
                   src={season.imageUrl}
                   alt={season.title}
                   fill
-                  className="object-cover"
+                  className="object-cover object-[center_top]"
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-green-800 to-green-950 flex items-center justify-center">
@@ -359,6 +361,9 @@ export default function SeasonDetail({ season }: Props) {
                 episodes={season.episodes}
                 contestants={season.contestants}
             />
+          )}
+          {activeTab === 'scoring' && (
+            <ScoringTab contestants={season.contestants} />
           )}
       </div>
     </div>

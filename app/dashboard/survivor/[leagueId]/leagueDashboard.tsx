@@ -117,7 +117,7 @@ const STATUS_BADGE: Record<string, string> = {
 }
 
 function calculateTribePoints(tribe: Tribe, airedEpisodeIds: Set<string>): number {
-  return tribe.players.reduce((total, pick) => {
+  return (tribe?.players ?? []).reduce((total, pick) => {
     const points = pick.contestant.episodeStats
       .filter(s => airedEpisodeIds.has(s.episode.id))
       .reduce((sum, s) => sum + s.event.points, 0)
@@ -263,7 +263,7 @@ export default function LeagueDashboard({ league, userId, pastLeagues }: Props) 
                                 src={pick.contestant.imageUrl}
                                 alt={pick.contestant.survivorPlayer.name}
                                 fill
-                                className="object-cover"
+                                className="object-cover object-[center_top]"
                               />
                             ) : (
                               <div className="w-full h-full bg-gray-200 flex-items-center justify-center">
@@ -373,165 +373,102 @@ export default function LeagueDashboard({ league, userId, pastLeagues }: Props) 
           </div>
 
           {/* Last Episode */}
-          <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100">
-              <h2 className="text-sm font-medium text-gray-900">
-                {lastEpisode ? `Last Episode — Ep ${lastEpisode.number}` : 'Next Episode'}
-              </h2>
-            </div>
-            <div className="p-4">
-              {lastEpisode ? (
-                <div className="flex flex-col gap-2">
-                  <p className="text-sm font-medium text-gray-900">{lastEpisode.name}</p>
-                  <div className="flex gap-2 flex-wrap">
-                    {lastEpisode.isMerge && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">
-                        Merge episode
-                      </span>
-                    )}
-                    {lastEpisode.isFinale && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-600">
-                        Finale
-                      </span>
-                    )}
-                  </div>
-                  {hasPicks && (
-                    <p className="text-sm text-gray-600">
-                      Your tribe scored <span className="font-medium text-green-700">+{lastEpisodeMyPoints} pts</span>
-                    </p>
-                  )}
-                  {lastEpTopScorer && lastEpTopScorer.points > 0 && (
-                    <p className="text-sm text-gray-600">
-                      Top scorer: <span className="font-medium text-gray-900">{lastEpTopScorer.name}</span>
-                      {' '}
-                      <span className="text-green-700">+{lastEpTopScorer.points} pts</span>
-                    </p>
-                  )}
-                  {eliminatedThisEp && (
-                    <p className="text-sm text-gray-600">
-                      Eliminated: <span className="font-medium text-red-600">{eliminatedThisEp.survivorPlayer.name}</span>
-                    </p>
-                  )}
-                </div>
-              ) : nextEpisode ? (
-                <div>
-                  <p className="text-sm text-gray-500">No episodes have aired yet</p>
-                  <p className="text-sm text-gray-900 mt-1">
-                    Next: <span className="font-medium">Ep {nextEpisode.number} · {nextEpisode.name}</span>
-                  </p>
-                </div>
-              ) : (
-                <p className="text-sm text-gray-400">No episodes scheduled</p>
-              )}
-            </div>
-          </div>
-
-          {/* Seasons */}
-          <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100">
-              <h2 className="text-sm font-medium text-gray-900">Seasons</h2>
-            </div>
-            <div className="divide-y divide-gray-50">
-              {/* Current season */}
-              <div className="px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
-                    {league.survivorSeason.imageUrl ? (
-                      <Image
-                        src={league.survivorSeason.imageUrl}
-                        alt={league.survivorSeason.title}
-                        fill
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-green-100 flex items-center justify-center">
-                        <span className="text-xs text-green-700 font-bold">
-                          S{league.survivorSeason.number}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      Season {league.survivorSeason.number} · {league.survivorSeason.title}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {airedEpisodes.length} episodes aired
-                      {myRank > 0 && ` · ${myRank}${myRank === 1 ? 'st' : myRank === 2 ? 'nd' : myRank === 3 ? 'rd' : 'th'} place`}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-gray-900">{myPoints} pts</span>
-                  <Link
-                    href={`/survivor/seasons/${league.survivorSeason.id}`}
-                    className="text-xs text-green-700 hover:text-green-800"
-                    onClick={e => e.stopPropagation()}
-                  >
-                    Wiki →
-                  </Link>
-                </div>
+          {lastEpisode ? (
+            <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-100">
+                <h2 className="text-sm font-medium text-gray-900">
+                  {lastEpisode ? `Last Episode — Ep ${lastEpisode.number}` : 'Next Episode'}
+                </h2>
               </div>
-
-              {/* Past leagues */}
-              {pastLeagues.map(past => {
-                const myPastTribe = past.tribes[0]
-                const pastAiredIds = new Set(
-                  past.survivorSeason.episodes
-                    .filter(e => e.isAired)
-                    .map(e => e.id)
-                )
-                const pastPoints = myPastTribe
-                  ? calculateTribePoints(myPastTribe, pastAiredIds)
-                  : 0
-
-                return (
-                  <div
-                    key={past.id}
-                    className="px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors cursor-pointer"
-                    onClick={() => window.location.href = `/dashboard/survivor/${past.id}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
-                        {past.survivorSeason.imageUrl ? (
-                          <Image
-                            src={past.survivorSeason.imageUrl}
-                            alt={past.survivorSeason.title}
-                            fill
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                            <span className="text-xs text-gray-500 font-bold">
-                              S{past.survivorSeason.number}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          Season {past.survivorSeason.number} · {past.survivorSeason.title}
-                        </p>
-                        {myPastTribe && (
-                          <p className="text-xs text-gray-400">{myPastTribe.name}</p>
-                        )}
-                      </div>
+              <div className="p-4">
+                {lastEpisode ? (
+                  <div className="flex flex-col gap-2">
+                    <Link
+                      href={`/survivor/seasons/${lastEpisode.survivorSeasonId}/episodes/${lastEpisode.id}`}
+                      className="text-sm font-medium text-gray-900 hover:text-green-700 transition-colors"
+                    >
+                      {lastEpisode.name}
+                    </Link>
+                    <div className="flex gap-2 flex-wrap">
+                      {lastEpisode.isMerge && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">
+                          Merge episode
+                        </span>
+                      )}
+                      {lastEpisode.isFinale && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-600">
+                          Finale
+                        </span>
+                      )}
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-gray-900">{pastPoints} pts</span>
-                      <Link
-                        href={`/survivor/seasons/${past.survivorSeason.id}`}
-                        className="text-xs text-green-700 hover:text-green-800"
-                        onClick={e => e.stopPropagation()}
-                      >
-                        Wiki →
-                      </Link>
+                    {hasPicks && (
+                      <p className="text-sm text-gray-600">
+                        Your tribe scored <span className="font-medium text-green-700">+{lastEpisodeMyPoints} pts</span>
+                      </p>
+                    )}
+                    {lastEpTopScorer && lastEpTopScorer.points > 0 && (
+                      <p className="text-sm text-gray-600">
+                        Top scorer: <span className="font-medium text-gray-900">{lastEpTopScorer.name}</span>
+                        {' '}
+                        <span className="text-green-700">+{lastEpTopScorer.points} pts</span>
+                      </p>
+                    )}
+                    {eliminatedThisEp && (
+                      <p className="text-sm text-gray-600">
+                        Eliminated: <span className="font-medium text-red-600">{eliminatedThisEp.survivorPlayer.name}</span>
+                      </p>
+                    )}
+                  </div>
+                ) : nextEpisode ? (
+                  <div>
+                    <p className="text-sm text-gray-500">No episodes have aired yet</p>
+                    <p className="text-sm text-gray-900 mt-1">
+                      Next: <span className="font-medium">Ep {nextEpisode.number} · {nextEpisode.name}</span>
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400">No episodes scheduled</p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div></div>
+          )}
+          
+
+          {/* Next Episode */}
+          {nextEpisode ? (
+            <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-100">
+                <h2 className="text-sm font-medium text-gray-900">
+                  {nextEpisode ? `Next Episode — Ep ${nextEpisode.number}` : 'Next Episode'}
+                </h2>
+              </div>
+              <div className="p-4">
+                {nextEpisode ? (
+                  <div className="flex flex-col gap-2">
+                    <Link
+                      href={`/survivor/seasons/${nextEpisode.survivorSeasonId}/episodes/${nextEpisode.id}`}
+                      className="text-sm font-medium text-gray-900 hover:text-green-700 transition-colors"
+                    >
+                      {nextEpisode.name}
+                    </Link>
+                    <div className="flex gap-2 flex-wrap">
+                      {nextEpisode.isFinale && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-600">
+                          Finale
+                        </span>
+                      )}
                     </div>
                   </div>
-                )
-              })}
+                ) : (
+                  <p className="text-sm text-gray-400">No episodes scheduled</p>
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div></div>
+          )} 
         </div>
       </div>
     </div>

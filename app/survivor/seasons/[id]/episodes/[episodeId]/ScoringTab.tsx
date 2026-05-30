@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { EpisodeWithDetails } from './types'
+import { getContestantTribe, EpisodeRef } from '@/app/lib/survivorHelpers'
 
 type Props = {
   episode: EpisodeWithDetails
@@ -41,7 +42,7 @@ export default function ScoringTab({ episode }: Props) {
       <h3 className="text-sm font-medium text-gray-900 mb-4">Episode Scoring</h3>
       <div className="flex flex-col gap-2">
         {sorted.map(({ contestant, stats, total }) => {
-          const tribe = contestant.tribeMemberships[0]?.tribe
+          const tribe = getContestantTribe(contestant, episode.survivorSeason.episodes, episode.number)
           const isExpanded = expandedId === contestant.id
 
           return (
@@ -57,7 +58,7 @@ export default function ScoringTab({ episode }: Props) {
                       src={contestant.imageUrl}
                       alt={contestant.survivorPlayer.name}
                       fill
-                      className="object-cover"
+                      className="object-cover object-[center_top]"
                     />
                   ) : (
                     <div

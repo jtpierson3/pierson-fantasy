@@ -23,17 +23,18 @@ enum RosterSlot {
 // ===================================================
 
 model User {
-  id              String                        @id @default(cuid())
-  clerkId         String                        @unique
-  username        String
-  email           String
-  isSiteAdmin     Boolean                       @default(false)
-  leagues         FantasyLeagueMember[]
-  fantasyTeams    FantasyTeam[]
-  createdAt       DateTime                      @default(now())
-  updatedAt       DateTime                      @updatedAt
-  survivorLeagues SurvivorFantasyLeagueMember[]
-  leagueTribe     SurvivorFantasyLeagueTribe[]
+  id               String                        @id @default(cuid())
+  clerkId          String                        @unique
+  username         String
+  email            String
+  isSiteAdmin      Boolean                       @default(false)
+  leagues          FantasyLeagueMember[]
+  fantasyTeams     FantasyTeam[]
+  eliminationPicks EliminationPick[]
+  createdAt        DateTime                      @default(now())
+  updatedAt        DateTime                      @updatedAt
+  survivorLeagues  SurvivorFantasyLeagueMember[]
+  leagueTribe      SurvivorFantasyLeagueTribe[]
 }
 
 model FantasyLeague {
@@ -216,6 +217,7 @@ model Episode {
   stats            EpisodeStat[]
   challenges       Challenge[]
   tribalCouncils   TribalCouncil[]
+  eliminationPicks EliminationPick[]
   tribeMemberships TribeMembership[]
 
   @@unique([survivorSeasonId, number])
@@ -239,6 +241,7 @@ model Contestant {
   tribeMemberships  TribeMembership[]
   episodeStats      EpisodeStat[]
   survivorPicks     SurvivorPicks[]
+  eliminationPicks  EliminationPick[]
   sitOuts           SitOut[]
   challengeResults  ChallengeResult[] @relation("IndividualWinner")
   challengeTeams    ChallengeTeam[]   @relation("ChallengeTeamContestants")
@@ -290,6 +293,7 @@ model SurvivorLeague {
   survivorSeasonId String
   members          SurvivorFantasyLeagueMember[]
   tribes           SurvivorFantasyLeagueTribe[]
+  eliminationPicks EliminationPick[]
   createdAt        DateTime                      @default(now())
   updatedAt        DateTime                      @default(now())
 }
@@ -310,7 +314,7 @@ model SurvivorFantasyLeagueTribe {
   id               String          @id @default(cuid())
   name             String
   user             User            @relation(fields: [userId], references: [id])
-  userId           String          @unique
+  userId           String
   survivorLeague   SurvivorLeague  @relation(fields: [survivorLeagueId], references: [id])
   survivorLeagueId String
   players          SurvivorPicks[]
@@ -403,4 +407,20 @@ model SitOut {
   contestant   Contestant @relation(fields: [contestantId], references: [id])
 
   @@unique([challengeId, contestantId])
+}
+
+model EliminationPick {
+  id               String         @id @default(cuid())
+  userId           String
+  survivorLeagueId String
+  episodeId        String
+  contestantId     String
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  user             User           @relation(fields: [userId], references: [id])
+  survivorLeague   SurvivorLeague @relation(fields: [survivorLeagueId], references: [id])
+  episode          Episode        @relation(fields: [episodeId], references: [id])
+  contestant       Contestant     @relation(fields: [contestantId], references: [id])
+
+  @@unique([userId, survivorLeagueId, episodeId])
 }

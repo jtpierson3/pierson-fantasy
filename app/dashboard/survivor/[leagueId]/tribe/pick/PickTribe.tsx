@@ -199,7 +199,7 @@ export default function PickTribe({
                       <img
                         src={contestant.imageUrl}
                         alt={contestant.survivorPlayer.name}
-                        className="w-10 h-10 object-cover rounded-full"
+                        className="w-10 h-10 object-cover object-[center_top] rounded-full"
                       />
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">

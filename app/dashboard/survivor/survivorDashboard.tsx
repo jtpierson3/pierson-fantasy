@@ -144,7 +144,7 @@ function LeagueCard({
                         src={league.survivorSeason.imageUrl}
                         alt={league.survivorSeason.title}
                         fill
-                        className="object-cover"
+                        className="object-cover object-[center_top]"
                     />
                 ) : (
                     <div className="h-full bg-gradient-to-br from-green-800 to-green-950 flex items-center justify-center">
@@ -194,7 +194,7 @@ function LeagueCard({
                                         src={pick.contestant.imageUrl}
                                         alt={pick.contestant.survivorPlayer.name}
                                         fill
-                                        className="object-cover"
+                                        className="object-cover object-[center_top]"
                                     />
                                 ) : (
                                     <div className="w-full h-full bg-gray-200 flex items-center justify-center">

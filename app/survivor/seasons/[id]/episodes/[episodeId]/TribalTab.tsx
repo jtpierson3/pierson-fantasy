@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import type { EpisodeWithDetails } from './types'
+import { getContestantTribe } from '@/app/lib/survivorHelpers'
 
 type Props = {
   episode: EpisodeWithDetails
@@ -35,7 +36,9 @@ export default function TribalTab({ episode }: Props) {
             a.votes.filter(v => !v.isRevoked).length
           )
 
-        const eliminatedTribe = tc.eliminated?.tribeMemberships[0]?.tribe
+        const eliminatedTribe = tc.eliminated
+          ? getContestantTribe(tc.eliminated)
+          : null
         const isNoVote = ['medevac', 'quit'].includes(tc.eliminated?.status ?? '')
 
         return (
@@ -72,7 +75,7 @@ export default function TribalTab({ episode }: Props) {
                 </div>
 
                 {sortedTargets.map(({ target, votes }) => {
-                  const targetTribe = target.tribeMemberships[0]?.tribe
+                  const targetTribe = getContestantTribe(target, episode.survivorSeason.episodes, episode.number)
                   const effectiveVotes = votes.filter(v => !v.isRevoked)
                   const revokedVotes = votes.filter(v => v.isRevoked)
 
@@ -89,7 +92,7 @@ export default function TribalTab({ episode }: Props) {
                               src={target.imageUrl}
                               alt={target.survivorPlayer.name}
                               fill
-                              className="object-cover"
+                              className="object-cover object-[center_top]"
                             />
                           ) : (
                             <div
@@ -123,7 +126,7 @@ export default function TribalTab({ episode }: Props) {
                       {/* Who voted for them */}
                       <div className="flex flex-wrap gap-1.5">
                         {votes.map(vote => {
-                          const voterTribe = vote.voter.tribeMemberships[0]?.tribe
+                          const voterTribe = getContestantTribe(vote.voter, episode.survivorSeason.episodes, episode.number)
                           return (
                             <Link
                               href={`/survivor/players/${vote.voter.survivorPlayerId}`}

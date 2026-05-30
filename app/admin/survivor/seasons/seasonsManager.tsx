@@ -214,7 +214,7 @@ export default function SeasonsManager({ seasons }: Props) {
                                     src={season.imageUrl}
                                     alt={season.title}
                                     fill
-                                    className="object-cover"
+                                    className="object-cover object-[center_top]"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent">
                                 {season.isActive && (

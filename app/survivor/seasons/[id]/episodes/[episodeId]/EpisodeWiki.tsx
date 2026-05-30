@@ -186,7 +186,9 @@ export default function EpisodeWiki({ episode }: Props) {
                                         {episode.tribalCouncils
                                             .filter(tc => tc.eliminated)
                                             .map(tc => {
-                                                const tribe = tc.eliminated?.tribeMemberships[0].tribe
+                                                const tribe = tc.eliminated
+                                                    ? getContestantTribe(tc.eliminated)
+                                                    : null
 
                                                 return(
                                                     <div key={tc.id} className="flex justify-between gap-2 mb-1">

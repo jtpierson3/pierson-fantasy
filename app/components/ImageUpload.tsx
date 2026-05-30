@@ -73,7 +73,7 @@ export default function ImageUpload({
               src={value}
               alt="Uploaded image"
               fill
-              className="object-cover"
+              className="object-cover object-[center_top]"
             />
             <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
               <p className="text-xs text-white font-medium">Click to replace</p>

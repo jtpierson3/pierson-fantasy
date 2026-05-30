@@ -25,7 +25,7 @@ async function SeasonDetailContent({ id }: { id: string }) {
                 where: { isRevoked: false }
                 },
                 episodeStats: {
-                include: { event: true }
+                include: { event: true, episode: true }
                 }
             },
             orderBy: { placement: 'asc' }

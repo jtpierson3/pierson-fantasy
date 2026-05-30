@@ -192,7 +192,7 @@ export default function PlayerBioCard({ player, contestants, featuredContestantI
                 src={featuredContestant.imageUrl}
                 alt={player.name}
                 fill
-                className="object-cover"
+                className="object-cover object-[center_top]"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
