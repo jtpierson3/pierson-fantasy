@@ -21,7 +21,7 @@ type SeasonWithDetails = Prisma.SurvivorSeasonGetPayload<{
           include: { challenge: true }
         }
         votesReceived: { where: { isRevoked: false } }
-        episodeStats: { include: { event: true } }
+        episodeStats: { include: { event: true, episode: true } }
       }
     }
     episodes: {
