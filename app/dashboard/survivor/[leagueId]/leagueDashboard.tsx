@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -232,7 +232,7 @@ export default function LeagueDashboard({ league, userId, pastLeagues, activeCon
       setPickSaved(true)
       router.refresh()
     } catch {
-      // Handle error
+      // Handle error please
     } finally {
       setSavingPick(false)
     }
