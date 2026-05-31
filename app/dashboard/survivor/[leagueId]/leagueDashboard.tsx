@@ -214,7 +214,7 @@ export default function LeagueDashboard({ league, userId, pastLeagues, activeCon
   const [savingPick, setSavingPick] = useState(false)
   const [pickSaved, setPickSaved] = useState(false)
 
-  const handleSavePick = useCallback(async () => {
+  const handleSavePick = async () => {
     if (!selectedContestantId || !nextEpisode) return
     setSavingPick(true)
     setPickSaved(false)
@@ -236,7 +236,7 @@ export default function LeagueDashboard({ league, userId, pastLeagues, activeCon
     } finally {
       setSavingPick(false)
     }
-  }, [selectedContestantId, nextEpisode, leagueId, router])
+  }
 
   return (
     <div className="p-6">
