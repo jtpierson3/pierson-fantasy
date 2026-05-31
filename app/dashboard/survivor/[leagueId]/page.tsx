@@ -129,17 +129,57 @@ async function LeagueContent({ leagueId }: { leagueId: string}) {
     const isMember = league.members.some(m => m.user.id === user.id)
     if (!isMember) notFound()
 
+    const nextEpisode = league.survivorSeason.episodes
+        .filter(e => !e.isAired)
+        .sort((a, b) => a.number - b.number)[0] ?? null
+
     // Get past leagues for this user in other seasons
+    const activeContestants = await prisma.contestant.findMany({
+        where: {
+            survivorSeasonId: league.survivorSeason.id,
+            status: { in: ['active', 'finalist']}
+        },
+        include: {
+            survivorPlayer: true,
+            tribeMemberships: {
+                include: { tribe: true },
+                orderBy: { id: 'asc' }
+            }
+        },
+        orderBy: { survivorPlayer: { name: 'asc' } }
+    })
+
+    const currentPick = nextEpisode
+        ? await prisma.eliminationPick.findUnique({
+            where: {
+                userId_survivorLeagueId_episodeId: {
+                    userId: user.id,
+                    survivorLeagueId: leagueId,
+                    episodeId: nextEpisode.id
+                }
+            },
+            include: {
+                contestant: {
+                    include: {
+                        survivorPlayer: true,
+                        tribeMemberships: {
+                            include: { tribe: true },
+                            orderBy: { id: 'asc' }
+                        }
+                    }
+                }
+            }
+        })
+        : null
+
     const pastLeagues = await prisma.survivorLeague.findMany({
         where: {
-            id: { not: leagueId},
+            id: { not: leagueId },
             members: { some: { userId: user.id } }
         },
         include: {
             survivorSeason: true,
-            tribes: { 
-                where: { userId: user.id }
-            }
+            tribes: { where: { userId: user.id } }
         },
         orderBy: { createdAt: 'desc' }
     })
@@ -149,6 +189,9 @@ async function LeagueContent({ leagueId }: { leagueId: string}) {
             league={league as LeagueWithDetails}
             userId={user.id}
             pastLeagues={pastLeagues as PastLeagueWithDetails[]}
+            activeContestants={activeContestants}
+            currentPick={currentPick}
+            leagueId={leagueId}
         />
     )
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -64,6 +65,24 @@ type Season = {
   episodes: Episode[]
 }
 
+type ActiveContestant = Prisma.ContestantGetPayload<{
+  include: {
+    survivorPlayer: true
+    tribeMemberships: { include: { tribe: true } }
+  }
+}>
+
+type CurrentPick = Prisma.EliminationPickGetPayload<{
+  include: {
+    contestant: {
+      include: {
+        survivorPlayer: true
+        tribeMemberships: { include: { tribe: true } }
+      }
+    }
+  }
+}> | null
+
 type Props = {
   league: Prisma.SurvivorLeagueGetPayload<{
     include: {
@@ -107,6 +126,9 @@ type Props = {
         }
     }
   }>[]
+  activeContestants: ActiveContestant[]
+  currentPick: CurrentPick
+  leagueId: string
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -131,7 +153,7 @@ function calculateContestantPoints(contestant: Contestant, airedEpisodeIds: Set<
     .reduce((sum, s) => sum + s.event.points, 0)
 }
 
-export default function LeagueDashboard({ league, userId, pastLeagues }: Props) {
+export default function LeagueDashboard({ league, userId, pastLeagues, activeContestants, currentPick, leagueId }: Props) {
   const router = useRouter()
 
   const airedEpisodes = league.survivorSeason.episodes.filter(e => e.isAired)
@@ -184,6 +206,37 @@ export default function LeagueDashboard({ league, userId, pastLeagues }: Props) 
         c.episodeStats.some(s => s.episode.id === lastEpisode.id)
       )
     : null
+
+  // Vote Outs
+  const [selectedContestantId, setSelectedContestantId] = useState<string>(
+    currentPick?.contestantId ?? ''
+  )
+  const [savingPick, setSavingPick] = useState(false)
+  const [pickSaved, setPickSaved] = useState(false)
+
+  const handleSavePick = useCallback(async () => {
+    if (!selectedContestantId || !nextEpisode) return
+    setSavingPick(true)
+    setPickSaved(false)
+    try {
+      const res = await fetch('/api/survivor/picks/elimination', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          survivorLeagueId: leagueId,
+          episodeId: nextEpisode.id,
+          contestantId: selectedContestantId
+        })
+      })
+      if (!res.ok) throw new Error('Failed to save pick')
+      setPickSaved(true)
+      router.refresh()
+    } catch {
+      // Handle error
+    } finally {
+      setSavingPick(false)
+    }
+  }, [selectedContestantId, nextEpisode, leagueId, router])
 
   return (
     <div className="p-6">
@@ -459,6 +512,69 @@ export default function LeagueDashboard({ league, userId, pastLeagues }: Props) 
                           Finale
                         </span>
                       )}
+
+                      {/* Pick Section */}
+                      <div className="border-t border-gray-100 pt-3">
+                        <p className="text-xs font-medium text-gray-500 mb-2">
+                          {nextEpisode.isFinale ? 'Pick the winner:' : ' Pick who gets voted out next:'}
+                        </p>
+
+                        {currentPick && (
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="relative w-7 h-7 rounded-full overflow-hidden flex-shrink-0">
+                              {currentPick.contestant.imageUrl ? (
+                                <Image 
+                                  src={currentPick.contestant.imageUrl}
+                                  alt={currentPick.contestant.survivorPlayer.name}
+                                  fill
+                                  className="object-cover object-[center_top]"
+                                />
+                              ): (
+                                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                  <span className="text-xs text-gray-500">
+                                    {currentPick.contestant.survivorPlayer.name[0]}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-600">
+                              Current pick: <span className="font-medium text-gray-900">
+                                {currentPick.contestant.survivorPlayer.name}
+                              </span>
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Dropdown */}
+                        <div className="flex gap-2">
+                          <select
+                            value={selectedContestantId}
+                            onChange={e => {
+                              setSelectedContestantId(e.target.value)
+                              setPickSaved(false)
+                            }}
+                            className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600 text-gray-700"
+                          >
+                            <option value="">Select a contestant...</option>
+                            {activeContestants.map(c => {
+                              const tribe = c.tribeMemberships[c.tribeMemberships.length - 1]?.tribe
+                              return (
+                                <option key={c.id} value={c.id}>
+                                  {c.survivorPlayer.name}{tribe ? `(${tribe.name})` : ''}
+                                </option>
+                              )
+                            })}
+                          </select>
+                          <button
+                            onClick={handleSavePick}
+                            disabled={savingPick || !selectedContestantId}
+                            className="px-3 py-1.5 text-xs rounded-lg bg-green-700 text-white hover:bg-green-600 transition-colors disabled:opacity-50 font-medium"
+                          >
+                            {savingPick ? 'Saving...' : pickSaved ? 'Saved!' : 'Save'}
+                          </button>
+                        </div>
+
+                      </div>
                     </div>
                   </div>
                 ) : (
