@@ -97,7 +97,7 @@ type LastEpisodePick = Prisma.EliminationPickGetPayload<{
       include: { survivorPlayer: true}
     }
   }
-}>
+}> | null
 
 type Props = {
   league: Prisma.SurvivorLeagueGetPayload<{
