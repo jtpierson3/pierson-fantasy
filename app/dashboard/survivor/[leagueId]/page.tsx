@@ -184,6 +184,47 @@ async function LeagueContent({ leagueId }: { leagueId: string}) {
         orderBy: { createdAt: 'desc' }
     })
 
+    const lastEpisode = league.survivorSeason.episodes
+        .filter(e => e.isAired)
+        .sort((a,b) => b.number - a.number)[0] ?? null
+
+    const lastEpisodePick = lastEpisode
+        ? await prisma.eliminationPick.findUnique({
+                where: {
+                    userId_survivorLeagueId_episodeId: {
+                        userId: user.id,
+                        survivorLeagueId: leagueId,
+                        episodeId: lastEpisode.id
+                    }
+                },
+                include: {
+                    contestant: {
+                        include: { survivorPlayer: true}
+                    }
+                }
+            })
+        : null
+
+    const eliminationPicks = await prisma.eliminationPick.findMany({
+        where: {
+            userId: user.id
+        }
+    })
+
+    const eliminationPickEvent = await prisma.scoringEvent.findFirst({
+        where: {
+            survivorSeasonId: league.survivorSeason.id,
+            label: 'Correct Elimination Pick'
+        }
+    })
+
+    const winnerPickEvent = await prisma.scoringEvent.findFirst({
+        where: {
+            survivorSeasonId: league.survivorSeason.id,
+            label: 'Correct Winner Pick'
+        }
+    })
+
     return (
         <LeagueDashboard 
             league={league as LeagueWithDetails}
@@ -191,6 +232,10 @@ async function LeagueContent({ leagueId }: { leagueId: string}) {
             pastLeagues={pastLeagues as PastLeagueWithDetails[]}
             activeContestants={activeContestants}
             currentPick={currentPick}
+            lastEpisodePick={lastEpisodePick}
+            eliminationPicks={eliminationPicks}
+            eliminationPickPoints={eliminationPickEvent?.points ?? 0}
+            winnerPickPoints={winnerPickEvent?.points ?? 0}
             leagueId={leagueId}
         />
     )

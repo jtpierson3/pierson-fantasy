@@ -415,6 +415,7 @@ model EliminationPick {
   survivorLeagueId String
   episodeId        String
   contestantId     String
+  isCorrect        Boolean        @default(false)
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   user             User           @relation(fields: [userId], references: [id])

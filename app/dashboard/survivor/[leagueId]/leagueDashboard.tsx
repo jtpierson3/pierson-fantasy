@@ -72,6 +72,14 @@ type ActiveContestant = Prisma.ContestantGetPayload<{
   }
 }>
 
+type EliminationPick = Prisma.EliminationPickGetPayload<{
+  select: {
+    userId: true
+    episodeId: true
+    isCorrect: true
+  }
+}>
+
 type CurrentPick = Prisma.EliminationPickGetPayload<{
   include: {
     contestant: {
@@ -82,6 +90,14 @@ type CurrentPick = Prisma.EliminationPickGetPayload<{
     }
   }
 }> | null
+
+type LastEpisodePick = Prisma.EliminationPickGetPayload<{
+  include: { 
+    contestant: {
+      include: { survivorPlayer: true}
+    }
+  }
+}>
 
 type Props = {
   league: Prisma.SurvivorLeagueGetPayload<{
@@ -128,6 +144,10 @@ type Props = {
   }>[]
   activeContestants: ActiveContestant[]
   currentPick: CurrentPick
+  eliminationPicks: EliminationPick[]
+  lastEpisodePick: LastEpisodePick,
+  eliminationPickPoints: number,
+  winnerPickPoints: number
   leagueId: string
 }
 
@@ -138,13 +158,24 @@ const STATUS_BADGE: Record<string, string> = {
   winner: 'bg-yellow-100 text-yellow-600',
 }
 
-function calculateTribePoints(tribe: Tribe, airedEpisodeIds: Set<string>): number {
-  return (tribe?.players ?? []).reduce((total, pick) => {
+function calculateTribePoints(
+  tribe: Tribe, 
+  airedEpisodeIds: Set<string>, 
+  eliminationPicks: { userId: string; isCorrect: boolean }[],
+  eliminationPickPoints: number
+): number {
+  const statPoints = (tribe?.players ?? []).reduce((total, pick) => {
     const points = pick.contestant.episodeStats
       .filter(s => airedEpisodeIds.has(s.episode.id))
       .reduce((sum, s) => sum + s.event.points, 0)
     return total + points
   }, 0)
+
+  const pickPoints = eliminationPicks
+    .filter(p => p.userId === tribe.userId && p.isCorrect)
+    .length * eliminationPickPoints
+
+  return statPoints + pickPoints
 }
 
 function calculateContestantPoints(contestant: Contestant, airedEpisodeIds: Set<string>): number {
@@ -153,7 +184,7 @@ function calculateContestantPoints(contestant: Contestant, airedEpisodeIds: Set<
     .reduce((sum, s) => sum + s.event.points, 0)
 }
 
-export default function LeagueDashboard({ league, userId, pastLeagues, activeContestants, currentPick, leagueId }: Props) {
+export default function LeagueDashboard({ league, userId, pastLeagues, activeContestants, currentPick, lastEpisodePick, eliminationPicks, eliminationPickPoints, winnerPickPoints, leagueId }: Props) {
   const router = useRouter()
 
   const airedEpisodes = league.survivorSeason.episodes.filter(e => e.isAired)
@@ -170,7 +201,7 @@ export default function LeagueDashboard({ league, userId, pastLeagues, activeCon
   const standings = league.tribes
     .map(tribe => ({
       tribe,
-      points: calculateTribePoints(tribe, airedEpisodeIds),
+      points: calculateTribePoints(tribe, airedEpisodeIds, eliminationPicks, eliminationPickPoints),
     }))
     .sort((a, b) => b.points - a.points)
 
@@ -469,6 +500,24 @@ export default function LeagueDashboard({ league, userId, pastLeagues, activeCon
                     {eliminatedThisEp && (
                       <p className="text-sm text-gray-600">
                         Eliminated: <span className="font-medium text-red-600">{eliminatedThisEp.survivorPlayer.name}</span>
+                      </p>
+                    )}
+                    {lastEpisodePick ? (
+                      <p className="text-sm text-gray-600">
+                        Your pick: 
+                          {lastEpisodePick.isCorrect ? (
+                            <span className="font-medium text-sm text-green-600">
+                              {lastEpisodePick.contestant.survivorPlayer.name} +{eliminationPickPoints}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-red-600">
+                              {lastEpisodePick.contestant.survivorPlayer.name} - Incorrect Pick
+                            </span>
+                          )}
+                      </p>
+                    ) : (
+                      <p className="text-sm trext-gray-600">
+                        You did not pick anyone to be voted out.
                       </p>
                     )}
                   </div>

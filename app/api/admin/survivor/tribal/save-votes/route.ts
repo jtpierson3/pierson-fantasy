@@ -50,6 +50,33 @@ export async function POST(req: Request) {
         where: { contestantId: eliminatedId, isCurrent: true },
         data: { isCurrent: false }
       })
+
+      const tribalCouncil = await prisma.tribalCouncil.findUnique({
+        where: { id: tribalCouncilId },
+        select: { episodeId: true}
+      })
+
+      if (tribalCouncil) {
+        // Mark Correct Picks
+        await prisma.eliminationPick.updateMany({
+          where: {
+            episodeId: tribalCouncil.episodeId,
+            contestantId: eliminatedId,
+          },
+          data: {
+            isCorrect: true
+          }
+        })
+
+        //Mark incorrect Picks
+        await prisma.eliminationPick.updateMany({
+          where: {
+            episodeId: tribalCouncil.episodeId,
+            contestantId: { not: eliminatedId },
+          },
+          data: { isCorrect: false}
+        })
+      }
     }
 
     return NextResponse.json({ success: true })
