@@ -42,6 +42,18 @@ async function MyTribeContent({ leagueId }: { leagueId: string }) {
                                 include: { event: true, episode: true }
                             }
                         }
+                    },
+                    swappedFrom: {
+                        include: {
+                            survivorPlayer: true,
+                            tribeMemberships: {
+                                include: { tribe: true },
+                                orderBy: { id: 'asc' }
+                            },
+                            episodeStats: {
+                                include: { event: true, episode: true }
+                            }
+                        }
                     }
                 }
             }
@@ -60,12 +72,53 @@ async function MyTribeContent({ leagueId }: { leagueId: string }) {
         })).map(e => e.id)
     )
 
+    const mergeEpisode = await prisma.episode.findFirst({
+        where: {
+            survivorSeasonId: league.survivorSeason.id,
+            isMerge: true,
+            isAired: true
+        }
+    })
+
+    const nextEpisodeAfterMerge = mergeEpisode
+        ? await prisma.episode.findFirst({
+            where: {
+                survivorSeasonId: league.survivorSeason.id,
+                number: { gt: mergeEpisode.number },
+                isAired: false
+            },
+            orderBy: { number: 'asc' }
+        })
+        : null
+
+    const swapWindowOpen = !!mergeEpisode && !nextEpisodeAfterMerge?.isAired && !myTribe?.hasUsedMergeSwap
+
+    const activeContestants = swapWindowOpen
+        ? await prisma.contestant.findMany({
+            where: {
+                survivorSeasonId: league.survivorSeason.id,
+                status: { in: ['active', 'finalist']}
+            },
+            include: {
+                survivorPlayer: true,
+                tribeMemberships: {
+                    include: { tribe: true },
+                    orderBy: { id: 'asc' }
+                }
+            },
+            orderBy: { survivorPlayer: { name: 'asc' } }
+        })
+        : []
+
     return (
         <MyTribe 
             leagueId={leagueId}
             tribe={myTribe}
             season={league.survivorSeason}
             airedEpisodeIds={airedEpisodeIds}
+            swapWindowOpen={swapWindowOpen}
+            activeContestants={activeContestants}
+            mergeEpisode={mergeEpisode}
         />
     )
 }

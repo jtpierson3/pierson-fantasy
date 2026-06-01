@@ -22,9 +22,29 @@ type TribeWithPlayers = Prisma.SurvivorFantasyLeagueTribeGetPayload<{
             }
           }
         }
+        swappedFrom: {
+            include: {
+                survivorPlayer: true
+                tribeMembershps: {
+                    include: {
+                        tribe: true
+                    }
+                }
+                episodeStats: {
+                    include: { event: true; episode: true}
+                }
+            }
+        }
       }
     }
   }
+}>
+
+type ActiveContestant = Prisma.ContestantGetPayload<{
+    include: {
+        survivorPlayer: true
+        tribeMemberships: { include: { tribe: true } }
+    }
 }>
 
 type Season = {
@@ -33,11 +53,19 @@ type Season = {
   title: string
 }
 
+type MergeEpisode = {
+    id: string
+    number: number
+} | null
+
 type Props = {
   leagueId: string
   tribe: TribeWithPlayers
   season: Season
   airedEpisodeIds: Set<string>
+  swapWindowOpen: boolean
+  activeContestants: ActiveContestant[]
+  mergeEpisode: MergeEpisode
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -55,20 +83,75 @@ const STATUS_BADGE: Record<string, { label: string; color: string }> = {
   winner: { label: 'Winner', color: 'bg-yellow-100 text-yellow-600' },
 }
 
-export default function MyTribe({ leagueId, tribe, season, airedEpisodeIds }: Props) {
+export default function MyTribe({ 
+    leagueId, tribe, season, airedEpisodeIds, swapWindowOpen, activeContestants, mergeEpisode
+}: Props) {
   const router = useRouter()
   const [tribeName, setTribeName] = useState(tribe.name)
   const [isEditing, setIsEditing] = useState(false)
   const [savingName, setSavingName] = useState(false)
   const [nameError, setNameError] = useState<string | null>(null)
 
+  //Swap state
+  const [showSwap, setShowSwap] = useState(false)
+  const [swapOutId, setSwapOutId] = useState<string>('')
+  const [swapInId, setSwapInId] = useState<string>('')
+  const [savingSwap, setSavingSwap] = useState(false)
+  const [swapError, setSwapError] = useState<string | null>(null) 
+
   const hasPicks = tribe.players.length > 0
 
   const totalPoints = tribe.players.reduce((total, pick) => {
+    const mergeEpisodeNumber = mergeEpisode?.number ?? 0
+
+    if (pick.isSwap) {
+        //New player - only counts after merge Episode
+        const newPoints = pick.contestant.episodeStats
+            .filter(s => airedEpisodeIds.has(s.episode.id) && s.episode.number > mergeEpisodeNumber)
+            .reduce((sum, s) => sum + s.event.points, 0)
+
+        //Old player = only count stats up to and including merge episode
+        const oldPoints = (pick.swappedFrom?.episodeStats ?? [])
+            .filter(s => airedEpisodeIds.has(s.episode.id) && s.episode.number <= mergeEpisodeNumber)
+            .reduce((sum, s) => sum + s.event.points, 0)
+
+        return total + newPoints + oldPoints
+    }
+
     return total + pick.contestant.episodeStats
-      .filter(s => airedEpisodeIds.has(s.episode.id))
-      .reduce((sum, s) => sum + s.event.points, 0)
+        .filter(s => airedEpisodeIds.has(s.episode.id))
+        .reduce((sum, s) => sum + s.event.points, 0)
   }, 0)
+
+  const handleSaveSwap = useCallback(async () => {
+    if (!swapOutId || !swapInId) {
+        setSwapError('Please select both a player to swap out and a player to swap in.')
+        return
+    }
+    setSavingSwap(true)
+    setSwapError(null)
+    try {
+        const res = await fetch('/api/survivor/tribe/swap', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                tribeId: tribe.id,
+                swapOutId,
+                swapInId,
+            })
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error ?? 'Failed to save swap')
+        setShowSwap(false)
+        setSwapOutId('')
+        setSwapInId('')
+        router.refresh()
+    } catch (err) {
+        setSwapError(err instanceof Error ? err.message : 'Failed to save swap')
+    } finally {
+        setSavingSwap(false)
+    }
+  }, [swapOutId, swapInId, tribe.id, router])
 
   const handleSaveName = useCallback(async () => {
     if (!tribeName.trim()) {
@@ -186,83 +269,221 @@ export default function MyTribe({ leagueId, tribe, season, airedEpisodeIds }: Pr
       ) : (
         <>
           {/* 2x3 grid */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-3 gap-4 mb-4">
             {tribe.players.map(pick => {
-              const contestant = pick.contestant
-              const points = contestant.episodeStats
-                .filter(s => airedEpisodeIds.has(s.episode.id))
-                .reduce((sum, s) => sum + s.event.points, 0)
-              const currentTribe = contestant.tribeMemberships[0]?.tribe
-              const isEliminated = contestant.status === 'eliminated'
-              const statusStyle = STATUS_STYLES[contestant.status] ?? 'border-gray-200'
-              const statusBadge = STATUS_BADGE[contestant.status]
+                const contestant = pick.contestant
+                const mergeEpisodeNumber = mergeEpisode?.number ?? 0
 
-              return (
-                <div
-                  key={pick.id}
-                  className={`bg-white border-2 rounded-xl p-4 flex flex-col items-center gap-2 ${statusStyle}`}
-                >
-                  {/* Photo */}
-                  <div className="relative w-20 h-20 rounded-full overflow-hidden">
-                    {contestant.imageUrl ? (
-                      <Image
-                        src={contestant.imageUrl}
-                        alt={contestant.survivorPlayer.name}
-                        fill
-                        className={`object-cover ${isEliminated ? 'grayscale' : ''}`}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                        <span className="text-2xl text-gray-400">
-                          {contestant.survivorPlayer.name[0]}
+                const points = pick.isSwap
+                ? pick.contestant.episodeStats
+                    .filter(s => airedEpisodeIds.has(s.episode.id) && s.episode.number > mergeEpisodeNumber)
+                    .reduce((sum, s) => sum + s.event.points, 0)
+                : contestant.episodeStats
+                    .filter(s => airedEpisodeIds.has(s.episode.id))
+                    .reduce((sum, s) => sum + s.event.points, 0)
+
+                const currentTribe = contestant.tribeMemberships[0]?.tribe
+                const isEliminated = contestant.status === 'eliminated'
+                const statusStyle = STATUS_STYLES[contestant.status] ?? 'border-gray-200'
+                const statusBadge = STATUS_BADGE[contestant.status]
+
+                return (
+                <div key={pick.id} className="flex flex-col gap-2">
+                    {/* Current player card */}
+                    <div className={`bg-white border-2 rounded-xl p-4 flex flex-col items-center gap-2 ${statusStyle}`}>
+                    {/* Swap badge */}
+                    {pick.isSwap && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium w-full text-center">
+                        🔄 Merge swap
                         </span>
-                      </div>
                     )}
-                  </div>
 
-                  {/* Name */}
-                  <p className={`text-sm font-medium text-center leading-tight ${
-                    isEliminated ? 'text-gray-400' : 'text-gray-900'
-                  }`}>
-                    {contestant.survivorPlayer.name}
-                  </p>
-
-                  {/* Tribe */}
-                  {currentTribe && (
-                    <div className="flex items-center gap-1">
-                      <div
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: currentTribe.color }}
-                      />
-                      <p className="text-xs text-gray-400">{currentTribe.name}</p>
+                    {/* Photo */}
+                    <div className="relative w-20 h-20 rounded-full overflow-hidden">
+                        {contestant.imageUrl ? (
+                        <Image
+                            src={contestant.imageUrl}
+                            alt={contestant.survivorPlayer.name}
+                            fill
+                            className={`object-cover object-[center_top] ${isEliminated ? 'grayscale' : ''}`}
+                        />
+                        ) : (
+                        <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                            <span className="text-2xl text-gray-400">
+                            {contestant.survivorPlayer.name[0]}
+                            </span>
+                        </div>
+                        )}
                     </div>
-                  )}
 
-                  {/* Status badge */}
-                  {statusBadge && (
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusBadge.color}`}>
-                      {statusBadge.label}
+                    <p className={`text-sm font-medium text-center leading-tight ${
+                        isEliminated ? 'text-gray-400' : 'text-gray-900'
+                    }`}>
+                        {contestant.survivorPlayer.name}
+                    </p>
+
+                    {currentTribe && (
+                        <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: currentTribe.color }} />
+                        <p className="text-xs text-gray-400">{currentTribe.name}</p>
+                        </div>
+                    )}
+
+                    {statusBadge && (
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusBadge.color}`}>
+                        {statusBadge.label}
+                        </span>
+                    )}
+
+                    <span className={`text-sm font-medium ${isEliminated ? 'text-gray-400' : 'text-green-700'}`}>
+                        {points} pts
                     </span>
-                  )}
+                    </div>
 
-                  {/* Points */}
-                  <span className={`text-sm font-medium ${
-                    isEliminated ? 'text-gray-400' : 'text-green-700'
-                  }`}>
-                    {points} pts
-                  </span>
+                    {/* Swapped out player */}
+                    {pick.isSwap && pick.swappedFrom && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 flex flex-col items-center gap-1.5 opacity-60">
+                        <span className="text-xs text-gray-400 font-medium">Replaced</span>
+                        <div className="relative w-10 h-10 rounded-full overflow-hidden">
+                        {pick.swappedFrom.imageUrl ? (
+                            <Image
+                            src={pick.swappedFrom.imageUrl}
+                            alt={pick.swappedFrom.survivorPlayer.name}
+                            fill
+                            className="object-cover object-[center_top] grayscale"
+                            />
+                        ) : (
+                            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                            <span className="text-sm text-gray-400">
+                                {pick.swappedFrom.survivorPlayer.name[0]}
+                            </span>
+                            </div>
+                        )}
+                        </div>
+                        <p className="text-xs text-gray-400 text-center leading-tight">
+                        {pick.swappedFrom.survivorPlayer.name}
+                        </p>
+                        <span className="text-xs text-gray-400">
+                        {pick.swappedFrom.episodeStats
+                            .filter(s => airedEpisodeIds.has(s.episode.id) && s.episode.number <= (mergeEpisode?.number ?? 0))
+                            .reduce((sum, s) => sum + s.event.points, 0)} pts
+                        </span>
+                    </div>
+                    )}
                 </div>
-              )
+                )
             })}
-          </div>
+            </div>
 
-          {/* Edit picks button */}
-          <button
-            onClick={() => router.push(`/dashboard/survivor/${leagueId}/tribe/pick`)}
-            className="w-full py-2.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors font-medium"
-          >
-            Edit Picks
-          </button>
+            {/* Swap window banner */}
+            {swapWindowOpen && !showSwap && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                <div className="flex items-center justify-between">
+                <div>
+                    <p className="text-sm font-medium text-blue-900">Merge swap available!</p>
+                    <p className="text-xs text-blue-600 mt-0.5">
+                    You can swap one player before the next episode airs.
+                    </p>
+                </div>
+                <button
+                    onClick={() => setShowSwap(true)}
+                    className="px-4 py-2 text-sm rounded-lg bg-blue-700 text-white hover:bg-blue-600 transition-colors font-medium"
+                >
+                    Use swap
+                </button>
+                </div>
+            </div>
+            )}
+
+            {/* Swap UI */}
+            {showSwap && (
+            <div className="bg-white border border-blue-200 rounded-xl p-4 mb-4">
+                <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-medium text-gray-900">🔄 Merge Swap</h3>
+                <button
+                    onClick={() => {
+                    setShowSwap(false)
+                    setSwapOutId('')
+                    setSwapInId('')
+                    setSwapError(null)
+                    }}
+                    className="text-xs text-gray-400 hover:text-gray-600"
+                >
+                    Cancel
+                </button>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                {/* Swap out */}
+                <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                    Remove from tribe
+                    </label>
+                    <select
+                    value={swapOutId}
+                    onChange={e => setSwapOutId(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-700"
+                    >
+                    <option value="">Select a player to remove...</option>
+                    {tribe.players.map(pick => (
+                        <option key={pick.id} value={pick.contestant.id}>
+                        {pick.contestant.survivorPlayer.name}
+                        {pick.contestant.status !== 'active' ? ` (${pick.contestant.status})` : ''}
+                        </option>
+                    ))}
+                    </select>
+                </div>
+
+                {/* Swap in */}
+                <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1.5">
+                    Add to tribe
+                    </label>
+                    <select
+                    value={swapInId}
+                    onChange={e => setSwapInId(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-700"
+                    >
+                    <option value="">Select a player to add...</option>
+                    {activeContestants
+                        .filter(c => !tribe.players.some(p => p.contestantId === c.id))
+                        .map(c => {
+                        const tribe2 = c.tribeMemberships[c.tribeMemberships.length - 1]?.tribe
+                        return (
+                            <option key={c.id} value={c.id}>
+                            {c.survivorPlayer.name}{tribe2 ? ` (${tribe2.name})` : ''}
+                            </option>
+                        )
+                        })}
+                    </select>
+                </div>
+
+                {swapError && (
+                    <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                    {swapError}
+                    </p>
+                )}
+
+                <button
+                    onClick={handleSaveSwap}
+                    disabled={savingSwap || !swapOutId || !swapInId}
+                    className="w-full py-2.5 text-sm rounded-lg bg-blue-700 text-white hover:bg-blue-600 transition-colors disabled:opacity-50 font-medium"
+                >
+                    {savingSwap ? 'Saving...' : 'Confirm swap'}
+                </button>
+                </div>
+            </div>
+            )}
+
+            {/* Edit picks button */}
+            {!tribe.hasUsedMergeSwap && (
+            <button
+                onClick={() => router.push(`/dashboard/survivor/${leagueId}/tribe/pick`)}
+                className="w-full py-2.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors font-medium"
+            >
+                Edit Picks
+            </button>
+            )}
         </>
       )}
     </div>

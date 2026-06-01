@@ -516,7 +516,7 @@ export default function LeagueDashboard({ league, userId, pastLeagues, activeCon
                           )}
                       </p>
                     ) : (
-                      <p className="text-sm trext-gray-600">
+                      <p className="text-sm text-gray-900">
                         You did not pick anyone to be voted out.
                       </p>
                     )}

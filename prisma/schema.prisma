@@ -242,6 +242,7 @@ model Contestant {
   episodeStats      EpisodeStat[]
   survivorPicks     SurvivorPicks[]
   eliminationPicks  EliminationPick[]
+  swappedOutPicks   SurvivorPicks[]   @relation("SwappedFrom")
   sitOuts           SitOut[]
   challengeResults  ChallengeResult[] @relation("IndividualWinner")
   challengeTeams    ChallengeTeam[]   @relation("ChallengeTeamContestants")
@@ -326,13 +327,15 @@ model SurvivorFantasyLeagueTribe {
 }
 
 model SurvivorPicks {
-  id           String                     @id @default(cuid())
-  tribe        SurvivorFantasyLeagueTribe @relation(fields: [tribeId], references: [id])
-  tribeId      String
-  contestant   Contestant                 @relation(fields: [contestantId], references: [id])
-  contestantId String
-  isSwap       Boolean                    @default(false)
-  addedAt      DateTime                   @default(now())
+  id            String                     @id @default(cuid())
+  tribe         SurvivorFantasyLeagueTribe @relation(fields: [tribeId], references: [id])
+  tribeId       String
+  contestant    Contestant                 @relation(fields: [contestantId], references: [id])
+  contestantId  String
+  isSwap        Boolean                    @default(false)
+  swappedFromId String?
+  swappedFrom   Contestant?                @relation("SwappedFrom", fields: [swappedFromId], references: [id])
+  addedAt       DateTime                   @default(now())
 
   @@unique([tribeId, contestantId])
 }
