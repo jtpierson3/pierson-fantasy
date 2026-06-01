@@ -91,7 +91,7 @@ async function MyTribeContent({ leagueId }: { leagueId: string }) {
         })
         : null
 
-    const swapWindowOpen = !!mergeEpisode && !nextEpisodeAfterMerge?.isAired && !myTribe?.hasUsedMergeSwap
+    const swapWindowOpen = !!mergeEpisode && !nextEpisodeAfterMerge?.isAired
 
     const activeContestants = swapWindowOpen
         ? await prisma.contestant.findMany({

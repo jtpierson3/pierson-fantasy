@@ -25,7 +25,7 @@ type TribeWithPlayers = Prisma.SurvivorFantasyLeagueTribeGetPayload<{
         swappedFrom: {
             include: {
                 survivorPlayer: true
-                tribeMembershps: {
+                tribeMemberships: {
                     include: {
                         tribe: true
                     }
@@ -380,16 +380,35 @@ export default function MyTribe({
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
                 <div className="flex items-center justify-between">
                 <div>
-                    <p className="text-sm font-medium text-blue-900">Merge swap available!</p>
-                    <p className="text-xs text-blue-600 mt-0.5">
-                    You can swap one player before the next episode airs.
-                    </p>
+                    {tribe.hasUsedMergeSwap ? (
+                        <>
+                            <p className="text-sm font-medium text-blue-900">Merge Swap Used</p>
+                            <p className="text-xs text-blue-600 mt-0.5">
+                                You can edit your swap until the next episode airs.
+                            </p>
+                        </>
+                    ) : (
+                        <>
+                            <p className="text-sm font-medium text-blue-900">Merge swap available!</p>
+                            <p className="text-xs text-blue-600 mt-0.5">
+                                You can swap one player before the next episode airs.
+                            </p>
+                        </>
+                    )}                 
                 </div>
                 <button
-                    onClick={() => setShowSwap(true)}
+                    onClick={() => {
+                        // Pre-populate if editing existing swap
+                        const existingSwap = tribe.players.find(p => p.isSwap)
+                        if (existingSwap) {
+                            setSwapOutId(existingSwap.swappedFromId ?? '')
+                            setSwapInId(existingSwap.contestantId)
+                        }
+                        setShowSwap(true)
+                    }}
                     className="px-4 py-2 text-sm rounded-lg bg-blue-700 text-white hover:bg-blue-600 transition-colors font-medium"
                 >
-                    Use swap
+                    {tribe.hasUsedMergeSwap ? 'Edit Swap' : 'Use Swap'}
                 </button>
                 </div>
             </div>
@@ -425,7 +444,9 @@ export default function MyTribe({
                     className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-700"
                     >
                     <option value="">Select a player to remove...</option>
-                    {tribe.players.map(pick => (
+                    {tribe.players
+                        .filter(pick => !pick.isSwap)
+                        .map(pick => (
                         <option key={pick.id} value={pick.contestant.id}>
                         {pick.contestant.survivorPlayer.name}
                         {pick.contestant.status !== 'active' ? ` (${pick.contestant.status})` : ''}

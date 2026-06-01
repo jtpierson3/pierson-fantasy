@@ -33,10 +33,7 @@ export async function POST(req: Request) {
 
         if (!tribe) return NextResponse.json({ error: 'Tribe not found' }, { status: 404 })
 
-        // Check swap hasn't been used
-        if (tribe.hasUsedMergeSwap) {
-            return NextResponse.json({ error: 'Merge swap already used' }, { status: 400 })
-        }
+        if (tribe.hasUsedMergeSwap) return NextResponse.json({ error: 'Tribe swap already used'}, { status: 400})
 
         // Check Merge has Happened
         const mergeEpisode = tribe.survivorLeague.survivorSeason.episodes
@@ -75,13 +72,10 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Contestant not available' }, { status: 400 })
         }
 
-        // Perform the swap in a transaction
         await prisma.$transaction([
-            //Remove old pick
             prisma.survivorPicks.delete({
                 where: { id: swapOutPick.id }
             }),
-            //Add new pick with swap flag
             prisma.survivorPicks.create({
                 data: {
                     tribeId,
@@ -90,12 +84,11 @@ export async function POST(req: Request) {
                     swappedFromId: swapOutId,
                 }
             }),
-            // Mark swap as used
             prisma.survivorFantasyLeagueTribe.update({
                 where: { id: tribeId },
                 data: { hasUsedMergeSwap: true }
             })
-        ])
+        ])  
 
         return NextResponse.json({ success: true })
     } catch (err) {
