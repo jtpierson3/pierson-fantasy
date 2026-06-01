@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     const { leagueId } = await req.json()
 
     // Delete in order
-    await prisma.eliminationPick.deleteMany({ where: { surivovrLeagueId: leagueId } })
+    await prisma.eliminationPick.deleteMany({ where: { survivorLeagueId: leagueId } })
 
     const tribes = await prisma.survivorFantasyLeagueTribe.findMany({
       where: { survivorLeagueId: leagueId }
