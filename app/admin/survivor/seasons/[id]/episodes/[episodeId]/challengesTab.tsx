@@ -395,7 +395,7 @@ export default function ChallengesTab({ episode, contestants }: Props) {
                         <div className="flex flex-wrap gap-1">
                           {team.contestants.map(c => (
                             <span key={c.id} className="text-xs text-gray-400">
-                              {c.survivorPlayer.name.split(' ')[0]}
+                              {c.survivorPlayer.name.split(' ')[0] + ' ' + c.survivorPlayer.name.split(' ')[1][0]}
                             </span>
                           ))}
                         </div>
@@ -534,7 +534,7 @@ export default function ChallengesTab({ episode, contestants }: Props) {
                             : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
                         }`}
                       >
-                        {c.survivorPlayer.name.split(' ')[0]}
+                        {c.survivorPlayer.name.split(' ')[0] + ' ' + c.survivorPlayer.name.split(' ')[1][0]}
                       </button>
                     ))}
                   </div>
@@ -621,7 +621,7 @@ export default function ChallengesTab({ episode, contestants }: Props) {
                           key={s.id}
                           className="text-xs px-2 py-0.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-300"
                         >
-                          {s.contestant.survivorPlayer.name.split(' ')[0]}
+                          {s.contestant.survivorPlayer.name.split(' ')[0] + ' ' + s.contestant.survivorPlayer.name.split(' ')[1][0]}
                         </span>
                       ))}
                     </div>
@@ -651,7 +651,7 @@ export default function ChallengesTab({ episode, contestants }: Props) {
                             : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
                         }`}
                       >
-                        {c.survivorPlayer.name.split(' ')[0]}
+                        {c.survivorPlayer.name.split(' ')[0] + ' ' + c.survivorPlayer.name.split(' ')[1][0]}
                       </button>
                     )
                   })}
@@ -824,7 +824,7 @@ export default function ChallengesTab({ episode, contestants }: Props) {
                                 }`}
                                 style={team.contestantIds.includes(c.id) ? { borderColor: team.color } : {}}
                               >
-                                {c.survivorPlayer.name.split(' ')[0]}
+                                {c.survivorPlayer.name.split(' ')[0] + ' ' + c.survivorPlayer.name.split(' ')[1][0]}
                               </button>
                             ))}
                           </div>
