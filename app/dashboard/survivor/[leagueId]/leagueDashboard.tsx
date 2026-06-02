@@ -307,10 +307,19 @@ export default function LeagueDashboard({ league, userId, pastLeagues, activeCon
               return (
                 <div
                   key={tribe.id}
-                  onClick={() => router.push(`/dashboard/survivor/${league.id}/tribe/${tribe.id}`)}
+                  onClick={() => {
+                    if (airedEpisodes.length === 0) return
+                    if (tribe.userId === userId) {
+                      router.push(`/dashboard/survivor/${league.id}/tribe`)
+                    } else {
+                      router.push(`/dashboard/survivor/${league.id}/tribe/${tribe.id}`)
+                    }
+                  }}
                   className={`grid grid-cols-12 gap-2 px-4 py-3 border-b border-gray-50 last:border-0 text-sm transition-colors ${
-                    isMe ? 'bg-green-50' : 'hover:bg-gray-50'
-                  }`}
+                      airedEpisodes.length === 0
+                        ? 'cursor-default'
+                        : 'cursor-pointer'
+                    }  ${isMe ? 'bg-green-50' : 'hover:bg-gray-50'}`}
                 >
                   <div className={`col-span-1 font-medium ${
                     index === 0 ? 'text-yellow-500' :
@@ -325,7 +334,7 @@ export default function LeagueDashboard({ league, userId, pastLeagues, activeCon
                       {tribe.name}
                     </p>
                     {/* Contestant Circle */}
-                    {tribe.players.length > 0 && (
+                    {(tribe.players.length > 0 && airedEpisodeIds.size > 0) ? (
                       <div className="flex -space-x-1.5 mt-1">
                         {tribe.players.slice(0,6).map(pick => (
                           <div
@@ -360,6 +369,8 @@ export default function LeagueDashboard({ league, userId, pastLeagues, activeCon
                         ))}
 
                       </div>
+                    ): (
+                      <></>
                     )}
                   </div>
                   <div className={`col-span-4 text-right font-medium ${isMe ? 'text-green-800' : 'text-gray-900'}`}>
