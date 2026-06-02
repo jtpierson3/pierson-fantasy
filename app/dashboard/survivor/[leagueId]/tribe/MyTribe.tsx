@@ -497,7 +497,7 @@ export default function MyTribe({
             )}
 
             {/* Edit picks button */}
-            {!tribe.hasUsedMergeSwap && (
+            {airedEpisodeIds.size < 1 && (
             <button
                 onClick={() => router.push(`/dashboard/survivor/${leagueId}/tribe/pick`)}
                 className="w-full py-2.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors font-medium"

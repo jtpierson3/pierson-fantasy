@@ -477,7 +477,9 @@ export default function ChallengesTab({ episode, contestants }: Props) {
                     <div className="mb-3">
                       <p className="text-xs text-gray-400 mb-2">Who participated?</p>
                       <div className="flex flex-wrap gap-1.5">
-                        {contestants.map(c => {
+                        {contestants
+                        .filter(c => c.status==='active')
+                        .map(c => {
                           const isSelected = challengeParticipants[challenge.id]?.has(c.id) ?? false
                           return (
                             <button
@@ -631,7 +633,9 @@ export default function ChallengesTab({ episode, contestants }: Props) {
                 {/* Sit-Out Picker */}
                 <p className="text-xs text-gray-400 mb-2">Set Sit-Outs</p>
                 <div className="flex flex-wrap gap-1.5 mb-3">
-                  {contestants.map(c => {
+                  {contestants
+                  .filter(c => c.status === 'active')
+                  .map(c => {
                     const isSelected = selectedSitOutIds[challenge.id]?.has(c.id) ?? false
 
                     return(
@@ -813,7 +817,9 @@ export default function ChallengesTab({ episode, contestants }: Props) {
                           </div>
                           <p className="text-xs text-gray-400 mb-2">Members:</p>
                           <div className="flex flex-wrap gap-1.5">
-                            {contestants.map(c => (
+                            {contestants
+                            .filter(c => c.status === 'active')
+                            .map(c => (
                               <button
                                 key={c.id}
                                 onClick={() => toggleContestantInTeam(teamIndex, c.id)}
