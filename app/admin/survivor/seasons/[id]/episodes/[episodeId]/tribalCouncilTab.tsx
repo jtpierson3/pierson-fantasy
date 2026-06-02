@@ -39,6 +39,7 @@ type TribalCouncil = {
 
 type Episode = {
   id: string
+  isFinale: boolean
   tribalCouncils: TribalCouncil[]
 }
 
@@ -539,7 +540,14 @@ export default function TribalCouncilTab({ episode, contestants }: Props) {
 
                     <div className="flex flex-col gap-2 mb-4">
                       {contestants
-                        .filter(c => c.status !== 'eliminated')
+                        .filter(c => {
+                          if (tribal.isFinalTribal) {
+                            return c.status === 'jury'
+                          } 
+                          else {
+                            return c.status === 'active'
+                          } 
+                        })
                         .map(contestant => {
                           const hasNoVote = noVotePlayers.has(contestant.id)
                           const hasExtraVote = extraVotePlayers.has(contestant.id)
@@ -571,7 +579,7 @@ export default function TribalCouncilTab({ episode, contestants }: Props) {
                                     >
                                       <option value="">— did not vote —</option>
                                       {contestants
-                                        .filter(c => c.id !== contestant.id)
+                                        .filter(c => (c.id !== contestant.id && c.status === 'active'))
                                         .map(c => (
                                           <option key={c.id} value={c.id}>
                                             {c.survivorPlayer.name}
