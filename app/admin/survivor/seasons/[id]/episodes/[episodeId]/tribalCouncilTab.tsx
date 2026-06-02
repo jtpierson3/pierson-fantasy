@@ -561,7 +561,7 @@ export default function TribalCouncilTab({ episode, contestants }: Props) {
                               hasNoVote ? 'opacity-40' : ''
                             }`}>
                               <span className="text-sm text-gray-300 w-28 truncate flex-shrink-0 pt-1.5">
-                                {contestant.survivorPlayer.name.split(' ')[0]}
+                                {contestant.survivorPlayer.name.split(' ')[0] + ' ' + contestant.survivorPlayer.name.split(' ')[1][0] + '.'}
                                 {hasExtraVote && <span className="text-purple-400 ml-1">+1</span>}
                                 {hasNoVote && <span className="text-gray-500 ml-1">(no vote)</span>}
                               </span>
