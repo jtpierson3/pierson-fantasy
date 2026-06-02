@@ -331,8 +331,9 @@ export default function LeagueDashboard({ league, userId, pastLeagues, activeCon
                   </div>
                   <div className="col-span-7 min-w-0">
                     <p className={`font-medium truncate ${isMe ? 'text-green-800' : 'text-gray-900'}`}>
-                      {tribe.name}
+                      {tribe.name}  
                     </p>
+                    <span className="text-xs text-gray-600">{tribe.user.username}</span>
                     {/* Contestant Circle */}
                     {(tribe.players.length > 0 && airedEpisodeIds.size > 0) ? (
                       <div className="flex -space-x-1.5 mt-1">
