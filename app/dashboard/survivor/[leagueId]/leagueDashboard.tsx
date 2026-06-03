@@ -99,6 +99,15 @@ type LastEpisodePick = Prisma.EliminationPickGetPayload<{
   }
 }> | null
 
+type SeasonContestant = Prisma.ContestantGetPayload<{
+  include: {
+    survivorPlayer: true
+    episodeStats: {
+      include: { event: true; episode: true }
+    }
+  }
+}>
+
 type Props = {
   league: Prisma.SurvivorLeagueGetPayload<{
     include: {
@@ -122,26 +131,7 @@ type Props = {
     }
   }>
   userId: string
-  pastLeagues: Prisma.SurvivorLeagueGetPayload<{
-    include: {
-        survivorSeason: { include: { episodes: true } }
-        tribes: {
-            include: {
-                user: true
-                players: {
-                    include: {
-                        contestant: {
-                            include: {
-                                survivorPlayer: true
-                                episodeStats: { include: { event: true; episode: true } }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-  }>[]
+  seasonContestants: SeasonContestant[]
   activeContestants: ActiveContestant[]
   currentPick: CurrentPick
   eliminationPicks: EliminationPick[]
@@ -184,7 +174,7 @@ function calculateContestantPoints(contestant: Contestant, airedEpisodeIds: Set<
     .reduce((sum, s) => sum + s.event.points, 0)
 }
 
-export default function LeagueDashboard({ league, userId, pastLeagues, activeContestants, currentPick, lastEpisodePick, eliminationPicks, eliminationPickPoints, winnerPickPoints, leagueId }: Props) {
+export default function LeagueDashboard({ league, userId, seasonContestants, activeContestants, currentPick, lastEpisodePick, eliminationPicks, eliminationPickPoints, winnerPickPoints, leagueId }: Props) {
   const router = useRouter()
 
   const airedEpisodes = league.survivorSeason.episodes.filter(e => e.isAired)
@@ -232,11 +222,11 @@ export default function LeagueDashboard({ league, userId, pastLeagues, activeCon
 
   // Eliminated this last episode
   const eliminatedThisEp = lastEpisode
-    ? allContestants.find(c =>
-        c.status === 'eliminated' &&
-        c.episodeStats.some(s => s.episode.id === lastEpisode.id)
+    ? seasonContestants.filter(c =>
+        ['eliminated', 'jury', 'medevac', 'quit'].includes(c.status) &&
+        c.eliminatedEpisode === lastEpisode.number
       )
-    : null
+    : []
 
   // Vote Outs
   const [selectedContestantId, setSelectedContestantId] = useState<string>(
@@ -509,9 +499,17 @@ export default function LeagueDashboard({ league, userId, pastLeagues, activeCon
                         <span className="text-green-700">+{lastEpTopScorer.points} pts</span>
                       </p>
                     )}
-                    {eliminatedThisEp && (
+                    {eliminatedThisEp.length > 0 && (
                       <p className="text-sm text-gray-600">
-                        Eliminated: <span className="font-medium text-red-600">{eliminatedThisEp.survivorPlayer.name}</span>
+                        Eliminated: { ' ' }
+                        {eliminatedThisEp.map((c, i) => (
+                          <span key={c.id}>
+                            <span className="font-medium text-gray-900">
+                              {c.survivorPlayer.name}
+                            </span>
+                            {(i < eliminatedThisEp.length -1) && ', '}
+                          </span>
+                        ))}
                       </p>
                     )}
                     {lastEpisodePick ? (

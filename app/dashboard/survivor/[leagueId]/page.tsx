@@ -225,11 +225,21 @@ async function LeagueContent({ leagueId }: { leagueId: string}) {
         }
     })
 
+    const seasonContestants = await prisma.contestant.findMany({
+        where: { survivorSeasonId: league.survivorSeason.id },
+        include: {
+            survivorPlayer: true,
+            episodeStats: {
+                include: { event: true, episode: true }
+            }
+        }
+    })
+
     return (
         <LeagueDashboard 
             league={league as LeagueWithDetails}
             userId={user.id}
-            pastLeagues={pastLeagues as PastLeagueWithDetails[]}
+            seasonContestants={seasonContestants}
             activeContestants={activeContestants}
             currentPick={currentPick}
             lastEpisodePick={lastEpisodePick}
