@@ -397,14 +397,19 @@ export default function MyTribe({
                     )}                 
                 </div>
                 <button
-                    onClick={() => {
-                        // Pre-populate if editing existing swap
-                        const existingSwap = tribe.players.find(p => p.isSwap)
-                        if (existingSwap) {
-                            setSwapOutId(existingSwap.swappedFromId ?? '')
-                            setSwapInId(existingSwap.contestantId)
+                    onClick={async () => {
+                        if (tribe.hasUsedMergeSwap) {
+                            const res = await fetch('/api/survivor/tribe/swap/reset', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ tribeId: tribe.id })
+                            })
+                            if (res.ok) {
+                                router.refresh()
+                            }
+                        } else {
+                            setShowSwap(true)
                         }
-                        setShowSwap(true)
                     }}
                     className="px-4 py-2 text-sm rounded-lg bg-blue-700 text-white hover:bg-blue-600 transition-colors font-medium"
                 >
