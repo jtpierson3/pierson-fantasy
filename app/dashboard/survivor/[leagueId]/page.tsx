@@ -27,32 +27,10 @@ type LeagueWithDetails = Prisma.SurvivorLeagueGetPayload<{
                                 }
                             }
                         }
-                    }
-                }
-            }
-        }
-    }
-}>
-
-type PastLeagueWithDetails = Prisma.SurvivorLeagueGetPayload<{
-    include: {
-        survivorSeason: {
-            include: { episodes: true }
-        }
-        tribes: {
-            include: {
-                user: true
-                players: {
-                    include: {
-                        contestant: {
+                        swappedFrom: {
                             include: {
                                 survivorPlayer: true
-                                episodeStats: {
-                                    include: {
-                                        event: true
-                                        episode: true
-                                    }
-                                }
+                                episodeStats: { include: { event: true; episode: true } }
                             }
                         }
                     }
@@ -112,6 +90,17 @@ async function LeagueContent({ leagueId }: { leagueId: string}) {
                                         include: {
                                             event: true,
                                             episode: true,
+                                        }
+                                    }
+                                }
+                            },
+                            swappedFrom: {
+                                include: {
+                                    survivorPlayer: true,
+                                    episodeStats: {
+                                        include: {
+                                            event: true,
+                                            episode: true
                                         }
                                     }
                                 }
@@ -235,6 +224,9 @@ async function LeagueContent({ leagueId }: { leagueId: string}) {
         }
     })
 
+    const mergeEpisode = league.survivorSeason.episodes
+        .find(e => e.isMerge && e.isAired) ?? null
+
     return (
         <LeagueDashboard 
             league={league as LeagueWithDetails}
@@ -247,6 +239,7 @@ async function LeagueContent({ leagueId }: { leagueId: string}) {
             eliminationPickPoints={eliminationPickEvent?.points ?? 0}
             winnerPickPoints={winnerPickEvent?.points ?? 0}
             leagueId={leagueId}
+            mergeEpisode={mergeEpisode}
         />
     )
 }

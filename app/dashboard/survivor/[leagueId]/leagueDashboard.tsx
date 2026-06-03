@@ -40,7 +40,11 @@ type Contestant = {
 
 type SurvivorPick = {
   id: string
+  constestantId: string
+  isSwap: boolean
+  swappedFromId: string | null
   contestant: Contestant
+  swappedFrom: Contestant | null
 }
 
 type User = {
@@ -108,6 +112,11 @@ type SeasonContestant = Prisma.ContestantGetPayload<{
   }
 }>
 
+type MergeEpisode = {
+  id: string
+  number: number
+} | null
+
 type Props = {
   league: Prisma.SurvivorLeagueGetPayload<{
     include: {
@@ -124,6 +133,12 @@ type Props = {
                                 episodeStats: { include: { event: true; episode: true } }
                             }
                         }
+                        swappedFrom: {
+                          include: {
+                            survivorPlayer: true
+                            episodeStats: { include: { event: true; episode: true } }
+                          }
+                        }
                     }
                 }
             }
@@ -139,6 +154,7 @@ type Props = {
   eliminationPickPoints: number,
   winnerPickPoints: number
   leagueId: string
+  mergeEpisode: MergeEpisode
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -149,16 +165,30 @@ const STATUS_BADGE: Record<string, string> = {
 }
 
 function calculateTribePoints(
-  tribe: Tribe, 
+  tribe: Props['league']['tribes'][0], 
   airedEpisodeIds: Set<string>, 
   eliminationPicks: { userId: string; isCorrect: boolean }[],
-  eliminationPickPoints: number
+  eliminationPickPoints: number,
+  mergeEpisodeNumber: number
 ): number {
   const statPoints = (tribe?.players ?? []).reduce((total, pick) => {
-    const points = pick.contestant.episodeStats
+    if (pick.isSwap) {
+      // New player - only count stats after merge episode
+      const newPoints = pick.contestant.episodeStats
+        .filter(s => airedEpisodeIds.has(s.episode.id) && s.episode.number > mergeEpisodeNumber)
+        .reduce((sum, s) => sum + s.event.points, 0)
+
+      // Old player - only count stats up to and including merge episode
+      const oldPoints = (pick.swappedFrom?.episodeStats ?? [])
+        .filter(s => airedEpisodeIds.has(s.episode.id) && s.episode.number <= mergeEpisodeNumber)
+        .reduce((sum, s) => sum + s.event.points, 0)
+
+      return total + newPoints + oldPoints
+    }
+
+    return total + pick.contestant.episodeStats
       .filter(s => airedEpisodeIds.has(s.episode.id))
       .reduce((sum, s) => sum + s.event.points, 0)
-    return total + points
   }, 0)
 
   const pickPoints = eliminationPicks
@@ -174,7 +204,7 @@ function calculateContestantPoints(contestant: Contestant, airedEpisodeIds: Set<
     .reduce((sum, s) => sum + s.event.points, 0)
 }
 
-export default function LeagueDashboard({ league, userId, seasonContestants, activeContestants, currentPick, lastEpisodePick, eliminationPicks, eliminationPickPoints, winnerPickPoints, leagueId }: Props) {
+export default function LeagueDashboard({ league, userId, seasonContestants, activeContestants, currentPick, lastEpisodePick, eliminationPicks, eliminationPickPoints, winnerPickPoints, leagueId, mergeEpisode }: Props) {
   const router = useRouter()
 
   const airedEpisodes = league.survivorSeason.episodes.filter(e => e.isAired)
@@ -187,11 +217,13 @@ export default function LeagueDashboard({ league, userId, seasonContestants, act
   const myTribe = league.tribes.find(t => t.userId === userId)
   const hasPicks = (myTribe?.players.length ?? 0) > 0
 
+  const mergeEpisodeNumber = mergeEpisode?.number ?? 0
+
   // Calculate standings
   const standings = league.tribes
     .map(tribe => ({
       tribe,
-      points: calculateTribePoints(tribe, airedEpisodeIds, eliminationPicks, eliminationPickPoints),
+      points: calculateTribePoints(tribe, airedEpisodeIds, eliminationPicks, eliminationPickPoints, mergeEpisodeNumber),
     }))
     .sort((a, b) => b.points - a.points)
 
