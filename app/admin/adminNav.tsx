@@ -20,6 +20,7 @@ const SITE_ADMIN_LINKS = [
     { href: '/admin/sync', label: 'Sync'},
     { href: '/admin/survivor', label: 'Survivor', },
     { href: '/admin/survivor/leagues', label: 'Survivor Leagues' },
+    { href: '/admin/survivor/challenges', label: 'Challenge Library' }
 ]
 
 export default function AdminNav({ isSiteAdmin, username}: Props) {

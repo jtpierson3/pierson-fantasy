@@ -39,6 +39,12 @@ type SitOut = {
   }
 }
 
+type SurvivorChallenge = {
+  id: string
+  name: string
+  description: string | null
+}
+
 type Challenge = {
   id: string
   name: string | null
@@ -47,6 +53,7 @@ type Challenge = {
   isFiremaking: boolean
   reward: string | null
   order: number
+  survivorChallengeId: string | null
   teams: ChallengeTeam[]
   sitOuts: SitOut[]
   results: {
@@ -69,6 +76,7 @@ type Episode = {
 type Props = {
   episode: Episode
   contestants: Contestant[]
+  challengeLibrary: SurvivorChallenge[]
 }
 
 type ChallengeForm = {
@@ -78,6 +86,7 @@ type ChallengeForm = {
   isIndividual: boolean
   isFiremaking: boolean
   reward: string
+  survivorChallengeId: string
 }
 
 const emptyForm: ChallengeForm = {
@@ -86,7 +95,8 @@ const emptyForm: ChallengeForm = {
   isIndividual: true,
   isFiremaking: false,
   reward: '',
-  order: ''
+  order: '',
+  survivorChallengeId: ''
 }
 
 type CustomTeam = {
@@ -121,7 +131,7 @@ type ConfirmDialog = {
   onConfirm: () => void
 } | null
 
-export default function ChallengesTab({ episode, contestants }: Props) {
+export default function ChallengesTab({ episode, contestants, challengeLibrary }: Props) {
   const router = useRouter()
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm] = useState<ChallengeForm>(emptyForm)
@@ -186,6 +196,7 @@ export default function ChallengesTab({ episode, contestants }: Props) {
         isFiremaking: boolean
         reward: string | null
         order: number
+        survivorChallengeId: string | null
         tribeIds?: string[]
         customTeams?: CustomTeam[]
       }
@@ -195,6 +206,7 @@ export default function ChallengesTab({ episode, contestants }: Props) {
         ...form,
         reward: form.reward || null,
         order: form.order ? parseInt(form.order) : episode.challenges.length + 1,
+        survivorChallengeId: form.survivorChallengeId || null
       }
 
       if (!form.isIndividual) {
@@ -250,8 +262,6 @@ export default function ChallengesTab({ episode, contestants }: Props) {
       }
     })
   }, [router])
-
-
 
   const handleSaveWinners = useCallback(async (challenge: Challenge) => {
     setSavingWinners(challenge.id)
@@ -360,6 +370,31 @@ export default function ChallengesTab({ episode, contestants }: Props) {
                 {challenge.reward && (
                   <p className="text-xs text-gray-400">🎁 {challenge.reward}</p>
                 )}
+                
+                {/* Library Link */}
+                <div className="px-4 py-2 border-b border-gray-800 flex items-center gap-2">
+                  <span className="text-xs text-gray-500">Library:</span>
+                  <select
+                    defaultValue={challenge.survivorChallengeId ?? ''}
+                    onChange={async e => {
+                      await fetch('api/admin/survivor/challenges/link', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          challengeId: challenge.id,
+                          survivorChallengeId: e.target.value || null
+                        })
+                      })
+                      router.refresh()
+                    }}
+                    className="flex-1 px-2 py-1 text-xs bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-green-600"
+                  >
+                    <option value="">- not linked -</option>
+                    {challengeLibrary.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <button
                 onClick={() => handleDeleteChallenge(challenge)}
@@ -699,6 +734,29 @@ export default function ChallengesTab({ episode, contestants }: Props) {
                   placeholder="e.g. Muddy Waters"
                   className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-green-600"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                  Challenge Library <span className="text-gray-600">(optional)</span>
+                </label>
+                <select
+                  value={form.survivorChallengeId}
+                  onChange={e => {
+                    const selected = challengeLibrary.find(c => c.id === e.target.value)
+                    setForm(prev => ({
+                      ...prev,
+                      survivorChallengeId: e.target.value,
+                      name: selected?.name ?? prev.name
+                    }))
+                  }}
+                  className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-1 focus:ring-green-600"
+                >
+                  <option value="">- notlinked -</option>
+                  {challengeLibrary.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
               </div>
 
               <div>

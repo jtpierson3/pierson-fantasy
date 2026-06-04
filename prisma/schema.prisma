@@ -340,20 +340,29 @@ model SurvivorPicks {
   @@unique([tribeId, contestantId])
 }
 
+model SurvivorChallenge {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  description String?
+  challenges  Challenge[]
+}
+
 model Challenge {
-  id           String            @id @default(cuid())
-  episode      Episode           @relation(fields: [episodeId], references: [id])
-  episodeId    String
-  name         String?
-  type         String
-  isIndividual Boolean           @default(true)
-  isFiremaking Boolean           @default(false)
-  reward       String?
-  teams        ChallengeTeam[]
-  results      ChallengeResult[]
-  sitOuts      SitOut[]
-  order        Int               @default(0)
-  createdAt    DateTime          @default(now())
+  id                  String             @id @default(cuid())
+  episode             Episode            @relation(fields: [episodeId], references: [id])
+  episodeId           String
+  name                String?
+  survivorChallengeId String?
+  survivorChallenge   SurvivorChallenge? @relation(fields: [survivorChallengeId], references: [id])
+  type                String
+  isIndividual        Boolean            @default(true)
+  isFiremaking        Boolean            @default(false)
+  reward              String?
+  teams               ChallengeTeam[]
+  results             ChallengeResult[]
+  sitOuts             SitOut[]
+  order               Int                @default(0)
+  createdAt           DateTime           @default(now())
 }
 
 model ChallengeTeam {

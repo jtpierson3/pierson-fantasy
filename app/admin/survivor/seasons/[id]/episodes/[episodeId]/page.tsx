@@ -149,11 +149,16 @@ export default async function EpisodeDetailPage({
     orderBy: [{ category: 'asc' }, { label: 'asc' }]
   })
 
+  const ChallengeLibrary = await prisma.survivorChallenge.findMany({
+    orderBy: { name: 'asc' }
+  })
+
   return (
     <EpisodeDetail
       episode={episode as EpisodeWithDetails}
       contestants={contestants as ContestantWithDetails[]}
       scoringEvents={scoringEvents}
+      challengeLibrary={ChallengeLibrary}
     />
   )
 }

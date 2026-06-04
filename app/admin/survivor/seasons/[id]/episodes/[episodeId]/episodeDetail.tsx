@@ -90,6 +90,7 @@ type Episode = {
     isFiremaking: boolean
     reward: string | null
     order: number
+    survivorChallengeId: string | null
     sitOuts: {
       id: string
       contestantId: string
@@ -117,13 +118,20 @@ type Episode = {
   tribalCouncils: TribalCouncil[]
 }
 
+type SurvivorChallenge = {
+  id: string
+  name: string
+  description: string | null
+}
+
 type Props = {
   episode: Episode
   contestants: Contestant[]
   scoringEvents: ScoringEvent[]
+  challengeLibrary: SurvivorChallenge[]
 }
 
-export default function EpisodeDetail({ episode, contestants, scoringEvents }: Props) {
+export default function EpisodeDetail({ episode, contestants, scoringEvents, challengeLibrary }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('overview')
 
   return (
@@ -204,7 +212,7 @@ export default function EpisodeDetail({ episode, contestants, scoringEvents }: P
         />
       )}
       {activeTab === 'challenges' && (
-        <ChallengesTab episode={episode} contestants={contestants} />
+        <ChallengesTab episode={episode} contestants={contestants} challengeLibrary={challengeLibrary} />
       )}
       {activeTab === 'tribal' && (
         <TribalCouncilTab episode={episode} contestants={contestants} />
@@ -220,7 +228,11 @@ export default function EpisodeDetail({ episode, contestants, scoringEvents }: P
   )
 }
 
-function EpisodeOverview({ episode }: Props) {
+function EpisodeOverview({ episode, contestants, scoringEvents }: {
+  episode: Episode
+  contestants: Contestant[]
+  scoringEvents: ScoringEvent[]
+}) {
   const totalStats = episode.stats.length
   const contestantsScored = new Set(episode.stats.map(s => s.contestantId)).size
 

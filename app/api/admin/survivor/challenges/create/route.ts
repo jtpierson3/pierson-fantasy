@@ -12,7 +12,7 @@ export async function POST(req: Request) {
 
     const {
       episodeId, name, type, isIndividual, isFiremaking,
-      reward, order, tribeIds, customTeams
+      reward, order, survivorChallengeId, tribeIds, customTeams
     } = await req.json()
 
     const challenge = await prisma.challenge.create({
@@ -24,6 +24,7 @@ export async function POST(req: Request) {
         isFiremaking,
         reward: reward || null,
         order,
+        survivorChallengeId: survivorChallengeId || null
       }
     })
 
