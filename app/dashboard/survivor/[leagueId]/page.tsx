@@ -161,18 +161,6 @@ async function LeagueContent({ leagueId }: { leagueId: string}) {
         })
         : null
 
-    const pastLeagues = await prisma.survivorLeague.findMany({
-        where: {
-            id: { not: leagueId },
-            members: { some: { userId: user.id } }
-        },
-        include: {
-            survivorSeason: true,
-            tribes: { where: { userId: user.id } }
-        },
-        orderBy: { createdAt: 'desc' }
-    })
-
     const lastEpisode = league.survivorSeason.episodes
         .filter(e => e.isAired)
         .sort((a,b) => b.number - a.number)[0] ?? null
@@ -200,10 +188,12 @@ async function LeagueContent({ leagueId }: { leagueId: string}) {
         }
     })
 
+    const nextEpisodeIsFinale = nextEpisode?.isFinale ?? false
+
     const eliminationPickEvent = await prisma.scoringEvent.findFirst({
         where: {
             survivorSeasonId: league.survivorSeason.id,
-            label: 'Correct Elimination Pick'
+            label: nextEpisodeIsFinale ? 'Correct Winner Pick' : 'Correct Elimination Pick'
         }
     })
 

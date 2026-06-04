@@ -545,18 +545,28 @@ export default function LeagueDashboard({ league, userId, seasonContestants, act
                       </p>
                     )}
                     {lastEpisodePick ? (
-                      <p className="text-sm text-gray-600">
-                        Your pick: 
-                          {lastEpisodePick.isCorrect ? (
-                            <span className="font-medium text-sm text-green-600">
-                              {lastEpisodePick.contestant.survivorPlayer.name} +{eliminationPickPoints}
-                            </span>
-                          ) : (
-                            <span className="text-sm text-red-600">
-                              {lastEpisodePick.contestant.survivorPlayer.name} - Incorrect Pick
-                            </span>
+                      <div>
+                          {lastEpisodePick && (
+                            <p className="text-sm text-gray-600">
+                              Your pick: <span className="font-medium text-gray-900">
+                                {lastEpisodePick.contestant.survivorPlayer.name}
+                              </span>
+                              {' '}
+                              {lastEpisodePick.isCorrect ? (
+                                <span className="text-green-600 font-medium">
+                                  {lastEpisode.isFinale 
+                                    ? `Correct Winner! +${winnerPickPoints}`
+                                    : `Correct! +${eliminationPickPoints}`
+                                  }
+                                </span>
+                              ) : (
+                                <span className="text-red-500">
+                                  x {lastEpisode?.isFinale ? 'Incorrect Winner' : 'Incorrect'}
+                                </span>
+                              )}
+                            </p>
                           )}
-                      </p>
+                      </div>
                     ) : (
                       <p className="text-sm text-gray-900">
                         You did not pick anyone to be voted out.

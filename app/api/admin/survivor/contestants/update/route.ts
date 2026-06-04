@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     // Update Player Bio and BirthDate if provided
     const contestant = await prisma.contestant.findUnique({
       where: {id: contestantId},
-      select: {survivorPlayerId: true}
+      select: {survivorPlayerId: true, survivorSeasonId: true}
     })
 
     if (contestant && (newPlayerBio !== undefined || newPlayerBirthDate !== undefined)) {
@@ -79,6 +79,36 @@ export async function POST(req: Request) {
             episodeId: swapEpisodeId || null
           }
         })
+      }
+
+      //Set Winner Elimination Pick
+      if (status === 'winner') {
+        //find the finale episode for this season
+        const finaleEp = await prisma.episode.findFirst({
+          where: {
+            survivorSeasonId: contestant?.survivorSeasonId,
+            isFinale: true,
+            isAired: true,
+          }
+        })
+
+        if (finaleEp) {
+          await prisma.eliminationPick.updateMany({
+            where: {
+              episodeId: finaleEp.id,
+              contestantId: contestantId,
+            },
+            data: { isCorrect: true }
+          })
+
+          await prisma.eliminationPick.updateMany({
+            where: {
+              episodeId: finaleEp.id,
+              contestantId: { not: contestantId }
+            },
+            data: {isCorrect: false}
+          })
+        }
       }
       
     }

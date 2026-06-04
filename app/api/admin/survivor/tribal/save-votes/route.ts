@@ -53,29 +53,68 @@ export async function POST(req: Request) {
 
       const tribalCouncil = await prisma.tribalCouncil.findUnique({
         where: { id: tribalCouncilId },
-        select: { episodeId: true}
+        select: { 
+          episodeId: true, 
+          episode: { 
+            select: {
+              isFinale: true,
+              survivorSeasonId: true
+            }
+          }
+        }
       })
 
       if (tribalCouncil) {
-        // Mark Correct Picks
-        await prisma.eliminationPick.updateMany({
-          where: {
-            episodeId: tribalCouncil.episodeId,
-            contestantId: eliminatedId,
-          },
-          data: {
-            isCorrect: true
-          }
-        })
+        if (tribalCouncil.episode.isFinale) {
+          // For finale - correct pick is the winner
+            const winner = await prisma.contestant.findFirst({
+              where: {
+                survivorSeasonId: tribalCouncil.episode.survivorSeasonId,
+                status: 'winner'
+              }
+            })
 
-        //Mark incorrect Picks
-        await prisma.eliminationPick.updateMany({
-          where: {
-            episodeId: tribalCouncil.episodeId,
-            contestantId: { not: eliminatedId },
-          },
-          data: { isCorrect: false}
-        })
+            if (winner) {
+              await prisma.eliminationPick.updateMany({
+                where: {
+                  episodeId: tribalCouncil.episodeId,
+                  contestantId: winner.id,
+                },
+                data: { isCorrect: true }
+              })
+
+              await prisma.eliminationPick.updateMany({
+                where: {
+                  episodeId: tribalCouncil.episodeId,
+                  contestantId: { not: winner.id },
+                },
+                data: { isCorrect: false }
+              })
+            } else {
+              // REgular episode - correct pick is eliminated contestant
+              await prisma.eliminationPick.updateMany({
+                where: {
+                  episodeId: tribalCouncil.episodeId,
+                  contestantId: eliminatedId,
+                },
+                data: {
+                  isCorrect: true
+                }
+              })
+
+              //Mark incorrect Picks
+              await prisma.eliminationPick.updateMany({
+                where: {
+                  episodeId: tribalCouncil.episodeId,
+                  contestantId: { not: eliminatedId },
+                },
+                data: { isCorrect: false}
+              })
+
+            }
+        }
+
+        
       }
     }
 
