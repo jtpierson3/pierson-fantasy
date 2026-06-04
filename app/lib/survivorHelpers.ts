@@ -3,6 +3,8 @@ export type EpisodeRef = {
     number: number
 }
 
+const inactiveStatuses = ['eliminated', 'jury', 'medevac', 'quit', 'finalist', 'winner']
+
 export function getContestantTribe(
     contestant: {
         status: string
@@ -12,7 +14,7 @@ export function getContestantTribe(
     atEpisodeNumber?: number
 ) {
     if (episodes && atEpisodeNumber) {
-        const validMemberships = [...contestant.tribeMemberships]
+        const validMemberships = contestant.tribeMemberships
             .filter(tm => {
                 if (!tm.episodeId) return true //starting tribe, always included.
                 const epNum = episodes.find(e => e.id === tm.episodeId)?.number ?? 0
@@ -21,7 +23,7 @@ export function getContestantTribe(
         return validMemberships[validMemberships.length - 1]?.tribe ?? null
     }
 
-    if (['eliminated', 'jury', 'medevac', 'quit'].includes(contestant.status)) {
+    if (inactiveStatuses.includes(contestant.status)) {
         // Eliminated - use last membership
         return contestant.tribeMemberships[contestant.tribeMemberships.length - 1]?.tribe ?? null
     }
