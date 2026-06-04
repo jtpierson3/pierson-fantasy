@@ -44,7 +44,11 @@ type ChallengeWithHistory = Prisma.SurvivorChallengeGetPayload<{
             }
           }
         }
-        survivorChallenge: {}
+        survivorChallenge: {
+            include: {
+                challenges: true
+            }
+        }
       }
     }
   }
@@ -152,7 +156,7 @@ export default function ChallengeWiki({ challenge }: Props) {
       {challenge.challenges.length === 0 && (
         <div className="bg-white border border-gray-100 rounded-xl p-8 text-center">
           <p className="text-sm text-gray-400">
-            This challenge hasn't been linked to any episodes yet.
+            This challenge has not been linked to any episodes yet.
           </p>
         </div>
       )}

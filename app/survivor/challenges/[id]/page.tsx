@@ -60,7 +60,11 @@ async function ChallengeWikiContent({ id }: { id: string }) {
               }
             }
           },
-          survivorChallenge: {}
+          survivorChallenge: {
+            include: {
+                challenges: true
+            }
+          }
         },
         orderBy: { episode: { survivorSeason: { number: 'asc' } } }
       }
