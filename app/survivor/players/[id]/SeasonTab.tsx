@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { PlayerWithDetails, ContestantWithDetails } from './types'
+import Link from 'next/link'
 
 type Props = {
   contestant: ContestantWithDetails
@@ -28,6 +29,7 @@ export default function SeasonTab({ contestant, player }: Props) {
       episodeNumber: r.challenge.episode.number,
       challengeName: r.challenge.name,
       challengeType: r.challenge.type,
+      survivorChallengeId: r.challenge.survivorChallengeId ?? null,
       result: r.placement === 1 ? 'Won' : 'Lost',
       sitOut: false,
     })),
@@ -35,6 +37,7 @@ export default function SeasonTab({ contestant, player }: Props) {
       episodeNumber: s.challenge.episode.number,
       challengeName: s.challenge.name,
       challengeType: s.challenge.type,
+      survivorChallengeId: s.challenge.survivorChallengeId ?? null,
       result: '—',
       sitOut: true,
     })),
@@ -161,7 +164,18 @@ export default function SeasonTab({ contestant, player }: Props) {
                 {allChallenges.map((c, i) => (
                   <tr key={i} className="border-b border-gray-50 last:border-0">
                     <td className="px-3 py-2 text-gray-600">{c.episodeNumber}</td>
-                    <td className="px-3 py-2 text-gray-600">{c.challengeName ?? '—'}</td>
+                    <td className="px-3 py-2 text-gray-600">
+                      {c.survivorChallengeId ? (
+                        <Link
+                          href={`/survivor/`}
+                          className="text-green-700 hover:text-green-800 transition-colors"
+                        >
+                          {c.challengeName ?? '-'}
+                        </Link>
+                      ) : (
+                        c.challengeName ?? '-'
+                      )}
+                    </td>
                     <td className="px-3 py-2 text-gray-600 capitalize">{c.challengeType}</td>
                     <td className="px-3 py-2">
                       {c.sitOut ? (

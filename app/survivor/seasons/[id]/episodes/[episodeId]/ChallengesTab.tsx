@@ -40,7 +40,15 @@ export default function ChallengesTab({ episode }: Props) {
                   🔥 Firemaking
                 </span>
               )}
-              {challenge.name && (
+              {challenge.survivorChallenge ?
+              (
+                <Link
+                  href={`/survivor/challenges/${challenge.survivorChallenge.id}`}
+                  className="text-sm font-medium text-gray-900 hover:text-green-700 transition-colors"
+                >
+                  {challenge.name}
+                </Link>  
+              ) : (
                 <p className="text-sm font-medium text-gray-900">{challenge.name}</p>
               )}
               {challenge.reward && (

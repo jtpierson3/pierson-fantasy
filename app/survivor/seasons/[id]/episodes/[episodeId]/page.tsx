@@ -41,6 +41,7 @@ async function EpisodeWikiContent({
       },
       challenges: {
         include: {
+          survivorChallenge: true,
           sitOuts: {
             include: {
               contestant: {

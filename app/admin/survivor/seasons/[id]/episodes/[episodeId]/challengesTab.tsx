@@ -377,7 +377,7 @@ export default function ChallengesTab({ episode, contestants, challengeLibrary }
                   <select
                     defaultValue={challenge.survivorChallengeId ?? ''}
                     onChange={async e => {
-                      await fetch('api/admin/survivor/challenges/link', {
+                      await fetch('/api/admin/survivor/challenges/link', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({

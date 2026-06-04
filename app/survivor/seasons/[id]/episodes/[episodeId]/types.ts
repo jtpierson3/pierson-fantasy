@@ -24,6 +24,7 @@ export type EpisodeWithDetails = Prisma.EpisodeGetPayload<{
     }
     challenges: {
       include: {
+        survivorChallenge: true
         sitOuts: {
           include: {
             contestant: {

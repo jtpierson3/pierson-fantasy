@@ -21,7 +21,8 @@ async function PlayerWikiContent({ id }: { id: string }) {
                         include: {
                             challenge: {
                                 include: {
-                                    episode: true
+                                    episode: true,
+                                    survivorChallenge: true
                                 }
                             }
                         }
@@ -30,7 +31,7 @@ async function PlayerWikiContent({ id }: { id: string }) {
                         include: {
                             challenge: {
                                 include: {
-                                    episode: true
+                                    episode: true,
                                 }
                             }
                         }

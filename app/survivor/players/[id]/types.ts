@@ -8,7 +8,7 @@ export type PlayerWithDetails = Prisma.SurvivorPlayerGetPayload<{
                 tribeMemberships: { include: { tribe: true } }
                 challengeResults: {
                     include: {
-                        challenge: { include: { episode: true } }
+                        challenge: { include: { episode: true, survivorChallenge: true } }
                     }
                 }
                 sitOuts: {
