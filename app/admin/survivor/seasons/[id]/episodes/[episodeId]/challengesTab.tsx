@@ -251,6 +251,8 @@ export default function ChallengesTab({ episode, contestants }: Props) {
     })
   }, [router])
 
+
+
   const handleSaveWinners = useCallback(async (challenge: Challenge) => {
     setSavingWinners(challenge.id)
     try {
@@ -286,7 +288,7 @@ export default function ChallengesTab({ episode, contestants }: Props) {
     } finally {
       setSavingWinners(null)
     }
-  }, [selectedWinnerIds, selectedWinnerTeamId, useAllParticipants, challengeParticipants, router])
+  }, [selectedWinnerIds, selectedWinnerTeamId, selectedRunnerUpTeamId, useAllParticipants, challengeParticipants, router])
 
   const toggleTribe = (tribeId: string) => {
     setSelectedTribeIds(prev =>

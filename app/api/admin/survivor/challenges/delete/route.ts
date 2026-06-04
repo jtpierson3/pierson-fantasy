@@ -12,6 +12,7 @@ export async function POST(req: Request) {
 
     const { challengeId } = await req.json()
 
+    await prisma.sitOut.deleteMany({ where: { challengeId }})
     await prisma.challengeResult.deleteMany({ where: { challengeId } })
     await prisma.challengeTeam.deleteMany({ where: { challengeId } })
     await prisma.challenge.delete({ where: { id: challengeId } })
