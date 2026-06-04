@@ -313,7 +313,7 @@ export default function SeasonSummaryTab({ episodes, contestants, seasonId }: Pr
                   <td className="px-3 py-2">
                     <div className="flex flex-col gap-0.5">
                       {exiledStats.map(stat => {
-                        const tribe = getContestantTribe(stat.contestant)
+                        const tribe = getContestantTribe(stat.contestant, episodes, episode.number)
                         return (
                           <Link
                             href={`/survivor/players/${stat.contestant.survivorPlayerId}`}
@@ -332,7 +332,7 @@ export default function SeasonSummaryTab({ episodes, contestants, seasonId }: Pr
                   <td className="px-3 py-2">
                     <div className="flex flex-col gap-0.5">
                       {journeyStats.map(stat => {
-                        const tribe = getContestantTribe(stat.contestant)
+                        const tribe = getContestantTribe(stat.contestant, episodes, episode.number)
                         return (
                           <Link
                             href={`/survivor/players/${stat.contestant.survivorPlayerId}`}
