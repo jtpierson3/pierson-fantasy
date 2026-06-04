@@ -258,6 +258,19 @@ export default function SeasonSummaryTab({ episodes, contestants, seasonId }: Pr
                         .sort((a, b) => a.order - b.order)
                         .map(challenge => {
                             const winners = getChallengeWinners(challenge)
+                            const runnerUps = challenge.results
+                                .filter(r => r.placement === 2)
+                                .map(w => {
+                                    if (w.contestant) {
+                                        const tribe = getContestantTribe(w.contestant, episodes, episode.number)
+                                        return { name: w.contestant.survivorPlayer.name.split(' ')[0], tribe}
+                                    }
+                                    if (w.team) {
+                                        return { name: w.team.name ?? 'Team', tribe: { color: w.team.color ?? '#6b7280', name: w.team.name ?? 'Team' } }
+                                    }
+                                })
+                                .filter(Boolean)
+
                             const label = challenge.type === 'reward'
                             ? 'Reward'
                             : challenge.type === 'immunity'
@@ -280,6 +293,15 @@ export default function SeasonSummaryTab({ episodes, contestants, seasonId }: Pr
                                 ) : (
                                     <span className="text-gray-400 text-xs">—</span>
                                 )}
+                                {runnerUps && runnerUps.length > 0 && runnerUps.map((w, i) => w && (
+                                    <span
+                                        key={i}
+                                        className="px-1.5 py-0.5 rounded text-white text-xs font-medium opacity-60"
+                                        style={{ backgroundColor: w.tribe?.color ?? '#6b7280'}}
+                                    >
+                                        {w.name} - Second Place
+                                    </span>
+                                ))}
                             </div>
                             )
                         })
