@@ -46,12 +46,6 @@ export default function StoryTab({ episode }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
-      {episode.description && (
-        <div>
-          <h3 className="text-sm font-medium text-gray-900 mb-2">Episode Summary</h3>
-          <p className="text-sm text-gray-600 leading-relaxed">{episode.description}</p>
-        </div>
-      )}
 
       {days.length > 0 && (
         <div className="flex flex-col gap-6">

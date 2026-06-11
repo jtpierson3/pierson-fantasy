@@ -110,6 +110,31 @@ async function MyTribeContent({ leagueId }: { leagueId: string }) {
         })
         : []
 
+    const eliminationPicks = await prisma.eliminationPick.findMany({
+        where: {
+            userId: myTribe.userId,
+            survivorLeagueId: leagueId
+        },
+        include: {
+            contestant: {
+                include: { survivorPlayer: true }
+            },
+            episode: true
+        }
+    })
+
+    const eliminationPickEvent = await prisma.scoringEvent.findFirst({
+        where: {
+            survivorSeasonId: league.survivorSeason.id,
+            label: 'Correct Elimination Pick'
+        }
+    })
+
+    const episodes = await prisma.episode.findMany({
+        where: { survivorSeasonId: league.survivorSeason.id },
+        orderBy: { number: 'asc' }
+    })
+
     return (
         <MyTribe 
             leagueId={leagueId}
@@ -119,6 +144,9 @@ async function MyTribeContent({ leagueId }: { leagueId: string }) {
             swapWindowOpen={swapWindowOpen}
             activeContestants={activeContestants}
             mergeEpisode={mergeEpisode}
+            eliminationPicks={eliminationPicks}
+            eliminationPickPoints={eliminationPickEvent?.points ?? 0}
+            episodes={episodes}
         />
     )
 }

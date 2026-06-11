@@ -492,99 +492,103 @@ export default function LeagueDashboard({ league, userId, seasonContestants, act
 
           {/* Last Episode */}
           {lastEpisode ? (
-            <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-100">
-                <h2 className="text-sm font-medium text-gray-900">
-                  {lastEpisode ? `Last Episode — Ep ${lastEpisode.number}` : 'Next Episode'}
-                </h2>
-              </div>
-              <div className="p-4">
-                {lastEpisode ? (
-                  <div className="flex flex-col gap-2">
-                    <Link
-                      href={`/survivor/seasons/${lastEpisode.survivorSeasonId}/episodes/${lastEpisode.id}`}
-                      className="text-sm font-medium text-gray-900 hover:text-green-700 transition-colors"
-                    >
-                      {lastEpisode.name}
-                    </Link>
-                    <div className="flex gap-2 flex-wrap">
-                      {lastEpisode.isMerge && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">
-                          Merge episode
-                        </span>
+            <Link 
+              href={`/survivor/seasons/${league.survivorSeason.id}/episodes/${lastEpisode.id}`}
+              className="hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <h2 className="text-sm font-medium text-gray-900">
+                    {lastEpisode ? `Last Episode — Ep ${lastEpisode.number}` : 'Next Episode'}
+                  </h2>
+                </div>
+                <div className="p-4">
+                  {lastEpisode ? (
+                    <div className="flex flex-col gap-2">
+                      <p
+                        className="text-sm font-medium text-gray-900"
+                      >
+                        {lastEpisode.name}
+                      </p>
+                      <div className="flex gap-2 flex-wrap">
+                        {lastEpisode.isMerge && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">
+                            Merge episode
+                          </span>
+                        )}
+                        {lastEpisode.isFinale && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-600">
+                            Finale
+                          </span>
+                        )}
+                      </div>
+                      {hasPicks && (
+                        <p className="text-sm text-gray-600">
+                          Your tribe scored <span className="font-medium text-green-700">+{lastEpisodeMyPoints} pts</span>
+                        </p>
                       )}
-                      {lastEpisode.isFinale && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-600">
-                          Finale
-                        </span>
+                      {lastEpTopScorer && lastEpTopScorer.points > 0 && (
+                        <p className="text-sm text-gray-600">
+                          Top scorer: <span className="font-medium text-gray-900">{lastEpTopScorer.name}</span>
+                          {' '}
+                          <span className="text-green-700">+{lastEpTopScorer.points} pts</span>
+                        </p>
+                      )}
+                      {eliminatedThisEp.length > 0 && (
+                        <p className="text-sm text-gray-600">
+                          Eliminated: { ' ' }
+                          {eliminatedThisEp.map((c, i) => (
+                            <span key={c.id}>
+                              <span className="font-medium text-gray-900">
+                                {c.survivorPlayer.name}
+                              </span>
+                              {(i < eliminatedThisEp.length -1) && ', '}
+                            </span>
+                          ))}
+                        </p>
+                      )}
+                      {lastEpisodePick ? (
+                        <div>
+                            {lastEpisodePick && (
+                              <p className="text-sm text-gray-600">
+                                Your pick: <span className="font-medium text-gray-900">
+                                  {lastEpisodePick.contestant.survivorPlayer.name}
+                                </span>
+                                {' '}
+                                {lastEpisodePick.isCorrect ? (
+                                  <span className="text-green-600 font-medium">
+                                    {lastEpisode.isFinale 
+                                      ? `Correct Winner! +${winnerPickPoints}`
+                                      : `Correct! +${eliminationPickPoints}`
+                                    }
+                                  </span>
+                                ) : (
+                                  <span className="text-red-500">
+                                    x {lastEpisode?.isFinale ? 'Incorrect Winner' : 'Incorrect'}
+                                  </span>
+                                )}
+                              </p>
+                            )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-900">
+                          You did not pick anyone to be voted out.
+                        </p>
                       )}
                     </div>
-                    {hasPicks && (
-                      <p className="text-sm text-gray-600">
-                        Your tribe scored <span className="font-medium text-green-700">+{lastEpisodeMyPoints} pts</span>
+                  ) : nextEpisode ? (
+                    <div>
+                      <p className="text-sm text-gray-500">No episodes have aired yet</p>
+                      <p className="text-sm text-gray-900 mt-1">
+                        Next: <span className="font-medium">Ep {nextEpisode.number} · {nextEpisode.name}</span>
                       </p>
-                    )}
-                    {lastEpTopScorer && lastEpTopScorer.points > 0 && (
-                      <p className="text-sm text-gray-600">
-                        Top scorer: <span className="font-medium text-gray-900">{lastEpTopScorer.name}</span>
-                        {' '}
-                        <span className="text-green-700">+{lastEpTopScorer.points} pts</span>
-                      </p>
-                    )}
-                    {eliminatedThisEp.length > 0 && (
-                      <p className="text-sm text-gray-600">
-                        Eliminated: { ' ' }
-                        {eliminatedThisEp.map((c, i) => (
-                          <span key={c.id}>
-                            <span className="font-medium text-gray-900">
-                              {c.survivorPlayer.name}
-                            </span>
-                            {(i < eliminatedThisEp.length -1) && ', '}
-                          </span>
-                        ))}
-                      </p>
-                    )}
-                    {lastEpisodePick ? (
-                      <div>
-                          {lastEpisodePick && (
-                            <p className="text-sm text-gray-600">
-                              Your pick: <span className="font-medium text-gray-900">
-                                {lastEpisodePick.contestant.survivorPlayer.name}
-                              </span>
-                              {' '}
-                              {lastEpisodePick.isCorrect ? (
-                                <span className="text-green-600 font-medium">
-                                  {lastEpisode.isFinale 
-                                    ? `Correct Winner! +${winnerPickPoints}`
-                                    : `Correct! +${eliminationPickPoints}`
-                                  }
-                                </span>
-                              ) : (
-                                <span className="text-red-500">
-                                  x {lastEpisode?.isFinale ? 'Incorrect Winner' : 'Incorrect'}
-                                </span>
-                              )}
-                            </p>
-                          )}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-900">
-                        You did not pick anyone to be voted out.
-                      </p>
-                    )}
-                  </div>
-                ) : nextEpisode ? (
-                  <div>
-                    <p className="text-sm text-gray-500">No episodes have aired yet</p>
-                    <p className="text-sm text-gray-900 mt-1">
-                      Next: <span className="font-medium">Ep {nextEpisode.number} · {nextEpisode.name}</span>
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-400">No episodes scheduled</p>
-                )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-400">No episodes scheduled</p>
+                  )}
+                </div>
               </div>
-            </div>
+            </Link>
           ) : (
             <div></div>
           )}

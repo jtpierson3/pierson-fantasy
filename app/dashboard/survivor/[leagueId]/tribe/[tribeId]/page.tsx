@@ -49,7 +49,20 @@ async function ViewTribeContent({
                 include: { event: true, episode: true }
               }
             }
-          }
+          },
+          swappedFrom: {
+            include: {
+                survivorPlayer: true,
+                tribeMemberships: {
+                    include: {
+                        tribe: true
+                    }
+                },
+                episodeStats: {
+                    include: { event: true, episode: true}
+                }
+            }
+        }
         }
       }
     }
@@ -67,6 +80,39 @@ async function ViewTribeContent({
     })).map(e => e.id)
   )
 
+  const eliminationPicks = await prisma.eliminationPick.findMany({
+    where: {
+      userId: tribe.userId,
+      survivorLeagueId: leagueId
+    },
+    include: {
+      contestant: {
+        include: { survivorPlayer: true }
+      },
+      episode: true
+    }
+  })
+
+  const eliminationPickEvent = await prisma.scoringEvent.findFirst({
+    where: {
+      survivorSeasonId: league.survivorSeason.id,
+      label: 'Correct Elimination Pick'
+    }
+  })
+
+  const episodes = await prisma.episode.findMany({
+    where: { survivorSeasonId: league.survivorSeason.id },
+    orderBy: { number: 'asc' }
+  })
+
+  const mergeEpisode = await prisma.episode.findFirst({
+    where: {
+      survivorSeasonId: league.survivorSeason.id,
+      isMerge: true,
+      isAired: true
+    }
+  })
+
   return (
     <ViewTribe
       leagueId={leagueId}
@@ -74,6 +120,10 @@ async function ViewTribeContent({
       season={league.survivorSeason}
       airedEpisodeIds={airedEpisodeIds}
       isMyTribe={tribe.userId === user.id}
+      mergeEpisode={mergeEpisode}
+      eliminationPicks={eliminationPicks}
+      eliminationPickPoints={eliminationPickEvent?.points ?? 0}
+      episodes={episodes}
     />
   )
 }

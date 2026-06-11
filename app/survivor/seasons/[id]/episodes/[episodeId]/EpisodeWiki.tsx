@@ -6,8 +6,7 @@ import ChallengesTab from './ChallengesTab'
 import TribalTab from './TribalTab'
 import { useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
-import type { Prisma } from '@prisma/client'
+import FormattedText from '@/app/components/FormattedText'
 import type { EpisodeWithDetails } from './types'
 import { getContestantTribe } from '@/app/lib/survivorHelpers'
 
@@ -112,9 +111,10 @@ export default function EpisodeWiki({ episode }: Props) {
                         </div>
 
                         {episode.description && (
-                            <p className="text-sm text-gray-600 leading-relaxed">
-                                {episode.description}
-                            </p>
+                            <FormattedText 
+                                text={episode.description}
+                                className="text-sm text-gray-600 leading-relaxed"
+                            />
                         )}
                     </div>
 
