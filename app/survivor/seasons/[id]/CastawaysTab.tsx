@@ -99,7 +99,13 @@ export default function CastawaysTab({ contestants, season }: Props) {
 
   const remaining = contestants
     .filter(c => !['eliminated', 'jury', 'medevac', 'quit'].includes(c.status) || c.eliminatedEpisode === null)
-    .sort((a, b) => a.survivorPlayer.name.localeCompare(b.survivorPlayer.name))
+    .sort((a, b) => {
+      if (a.placement !== null && b.placement !== null) {
+        return b.placement - a.placement
+      }
+
+      return a.survivorPlayer.name.localeCompare(b.survivorPlayer.name)
+    })
 
   const sorted = [...eliminated, ...remaining]
 

@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { Prisma } from '@prisma/client'
 import { getContestantTribe } from '@/app/lib/survivorHelpers'
+import FormattedText from '@/app/components/FormattedText'
 
 type ChallengeWithHistory = Prisma.SurvivorChallengeGetPayload<{
   include: {
@@ -87,9 +88,7 @@ export default function ChallengeWiki({ challenge }: Props) {
             Appeared in {challenge.challenges.length} season{challenge.challenges.length !== 1 ? 's' : ''}
           </p>
           {challenge.description && (
-            <p className="text-sm text-gray-600 leading-relaxed">
-              {challenge.description}
-            </p>
+            <FormattedText text={challenge.description} className="text-sm text-gray-600 leading-relaxed"/>
           )}
         </div>
 
@@ -117,7 +116,7 @@ export default function ChallengeWiki({ challenge }: Props) {
                   >
                     Ep {c.episode.number}
                   </Link>
-                  <span className="text-gray-400 capitalize">{c.type}</span>
+                  <span className="text-gray-400 capitalize">{c.name}</span>
                 </div>
               ))}
             </div>
@@ -211,12 +210,10 @@ function SeasonChallengeTab({
         )}
       </div>
 
-      {/* Description */}
-      {challenge.survivorChallenge?.description && (
-        <div>
-          <h3 className="text-sm font-medium text-gray-900 mb-2">Description</h3>
-          <p className="text-sm text-gray-600 leading-relaxed">{challenge.survivorChallenge.description}</p>
-        </div>
+      {challenge.name ? (
+        <h3 className="text-gray-900">{challenge.name}</h3>
+      ) : (
+        <h3 className="text-gray-900">{challenge.survivorChallenge?.name}</h3>
       )}
 
       {/* Teams */}
