@@ -90,31 +90,29 @@ export async function POST(req: Request) {
                 },
                 data: { isCorrect: false }
               })
-            } else {
-              // REgular episode - correct pick is eliminated contestant
-              await prisma.eliminationPick.updateMany({
-                where: {
-                  episodeId: tribalCouncil.episodeId,
-                  contestantId: eliminatedId,
-                },
-                data: {
-                  isCorrect: true
-                }
-              })
-
-              //Mark incorrect Picks
-              await prisma.eliminationPick.updateMany({
-                where: {
-                  episodeId: tribalCouncil.episodeId,
-                  contestantId: { not: eliminatedId },
-                },
-                data: { isCorrect: false}
-              })
-
             }
-        }
 
-        
+        } else {
+          // REgular episode - correct pick is eliminated contestant
+          await prisma.eliminationPick.updateMany({
+            where: {
+              episodeId: tribalCouncil.episodeId,
+              contestantId: eliminatedId,
+            },
+            data: {
+              isCorrect: true
+            }
+          })
+
+          //Mark incorrect Picks
+          await prisma.eliminationPick.updateMany({
+            where: {
+              episodeId: tribalCouncil.episodeId,
+              contestantId: { not: eliminatedId },
+            },
+            data: { isCorrect: false}
+          })
+        }  
       }
     }
 
