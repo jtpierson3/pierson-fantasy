@@ -162,7 +162,6 @@ export default function ChallengesTab({ episode, contestants, challengeLibrary }
 
   const [selectedSitOutIds, setSelectedSitOutIds] = useState<Record<string, Set<string>>>(() => {
       const initial: Record<string, Set<string>> = {}
-      console.log('sitOuts:', episode.challenges.map(c=> ({ id: c.id, sitOuts: c.sitOuts})))
       episode.challenges.forEach(challenge => {
         if (challenge.sitOuts?.length > 0) {
           initial[challenge.id] = new Set(challenge.sitOuts.map(s => s.contestantId))

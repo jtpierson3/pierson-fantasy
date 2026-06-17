@@ -463,7 +463,7 @@ export default function LeagueDashboard({ league, userId, seasonContestants, act
                                 src={pick.contestant.imageUrl}
                                 alt={pick.contestant.survivorPlayer.name}
                                 fill
-                                className={`object-cover ${isEliminated ? 'grayscale' : ''}`}
+                                className={`object-cover object-[center_top]${isEliminated ? 'grayscale' : ''}`}
                               />
                             ) : (
                               <div className="w-full h-full bg-gray-100 flex items-center justify-center">

@@ -180,7 +180,7 @@ export default function CastawaysTab({ contestants, season }: Props) {
                         src={contestant.imageUrl}
                         alt={contestant.survivorPlayer.name}
                         fill
-                        className={`object-cover ${isEliminated ? 'grayscale' : ''}`}
+                        className={`object-cover object-[center_top] ${isEliminated ? 'grayscale' : ''}`}
                         />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center">
