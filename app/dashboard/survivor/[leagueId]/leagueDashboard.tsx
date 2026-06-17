@@ -409,92 +409,99 @@ export default function LeagueDashboard({ league, userId, seasonContestants, act
         <div className="flex-1 flex flex-col gap-4">
 
           {/* My Tribe */}
-          <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-              <h2 className="text-sm font-medium text-gray-900">
-                {myTribe?.name ?? 'My Tribe'}
-              </h2>
-              <button
-                onClick={() => router.push(`/dashboard/survivor/${league.id}/tribe`)}
-                className="text-xs text-green-700 hover:text-green-800 font-medium"
-              >
-                {hasPicks ? 'Manage tribe →' : 'Pick tribe →'}
-              </button>
-            </div>
-
-            {!hasPicks ? (
-              <div className="p-6 text-center">
-                <p className="text-sm text-gray-400 mb-3">
-                  You have not picked your tribe yet
-                </p>
-                <button
-                  onClick={() => router.push(`/dashboard/survivor/${league.id}/tribe/pick`)}
-                  className="px-4 py-2 text-sm rounded-lg bg-green-700 text-white hover:bg-green-600 transition-colors font-medium"
+          <Link 
+              href={hasPicks ? 
+                `/dashboard/survivor/${league.id}/tribe`
+                : `/dashboard/survivor/${league.id}/tribe/pick`
+              }
+              className="hover:border-gray-500 rounded-xl hover:shadow-lg transition-all cursor-pointer"
+          >
+            <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                <h2 className="text-sm font-medium text-gray-900">
+                  {myTribe?.name ?? 'My Tribe'}
+                </h2>
+                <p
+                  className="text-xs text-green-700 font-medium"
                 >
-                  Pick your tribe
-                </button>
+                  {hasPicks ? 'Manage tribe →' : 'Pick tribe →'}
+                </p>
               </div>
-            ) : (
-              <div className="p-4">
-                <div className="grid grid-cols-6 gap-3">
-                  {myTribe!.players.map(pick => {
-                    const points = calculateContestantPoints(pick.contestant, airedEpisodeIds)
-                    const isEliminated = pick.contestant.status === 'eliminated'
-                    return (
-                      <div
-                        key={pick.id}
-                        className={`flex flex-col items-center gap-1.5 ${isEliminated ? 'opacity-50' : ''}`}
-                      >
-                        <div className={`relative w-12 h-12 rounded-full overflow-hidden border-2 ${
-                          pick.contestant.status === 'winner' ? 'border-yellow-400' :
-                          pick.contestant.status === 'finalist' ? 'border-purple-400' :
-                          pick.contestant.status === 'jury' ? 'border-blue-400' :
-                          isEliminated ? 'border-gray-300' :
-                          'border-green-200'
-                        }`}>
-                          {pick.contestant.imageUrl ? (
-                            <Image
-                              src={pick.contestant.imageUrl}
-                              alt={pick.contestant.survivorPlayer.name}
-                              fill
-                              className={`object-cover ${isEliminated ? 'grayscale' : ''}`}
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                              <span className="text-sm text-gray-500">
-                                {pick.contestant.survivorPlayer.name[0]}
-                              </span>
-                            </div>
+
+              {!hasPicks ? (
+                <div className="p-6 text-center">
+                  <p className="text-sm text-gray-400 mb-3">
+                    You have not picked your tribe yet
+                  </p>
+                  <p
+                    onClick={() => router.push(`/dashboard/survivor/${league.id}/tribe/pick`)}
+                    className="px-4 py-2 text-sm rounded-lg bg-green-700 font-medium"
+                  >
+                    Pick your tribe
+                  </p>
+                </div>
+              ) : (
+                <div className="p-4">
+                  <div className="grid grid-cols-6 gap-3">
+                    {myTribe!.players.map(pick => {
+                      const points = calculateContestantPoints(pick.contestant, airedEpisodeIds)
+                      const isEliminated = pick.contestant.status === 'eliminated'
+                      return (
+                        <div
+                          key={pick.id}
+                          className={`flex flex-col items-center gap-1.5 ${isEliminated ? 'opacity-50' : ''}`}
+                        >
+                          <div className={`relative w-12 h-12 rounded-full overflow-hidden border-2 ${
+                            pick.contestant.status === 'winner' ? 'border-yellow-400' :
+                            pick.contestant.status === 'finalist' ? 'border-purple-400' :
+                            pick.contestant.status === 'jury' ? 'border-blue-400' :
+                            isEliminated ? 'border-gray-300' :
+                            'border-green-200'
+                          }`}>
+                            {pick.contestant.imageUrl ? (
+                              <Image
+                                src={pick.contestant.imageUrl}
+                                alt={pick.contestant.survivorPlayer.name}
+                                fill
+                                className={`object-cover ${isEliminated ? 'grayscale' : ''}`}
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                <span className="text-sm text-gray-500">
+                                  {pick.contestant.survivorPlayer.name[0]}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-xs font-medium text-gray-900 text-center leading-tight truncate w-full">
+                            {pick.contestant.survivorPlayer.name.split(' ')[0]}
+                          </p>
+                          <span className="text-xs font-medium text-green-700">
+                            {points}pts
+                          </span>
+                          {pick.contestant.status !== 'active' && (
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${STATUS_BADGE[pick.contestant.status] ?? 'bg-gray-100 text-gray-500'}`}>
+                              {pick.contestant.status}
+                            </span>
                           )}
                         </div>
-                        <p className="text-xs font-medium text-gray-900 text-center leading-tight truncate w-full">
-                          {pick.contestant.survivorPlayer.name.split(' ')[0]}
-                        </p>
-                        <span className="text-xs font-medium text-green-700">
-                          {points}pts
-                        </span>
-                        {pick.contestant.status !== 'active' && (
-                          <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${STATUS_BADGE[pick.contestant.status] ?? 'bg-gray-100 text-gray-500'}`}>
-                            {pick.contestant.status}
-                          </span>
-                        )}
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                    <p className="text-xs text-gray-400">Total points</p>
+                    <p className="text-sm font-medium text-gray-900">{myPoints} pts</p>
+                  </div>
                 </div>
-                <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-                  <p className="text-xs text-gray-400">Total points</p>
-                  <p className="text-sm font-medium text-gray-900">{myPoints} pts</p>
-                </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          </Link>
 
           {/* Last Episode */}
           {lastEpisode ? (
             <Link 
               href={`/survivor/seasons/${league.survivorSeason.id}/episodes/${lastEpisode.id}`}
-              className="hover:bg-gray-50 transition-colors cursor-pointer"
+              className="hover:border-gray-500 rounded-xl hover:shadow-lg transition-all cursor-pointer"
             >
               <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
                 <div className="px-4 py-3 border-b border-gray-100">
@@ -596,97 +603,104 @@ export default function LeagueDashboard({ league, userId, seasonContestants, act
 
           {/* Next Episode */}
           {nextEpisode ? (
-            <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-100">
-                <h2 className="text-sm font-medium text-gray-900">
-                  {nextEpisode ? `Next Episode — Ep ${nextEpisode.number}` : 'Next Episode'}
-                </h2>
-              </div>
-              <div className="p-4">
-                {nextEpisode ? (
-                  <div className="flex flex-col gap-2">
-                    <Link
-                      href={`/survivor/seasons/${nextEpisode.survivorSeasonId}/episodes/${nextEpisode.id}`}
-                      className="text-sm font-medium text-gray-900 hover:text-green-700 transition-colors"
-                    >
-                      {nextEpisode.name}
-                    </Link>
-                    <div className="flex gap-2 flex-wrap">
-                      {nextEpisode.isFinale && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-600">
-                          Finale
-                        </span>
-                      )}
-
-                      {/* Pick Section */}
-                      <div className="border-t border-gray-100 pt-3">
-                        <p className="text-xs font-medium text-gray-500 mb-2">
-                          {nextEpisode.isFinale ? 'Pick the winner:' : ' Pick who gets voted out next:'}
-                        </p>
-
-                        {currentPick && (
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="relative w-7 h-7 rounded-full overflow-hidden flex-shrink-0">
-                              {currentPick.contestant.imageUrl ? (
-                                <Image 
-                                  src={currentPick.contestant.imageUrl}
-                                  alt={currentPick.contestant.survivorPlayer.name}
-                                  fill
-                                  className="object-cover object-[center_top]"
-                                />
-                              ): (
-                                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                  <span className="text-xs text-gray-500">
-                                    {currentPick.contestant.survivorPlayer.name[0]}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-600">
-                              Current pick: <span className="font-medium text-gray-900">
-                                {currentPick.contestant.survivorPlayer.name}
-                              </span>
-                            </p>
-                          </div>
+            <Link 
+              href={`/survivor/seasons/${league.survivorSeason.id}/episodes/${nextEpisode.id}`}
+              className="hover:border-gray-500 rounded-xl hover:shadow-lg transition-all cursor-pointer"
+            >
+              <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <h2 className="text-sm font-medium text-gray-900">
+                    {nextEpisode ? `Next Episode — Ep ${nextEpisode.number}` : 'Next Episode'}
+                  </h2>
+                </div>
+                <div className="p-4">
+                  {nextEpisode ? (
+                    <div className="flex flex-col gap-2">
+                      <p  className="text-sm font-medium text-gray-900">
+                        {nextEpisode.name}
+                      </p>
+                      <div className="flex gap-2 flex-wrap">
+                        {nextEpisode.isFinale && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-600">
+                            Finale
+                          </span>
                         )}
 
-                        {/* Dropdown */}
-                        <div className="flex gap-2">
-                          <select
-                            value={selectedContestantId}
-                            onChange={e => {
-                              setSelectedContestantId(e.target.value)
-                              setPickSaved(false)
-                            }}
-                            className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600 text-gray-700"
-                          >
-                            <option value="">Select a contestant...</option>
-                            {activeContestants.map(c => {
-                              const tribe = c.tribeMemberships[c.tribeMemberships.length - 1]?.tribe
-                              return (
-                                <option key={c.id} value={c.id}>
-                                  {c.survivorPlayer.name}{tribe ? `(${tribe.name})` : ''}
-                                </option>
-                              )
-                            })}
-                          </select>
-                          <button
-                            onClick={handleSavePick}
-                            disabled={savingPick || !selectedContestantId}
-                            className="px-3 py-1.5 text-xs rounded-lg bg-green-700 text-white hover:bg-green-600 transition-colors disabled:opacity-50 font-medium"
-                          >
-                            {savingPick ? 'Saving...' : pickSaved ? 'Saved!' : 'Save'}
-                          </button>
-                        </div>
+                        {/* Pick Section */}
+                        <div className="border-t border-gray-100 pt-3">
+                          <p className="text-xs font-medium text-gray-500 mb-2">
+                            {nextEpisode.isFinale ? 'Pick the winner:' : ' Pick who gets voted out next:'}
+                          </p>
 
+                          {currentPick && (
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="relative w-7 h-7 rounded-full overflow-hidden flex-shrink-0">
+                                {currentPick.contestant.imageUrl ? (
+                                  <Image 
+                                    src={currentPick.contestant.imageUrl}
+                                    alt={currentPick.contestant.survivorPlayer.name}
+                                    fill
+                                    className="object-cover object-[center_top]"
+                                  />
+                                ): (
+                                  <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                    <span className="text-xs text-gray-500">
+                                      {currentPick.contestant.survivorPlayer.name[0]}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-600">
+                                Current pick: <span className="font-medium text-gray-900">
+                                  {currentPick.contestant.survivorPlayer.name}
+                                </span>
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Dropdown */}
+                            <div 
+                              className="flex gap-2"
+                              onClick={e => {
+                                e.stopPropagation()
+                                e.preventDefault()
+                              }}  
+                            >
+                              <select
+                                value={selectedContestantId}
+                                onChange={e => {
+                                  setSelectedContestantId(e.target.value)
+                                  setPickSaved(false)
+                                }}
+                                className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600 text-gray-700"
+                              >
+                                <option value="">Select a contestant...</option>
+                                {activeContestants.map(c => {
+                                  const tribe = c.tribeMemberships[c.tribeMemberships.length - 1]?.tribe
+                                  return (
+                                    <option key={c.id} value={c.id}>
+                                      {c.survivorPlayer.name}{tribe ? `(${tribe.name})` : ''}
+                                    </option>
+                                  )
+                                })}
+                              </select>
+                              <button
+                                onClick={handleSavePick}
+                                disabled={savingPick || !selectedContestantId}
+                                className="px-3 py-1.5 text-xs rounded-lg bg-green-700 text-white hover:bg-green-600 transition-colors disabled:opacity-50 font-medium"
+                              >
+                                {savingPick ? 'Saving...' : pickSaved ? 'Saved!' : 'Save'}
+                              </button>
+                            </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-400">No episodes scheduled</p>
-                )}
+                  ) : (
+                    <p className="text-sm text-gray-400">No episodes scheduled</p>
+                  )}
+                </div>
               </div>
-            </div>
+            </Link>
           ) : (
             <div></div>
           )} 
