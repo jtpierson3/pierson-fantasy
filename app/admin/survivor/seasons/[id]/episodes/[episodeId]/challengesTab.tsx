@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 
 type Tribe = {
@@ -160,17 +160,16 @@ export default function ChallengesTab({ episode, contestants, challengeLibrary }
 
   const tribes = episode.survivorSeason?.tribes ?? []
 
-  const [selectedSitOutIds, setSelectedSitOutIds] = useState<Record<string, Set<string>>>({})
-    
-  useEffect(() => {
+  const [selectedSitOutIds, setSelectedSitOutIds] = useState<Record<string, Set<string>>>(() => {
       const initial: Record<string, Set<string>> = {}
+      console.log('sitOuts:', episode.challenges.map(c=> ({ id: c.id, sitOuts: c.sitOuts})))
       episode.challenges.forEach(challenge => {
         if (challenge.sitOuts?.length > 0) {
           initial[challenge.id] = new Set(challenge.sitOuts.map(s => s.contestantId))
         }
       })
-      setSelectedSitOutIds(initial)
-  }, [episode])
+      return initial
+  })
   
   const [savingSitOuts, setSavingSitOuts] = useState<string | null>(null)
 
