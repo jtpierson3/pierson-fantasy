@@ -131,6 +131,32 @@ export default function ChallengesTab({ episode }: Props) {
                 </div>
               </div>
             )}
+            {/* Sit-outs */}
+            {challenge.sitOuts && challenge.sitOuts.length > 0 && (
+              <div className="px-4 py-3 border-t border-gray-100">
+                <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Sit-Outs</p>
+                <div className="flex flex-wrap gap-2">
+                  {challenge.sitOuts.map(s => {
+                    const tribe = getContestantTribe(s.contestant, episode.survivorSeason.episodes, episode.number)
+                    return (
+                      <Link
+                        key={s.id}
+                        href={`/survivor/players/${s.contestant.survivorPlayerId}`}
+                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors"
+                      >
+                        <div 
+                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: tribe?.color ?? '#6b7280'}}
+                        />
+                        <span className="text-xs text-gray-600">
+                          {s.contestant.survivorPlayer.name.split(' ')[0]}{' '}{s.contestant.survivorPlayer.name.split(' ')[1]}
+                        </span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )
       })}

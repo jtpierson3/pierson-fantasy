@@ -45,7 +45,13 @@ async function EpisodeWikiContent({
           sitOuts: {
             include: {
               contestant: {
-                include: { survivorPlayer: true }
+                include: { 
+                  survivorPlayer: true,
+                  tribeMemberships: {
+                    include: { tribe: true },
+                    orderBy: {id: 'asc'}
+                  }
+                }
               }
             }
           },
