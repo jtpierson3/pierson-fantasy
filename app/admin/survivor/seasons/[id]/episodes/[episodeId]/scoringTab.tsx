@@ -233,7 +233,7 @@ export default function ScoringTab({ episode, contestants, scoringEvents }: Prop
               {contestants.map(contestant => {
                 const isSelected = selectedContestantIds.has(contestant.id)
                 const currentTribe = contestant.tribeMemberships[0]?.tribe
-                const isEliminated = contestant.status === 'eliminated' || 'medevac' || 'quit'
+                const isEliminated = ['eliminated', 'medevac', 'quit', 'jury'].includes(contestant.status)
 
                 return (
                   <button
