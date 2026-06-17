@@ -160,7 +160,17 @@ export default function ChallengesTab({ episode, contestants, challengeLibrary }
 
   const tribes = episode.survivorSeason?.tribes ?? []
 
-  const [selectedSitOutIds, setSelectedSitOutIds] = useState<Record<string, Set<string>>>({})
+  const [selectedSitOutIds, setSelectedSitOutIds] = useState<Record<string, Set<string>>>(
+    () => {
+      const initial: Record<string, Set<string>> = {}
+      episode.challenges.forEach(challenge => {
+        if (challenge.sitOuts?.length > 0) {
+          initial[challenge.id] = new Set(challenge.sitOuts.map(s => s.contestantId))
+        }
+      })
+      return initial
+    }
+  )
   const [savingSitOuts, setSavingSitOuts] = useState<string | null>(null)
 
   const handleSaveSitOuts = useCallback(async (challenge: Challenge) => {
