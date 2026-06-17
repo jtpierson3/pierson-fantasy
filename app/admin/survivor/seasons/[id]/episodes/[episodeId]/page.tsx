@@ -91,6 +91,13 @@ export default async function EpisodeDetailPage({
       },
       challenges: {
         include: {
+          sitOuts: {
+            include: {
+              contestant: {
+                include: { survivorPlayer: true }
+              }
+            }
+          },
           teams: {
             include: {
               contestants: {
