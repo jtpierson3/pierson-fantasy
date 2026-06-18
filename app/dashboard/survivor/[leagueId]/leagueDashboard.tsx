@@ -440,7 +440,7 @@ export default function LeagueDashboard({ league, userId, seasonContestants, act
                 <p
                   className="text-xs text-green-700 font-medium"
                 >
-                  {lastEpisode.isMerge && !myTribe?.hasUsedMergeSwap ? (
+                  {lastEpisode?.isMerge && !myTribe?.hasUsedMergeSwap ? (
                     'TRIBE SWAP AVAILABLE'
                   ) : (
                     `${hasPicks ? 'Manage tribe →' : 'Pick tribe →'}`
@@ -538,12 +538,12 @@ export default function LeagueDashboard({ league, userId, seasonContestants, act
                         {lastEpisode.name}
                       </p>
                       <div className="flex gap-2 flex-wrap">
-                        {lastEpisode.isMerge && (
+                        {lastEpisode?.isMerge && (
                           <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">
                             Merge episode
                           </span>
                         )}
-                        {lastEpisode.isFinale && (
+                        {lastEpisode?.isFinale && (
                           <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-600">
                             Finale
                           </span>
