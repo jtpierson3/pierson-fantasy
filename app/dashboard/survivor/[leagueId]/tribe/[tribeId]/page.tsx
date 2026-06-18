@@ -100,6 +100,13 @@ async function ViewTribeContent({
     }
   })
 
+  const winnerPickEvent = await prisma.scoringEvent.findFirst({
+    where: {
+      survivorSeasonId: league.survivorSeason.id,
+      label: 'Correct Winner Pick'
+    }
+  })
+
   const episodes = await prisma.episode.findMany({
     where: { survivorSeasonId: league.survivorSeason.id },
     orderBy: { number: 'asc' }
@@ -123,6 +130,7 @@ async function ViewTribeContent({
       mergeEpisode={mergeEpisode}
       eliminationPicks={eliminationPicks}
       eliminationPickPoints={eliminationPickEvent?.points ?? 0}
+      winnerPickPoints={winnerPickEvent?.points ?? 0}
       episodes={episodes}
     />
   )

@@ -83,6 +83,7 @@ type Props = {
   mergeEpisode: MergeEpisode
   eliminationPicks: EliminationPick[]
   eliminationPickPoints: number
+  winnerPickPoints: number
   episodes: Episode[]
 }
 
@@ -102,7 +103,7 @@ const STATUS_BADGE: Record<string, { label: string; color: string }> = {
 }
 
 export default function MyTribe({ 
-    leagueId, tribe, season, airedEpisodeIds, swapWindowOpen, activeContestants, mergeEpisode, eliminationPicks, eliminationPickPoints, episodes
+    leagueId, tribe, season, airedEpisodeIds, swapWindowOpen, activeContestants, mergeEpisode, eliminationPicks, eliminationPickPoints, winnerPickPoints, episodes
 }: Props) {
   const router = useRouter()
   const [tribeName, setTribeName] = useState(tribe.name)
@@ -250,7 +251,9 @@ export default function MyTribe({
                     .reduce((sum, s) => sum + s.event.points, 0)
                 }, 0)
 
-                const pickPoints = pick?.isCorrect ? eliminationPickPoints : 0
+                const pickPoints = pick?.isCorrect 
+                  ? (episode.isFinale ? winnerPickPoints : eliminationPickPoints) 
+                  : 0
                 const totalEpisodePoints = episodePoints + pickPoints
 
                 return (
@@ -272,7 +275,7 @@ export default function MyTribe({
                             {' '}
                             {pick.isCorrect && (
                               <span className="text-green-600">
-                                +{eliminationPickPoints}
+                                +{episode.isFinale? winnerPickPoints : eliminationPickPoints}
                               </span>
                             )}
                           </p>
@@ -306,7 +309,10 @@ export default function MyTribe({
               </div>
               <div className="text-right">
                 <p className="text-sm font-medium text-green-700">
-                  {totalPoints + (eliminationPicks.filter(p => p.isCorrect).length * eliminationPickPoints)} pts
+                  {totalPoints + (eliminationPicks.filter(p => p.isCorrect).reduce((sum, pick) => {
+                    const ep = episodes.find(e => e.id === pick.episodeId)
+                    return sum + (ep?.isFinale ? winnerPickPoints : eliminationPickPoints)
+                  }, 0))} pts
                 </p>
               </div>
             </div>

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { Prisma } from '@prisma/client'
+import { Wire_One } from 'next/font/google'
 
 type TribeWithPlayers = Prisma.SurvivorFantasyLeagueTribeGetPayload<{
   include: {
@@ -75,6 +76,7 @@ type Props = {
   mergeEpisode: MergeEpisode
   eliminationPicks: EliminationPick[]
   eliminationPickPoints: number
+  winnerPickPoints: number
   episodes: Episode[]
 }
 
@@ -102,6 +104,7 @@ export default function ViewTribe({
   mergeEpisode,
   eliminationPicks,
   eliminationPickPoints,
+  winnerPickPoints,
   episodes
 }: Props) {
   const router = useRouter()
@@ -183,7 +186,9 @@ export default function ViewTribe({
                     .reduce((sum, s) => sum + s.event.points, 0)
                 }, 0)
 
-                const pickPoints = pick?.isCorrect ? eliminationPickPoints : 0
+                const pickPoints = pick?.isCorrect 
+                  ? (episode.isFinale ? winnerPickPoints : eliminationPickPoints)
+                  : 0
                 const totalEpisodePoints = episodePoints + pickPoints
 
                 return (
