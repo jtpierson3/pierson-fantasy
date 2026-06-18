@@ -493,46 +493,46 @@ export default function MyTribe({
 
                 {/* Swap window banner */}
                 {swapWindowOpen && !showSwap && (
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
-                    <div className="flex items-center justify-between">
-                    <div>
-                        {tribe.hasUsedMergeSwap ? (
-                            <>
-                                <p className="text-sm font-medium text-blue-900">Merge Swap Used</p>
-                                <p className="text-xs text-blue-600 mt-0.5">
-                                    You can edit your swap until the next episode airs.
-                                </p>
-                            </>
-                        ) : (
-                            <>
-                                <p className="text-sm font-medium text-blue-900">Merge swap available!</p>
-                                <p className="text-xs text-blue-600 mt-0.5">
-                                    You can swap one player before the next episode airs.
-                                </p>
-                            </>
-                        )}                 
-                    </div>
-                    <button
-                        onClick={async () => {
-                            if (tribe.hasUsedMergeSwap) {
-                                const res = await fetch('/api/survivor/tribe/swap/reset', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ tribeId: tribe.id })
-                                })
-                                if (res.ok) {
-                                    router.refresh()
-                                }
-                            } else {
-                                setShowSwap(true)
-                            }
-                        }}
-                        className="px-4 py-2 text-sm rounded-lg bg-blue-700 text-white hover:bg-blue-600 transition-colors font-medium"
-                    >
-                        {tribe.hasUsedMergeSwap ? 'Edit Swap' : 'Use Swap'}
-                    </button>
-                    </div>
-                </div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                      <div className="flex items-center justify-between">
+                      <div>
+                          {tribe.hasUsedMergeSwap ? (
+                              <>
+                                  <p className="text-sm font-medium text-blue-900">Merge Swap Used</p>
+                                  <p className="text-xs text-blue-600 mt-0.5">
+                                      You can edit your swap until the next episode airs.
+                                  </p>
+                              </>
+                          ) : (
+                              <>
+                                  <p className="text-sm font-medium text-blue-900">Merge swap available!</p>
+                                  <p className="text-xs text-blue-600 mt-0.5">
+                                      You can swap one player before the next episode airs.
+                                  </p>
+                              </>
+                          )}                 
+                      </div>
+                      <button
+                          onClick={async () => {
+                              if (tribe.hasUsedMergeSwap) {
+                                  const res = await fetch('/api/survivor/tribe/swap/reset', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ tribeId: tribe.id })
+                                  })
+                                  if (res.ok) {
+                                      router.refresh()
+                                  }
+                              } else {
+                                  setShowSwap(true)
+                              }
+                          }}
+                          className="px-4 py-2 text-sm rounded-lg bg-blue-700 text-white hover:bg-blue-600 transition-colors font-medium"
+                      >
+                          {tribe.hasUsedMergeSwap ? 'Edit Swap' : 'Use Swap'}
+                      </button>
+                      </div>
+                  </div>
                 )}
 
                 {/* Swap UI */}

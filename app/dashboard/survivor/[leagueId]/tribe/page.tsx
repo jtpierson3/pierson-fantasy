@@ -85,13 +85,14 @@ async function MyTribeContent({ leagueId }: { leagueId: string }) {
             where: {
                 survivorSeasonId: league.survivorSeason.id,
                 number: { gt: mergeEpisode.number },
-                isAired: false
             },
             orderBy: { number: 'asc' }
         })
         : null
 
-    const swapWindowOpen = !!mergeEpisode && !nextEpisodeAfterMerge?.isAired
+    const swapWindowOpen = !!mergeEpisode &&
+        nextEpisodeAfterMerge !== null && 
+        !nextEpisodeAfterMerge.isAired
 
     const activeContestants = swapWindowOpen
         ? await prisma.contestant.findMany({
@@ -157,6 +158,7 @@ export default async function MyTribePage({
     params: Promise<{ leagueId: string }>
 }) {
     const { leagueId } = await params
+    
     return (
         <Suspense fallback={
             <div className="p-6 flex items-center justify-center">
