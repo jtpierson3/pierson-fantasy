@@ -184,7 +184,13 @@ async function LeagueContent({ leagueId }: { leagueId: string}) {
 
     const eliminationPicks = await prisma.eliminationPick.findMany({
         where: {
-            userId: user.id
+            survivorLeagueId: leagueId,
+            isCorrect: true,
+        },
+        select: {
+            userId: true,
+            episodeId: true,
+            isCorrect: true
         }
     })
 

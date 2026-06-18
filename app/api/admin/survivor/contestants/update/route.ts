@@ -80,8 +80,9 @@ export async function POST(req: Request) {
           }
         })
       }
+    }
 
-      //Set Winner Elimination Pick
+    //Set Winner Elimination Pick
       if (status === 'winner') {
         //find the finale episode for this season
         const finaleEp = await prisma.episode.findFirst({
@@ -110,8 +111,6 @@ export async function POST(req: Request) {
           })
         }
       }
-      
-    }
 
     return NextResponse.json({ success: true })
   } catch (err) {

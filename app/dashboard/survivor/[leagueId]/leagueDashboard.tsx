@@ -167,9 +167,11 @@ const STATUS_BADGE: Record<string, string> = {
 function calculateTribePoints(
   tribe: Props['league']['tribes'][0], 
   airedEpisodeIds: Set<string>, 
-  eliminationPicks: { userId: string; isCorrect: boolean }[],
+  correctPicks: { userId: string; episodeId: string; isCorrect: boolean }[],
   eliminationPickPoints: number,
-  mergeEpisodeNumber: number
+  winnerPickPoints: number,
+  mergeEpisodeNumber: number,
+  episodes: { id: string; isFinale: boolean }[]
 ): number {
   const statPoints = (tribe?.players ?? []).reduce((total, pick) => {
     if (pick.isSwap) {
@@ -191,9 +193,13 @@ function calculateTribePoints(
       .reduce((sum, s) => sum + s.event.points, 0)
   }, 0)
 
-  const pickPoints = eliminationPicks
+  const pickPoints = correctPicks
     .filter(p => p.userId === tribe.userId && p.isCorrect)
-    .length * eliminationPickPoints
+    .reduce((sum, pick) => {
+      
+      const episode = episodes.find(e => e.id === pick.episodeId)
+      return sum + (episode?.isFinale ? winnerPickPoints : eliminationPickPoints)
+    }, 0)
 
   return statPoints + pickPoints
 }
@@ -223,7 +229,15 @@ export default function LeagueDashboard({ league, userId, seasonContestants, act
   const standings = league.tribes
     .map(tribe => ({
       tribe,
-      points: calculateTribePoints(tribe, airedEpisodeIds, eliminationPicks, eliminationPickPoints, mergeEpisodeNumber),
+      points: calculateTribePoints(
+        tribe, 
+        airedEpisodeIds, 
+        eliminationPicks, 
+        eliminationPickPoints,
+        winnerPickPoints, 
+        mergeEpisodeNumber,
+        league.survivorSeason.episodes
+      ),
     }))
     .sort((a, b) => b.points - a.points)
 
