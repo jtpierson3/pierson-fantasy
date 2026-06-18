@@ -432,7 +432,7 @@ export default function LeagueDashboard({ league, userId, seasonContestants, act
           >
             <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
               <div className={`flex items-center justify-between px-4 py-3 border-b border-gray-100 ${
-                (lastEpisode.isMerge && !myTribe?.hasUsedMergeSwap) ? 'background-color: blue' : ''
+                (lastEpisode?.isMerge && !myTribe?.hasUsedMergeSwap) ? 'background-color: blue' : ''
               }`}>
                 <h2 className="text-sm font-medium text-gray-900">
                   {myTribe?.name ?? 'My Tribe'}
