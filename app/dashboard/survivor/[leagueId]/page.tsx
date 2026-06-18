@@ -188,12 +188,10 @@ async function LeagueContent({ leagueId }: { leagueId: string}) {
         }
     })
 
-    const nextEpisodeIsFinale = nextEpisode?.isFinale ?? false
-
     const eliminationPickEvent = await prisma.scoringEvent.findFirst({
         where: {
             survivorSeasonId: league.survivorSeason.id,
-            label: nextEpisodeIsFinale ? 'Correct Winner Pick' : 'Correct Elimination Pick'
+            label: 'Correct Elimination Pick'
         }
     })
 

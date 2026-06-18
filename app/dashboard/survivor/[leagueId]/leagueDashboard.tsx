@@ -570,7 +570,7 @@ export default function LeagueDashboard({ league, userId, seasonContestants, act
                                 {' '}
                                 {lastEpisodePick.isCorrect ? (
                                   <span className="text-green-600 font-medium">
-                                    {lastEpisode.isFinale 
+                                    {lastEpisode?.isFinale 
                                       ? `Correct Winner! +${winnerPickPoints}`
                                       : `Correct! +${eliminationPickPoints}`
                                     }
