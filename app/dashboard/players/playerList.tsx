@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react"
 import Image from 'next/image'
+import Link from 'next/link'
 import { getPositionShort, getPositionColor } from '@/lib/helpers'
 import type { Player, Team } from '@prisma/client'
 
@@ -147,43 +148,47 @@ export default function PlayerList({ players, teams }: Props) {
             {layout === 'grid' && filtered.length >0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                     {filtered.map(player => (
-                        <div
+                        <Link 
+                            href={`/dashboard/players/${player.id}`}
                             key={player.id}
-                            className="bg-white border border-gray-100 rounded-xl p-4 hover:border-gray-200 hover:shadow-sm transition-all text-center"
                         >
-                            {/* Player Image */}
-                            <div className="relative w-16 h-16 mx-auto mb-3">
-                                <Image
-                                    src={player.image_path}
-                                    alt={player.display_name}
-                                    fill
-                                    className="object-contain rounded-full"
-                                    onError={(e) => {
-                                        (e.target as HTMLImageElement).src = "https://cdn.sportmonks.com/images/soccer/placeholder.png"
-                                    }}
-                                />
+                            <div
+                                className="bg-white border border-gray-100 rounded-xl p-4 hover:border-gray-200 hover:shadow-sm transition-all text-center"
+                            >
+                                {/* Player Image */}
+                                <div className="relative w-16 h-16 mx-auto mb-3">
+                                    <Image
+                                        src={player.image_path}
+                                        alt={player.display_name}
+                                        fill
+                                        className="object-contain rounded-full"
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).src = "https://cdn.sportmonks.com/images/soccer/placeholder.png"
+                                        }}
+                                    />
+                                </div>
+
+                                {/* Jersey Number */}
+                                {player.jersey_number && (
+                                    <p className="text-xs text-gray-400 mb-1">#{player.jersey_number}</p>
+                                )}
+
+                                {/* Name */}
+                                <p className="text-sm font-medium text-gray-900 leading-tight mb-1 truncate">
+                                    {player.display_name}
+                                </p>
+
+                                {/* Team */}
+                                <p className="text-xs text-gray-400 truncate mb-2">
+                                    {player.team.name}
+                                </p>
+
+                                {/* Position badge */}
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getPositionColor(player.position_id)}`}>
+                                    {getPositionShort(player.position_id)}
+                                </span>
                             </div>
-
-                            {/* Jersey Number */}
-                            {player.jersey_number && (
-                                <p className="text-xs text-gray-400 mb-1">#{player.jersey_number}</p>
-                            )}
-
-                            {/* Name */}
-                            <p className="text-sm font-medium text-gray-900 leading-tight mb-1 truncate">
-                                {player.display_name}
-                            </p>
-
-                            {/* Team */}
-                            <p className="text-xs text-gray-400 truncate mb-2">
-                                {player.team.name}
-                            </p>
-
-                            {/* Position badge */}
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getPositionColor(player.position_id)}`}>
-                                {getPositionShort(player.position_id)}
-                            </span>
-                        </div>
+                        </Link>
                     ))}
                 </div>
             )}
@@ -202,54 +207,58 @@ export default function PlayerList({ players, teams }: Props) {
 
                     {/* Table Rows */}
                     {filtered.map((player,index) => (
-                        <div
+                        <Link
+                            href={`/dashboard/players/${player.id}`}
                             key={player.id}
-                            className={`grid grid-cols-12 gap-4 px-4 py-3 items-cetner hover:bg-gray-50 transition-colors ${
-                                index !== filtered.length - 1 ? 'border-b border-gray-50' : ''
-                            }`}
                         >
-                            {/* Jersey Number */}
-                            <div className="col-span-1 text-xs text-gray-400">
-                                {player.jersey_number ?? '-'}
-                            </div>
+                            <div
+                                className={`grid grid-cols-12 gap-4 px-4 py-3 items-cetner hover:bg-gray-50 transition-colors ${
+                                    index !== filtered.length - 1 ? 'border-b border-gray-50' : ''
+                                }`}
+                            >
+                                {/* Jersey Number */}
+                                <div className="col-span-1 text-xs text-gray-400">
+                                    {player.jersey_number ?? '-'}
+                                </div>
 
-                            {/* Image */}
-                            <div className="col-span-1">
-                                <div className="relative w-8 h-8">
-                                    <Image 
-                                        src={player.image_path}
-                                        alt={player.display_name}
-                                        fill
-                                        className="object-contain rounded-full"
-                                    />
+                                {/* Image */}
+                                <div className="col-span-1">
+                                    <div className="relative w-8 h-8">
+                                        <Image 
+                                            src={player.image_path}
+                                            alt={player.display_name}
+                                            fill
+                                            className="object-contain rounded-full"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Name */}
+                                <div className="col-span-4 text-sm font-medium text-gray-900 truncate">
+                                    {player.display_name}
+                                </div>
+
+                                {/* Team */}
+                                <div className="col-span-3 flex items-center gap-2">
+                                    <div className="relative w-5 h-5 flex-shrink-0">
+                                        <Image 
+                                            src={player.team.image_path}
+                                            alt={player.team.name}
+                                            fill
+                                            className="object-contain"
+                                        />
+                                    </div>
+                                    <span className="text-sm text-gray-500 truncate">{player.team.name}</span>
+                                </div>
+
+                                {/* POSITION */}
+                                <div className="col-span-2">
+                                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getPositionColor(player.position_id)}`}>
+                                        {getPositionShort(player.position_id)}
+                                    </span>
                                 </div>
                             </div>
-
-                            {/* Name */}
-                            <div className="col-span-4 text-sm font-medium text-gray-900 truncate">
-                                {player.display_name}
-                            </div>
-
-                            {/* Team */}
-                            <div className="col-span-3 flex items-center gap-2">
-                                <div className="relative w-5 h-5 flex-shrink-0">
-                                    <Image 
-                                        src={player.team.image_path}
-                                        alt={player.team.name}
-                                        fill
-                                        className="object-contain"
-                                    />
-                                </div>
-                                <span className="text-sm text-gray-500 truncate">{player.team.name}</span>
-                            </div>
-
-                            {/* POSITION */}
-                            <div className="col-span-2">
-                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getPositionColor(player.position_id)}`}>
-                                    {getPositionShort(player.position_id)}
-                                </span>
-                            </div>
-                        </div>
+                        </Link>
                     ))}
                 </div>
             )}
