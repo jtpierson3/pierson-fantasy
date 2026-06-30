@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback } from "react"
 import Image from 'next/image'
 import Link from 'next/link'
+import { getTeamColor, getTintBackground, getContrastTextColor } from '@/lib/colors'
 import { getPositionShort, getPositionColor } from '@/lib/helpers'
 import type { Player, Team } from '@prisma/client'
 
@@ -153,7 +154,11 @@ export default function PlayerList({ players, teams }: Props) {
                             key={player.id}
                         >
                             <div
-                                className="bg-white border border-gray-100 rounded-xl p-4 hover:border-gray-200 hover:shadow-sm transition-all text-center"
+                                className="border border-gray-100 rounded-xl p-4 hover:border-gray-200 hover:shadow-sm transition-all text-center"
+                                style = {{
+                                    backgroundColor: getTintBackground(getTeamColor(player.team?.name)['primary'], 0.06),
+                                    borderTop: `3px solid ${getTeamColor(player.team?.name)['primary']}`
+                                }}
                             >
                                 {/* Player Image */}
                                 <div className="relative w-16 h-16 mx-auto mb-3">
