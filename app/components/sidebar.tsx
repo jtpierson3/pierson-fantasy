@@ -10,6 +10,7 @@ type Props = {
 }
 
 const FOOTBALL_NAV = [
+    /* DASHBOARD
     {
         href: '/dashboard',
         label: 'Dashboard',
@@ -21,7 +22,7 @@ const FOOTBALL_NAV = [
                 <rect x='9' y='9' width='6' height='6' rx='1' />
             </svg>
         ),
-    },
+    },*/
     {
         href: '/dashboard/my-team',
         label: 'My Team',
@@ -52,6 +53,7 @@ const FOOTBALL_NAV = [
             </svg>
         ),
     },
+    /* FIXTURES
     {
         href: '/dashboard/fixtures',
         label: 'Fixtures',
@@ -62,7 +64,7 @@ const FOOTBALL_NAV = [
                 <path d="M5 1v4M11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
         ),
-    },
+    }, */
 ]
 
 const SURVIVOR_NAV = [
