@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { prisma } from '@/lib/prisma'
 import PlayerList from './playerList'
+import { auth } from '@clerk/nextjs/server'
+import { redirect } from 'next/navigation'
 
 function PlayersSkeleton() {
   return(
@@ -28,6 +30,40 @@ function PlayersSkeleton() {
 }
 
 async function PlayersContent() {
+  const { userId } = await auth()
+  if (!userId) redirect('/sign-in')
+
+  const user = await prisma.user.findUnique({
+    where: { clerkId: userId }
+  })
+  if (!user) redirect('/sign-in')
+
+  //Get user's fantasy team
+  const myFantasyTeam = await prisma.fantasyTeam.findFirst({
+    where: { userId: user.id },
+    include: {
+      players: {
+        include: { player: true }
+      }
+    }
+  })
+
+  // Get all rostered players in the same league
+  const allRosteredPlayers = myFantasyTeam
+    ? await prisma.fantasyTeamPlayer.findMany({
+      where: {
+        fantasyTeam: {
+          fantasyLeagueId: myFantasyTeam.fantasyLeagueId
+        },
+      },
+      include: {
+        fantasyTeam: {
+          include: { user: true }
+        }
+      }
+    })
+    : []
+
   const [players, teams] = await Promise.all([
     prisma.player.findMany({
       include: { team: true },
@@ -41,7 +77,14 @@ async function PlayersContent() {
     }),
   ])
 
-  return <PlayerList players={players} teams={teams} />
+  return (
+    <PlayerList
+      players={players} 
+      teams={teams} 
+      myFantasyTeam={myFantasyTeam}
+      allRosteredPlayers={allRosteredPlayers}
+    />
+  )
 }
 
 export default function PlayersPage() {

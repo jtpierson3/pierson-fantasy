@@ -6,12 +6,32 @@ import Link from 'next/link'
 import { getTeamColor, getTintBackground, getContrastTextColor } from '@/lib/colors'
 import { getPositionShort, getPositionColor } from '@/lib/helpers'
 import type { Player, Team } from '@prisma/client'
+import { useRouter } from 'next/navigation'
+import { Prisma } from '@prisma/client'
 
 type PlayerWithTeam = Player & { team: Team }
+
+type FantasyTeamWithPlayers = Prisma.FantasyTeamGetPayload<{
+    include: {
+        players: {
+            include: { player: true }
+        }
+    }
+}> | null
+
+type RosteredPlayer = Prisma.FantasyTeamPlayerGetPayload<{
+    include: {
+        fantasyTeam: {
+            include: { user: true }
+        }
+    }
+}>
 
 type Props = {
     players: PlayerWithTeam[]
     teams: Team[]
+    myFantasyTeam: FantasyTeamWithPlayers
+    allRosteredPlayers: RosteredPlayer[]
 }
 
 type Layout = 'grid' | 'list'
@@ -25,7 +45,7 @@ const POSITION_IDS: Record<PositionFilter, number | null> = {
     ATT: 27
 }
 
-export default function PlayerList({ players, teams }: Props) {
+export default function PlayerList({ players, teams, myFantasyTeam, allRosteredPlayers }: Props) {
     const [layout, setLayout] = useState<Layout>('grid')
     const [search, setSearch] = useState('')
     const [positionFilter, setPositionFilter] = useState<PositionFilter>('ALL')
@@ -47,6 +67,58 @@ export default function PlayerList({ players, teams }: Props) {
     const handleTeamFilter = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
         setTeamFilter(e.target.value)
     }, [])
+
+    // Adding Player Functionality
+    const [addingPlayer, setAddingPlayer] = useState<PlayerWithTeam | null>(null)
+    const [dropPlayerId, setDropPlayerId] = useState<string>('')
+    const [saving, setSaving] = useState(false)
+    const router = useRouter()
+
+    const myRosteredCount = myFantasyTeam?.players.filter(
+        p => p.rosterSlot !== 'IR'
+    ).length ?? 0
+
+    const atRosterLimit = myRosteredCount >= 23
+
+    const ownershipMap = useMemo(() => {
+        const map = new Map<number, RosteredPlayer>()
+        allRosteredPlayers.forEach(rp => map.set(rp.playerId, rp))
+        return map
+    }, [allRosteredPlayers])
+
+    function getOwnership(playerId: number) {
+        return ownershipMap.get(playerId) ?? null
+    }
+
+    function isOnMyTeam(playerId: number) {
+        return myFantasyTeam?.players.some(p => p.playerId === playerId) ?? false
+    }
+
+    const handleAddPlayer = async (player: PlayerWithTeam) => {
+        if (!myFantasyTeam) return
+        setSaving(true)
+        try {
+            const res = await fetch('/api/fantasy/roster/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fantasyTeamId: myFantasyTeam.id,
+                    playerId: player.id,
+                    dropPlayerId: dropPlayerId || null
+                }) 
+            })
+
+            if (!res.ok) throw new Error("Failed to add player")
+
+            setAddingPlayer(null)
+            setDropPlayerId('')
+            router.refresh()
+        } catch {
+            // handle error
+        } finally {
+            setSaving(false)
+        }
+    }
 
     return (
         <div className="p-6">
@@ -192,6 +264,31 @@ export default function PlayerList({ players, teams }: Props) {
                                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getPositionColor(player.position_id)}`}>
                                     {getPositionShort(player.position_id)}
                                 </span>
+                                {/* Ownership + Add */}
+                                <div
+                                    className="mt-2"
+                                    onClick={e => { e.preventDefault(); e.stopPropagation() }}
+                                >
+                                    {isOnMyTeam(player.id) ? (
+                                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
+                                            Your Squad
+                                        </span>
+                                    ) : getOwnership(player.id) ? (
+                                        <span className="text-xs text-gray-400 truncate block">
+                                            {getOwnership(player.id)!.fantasyTeam.user.username}
+                                        </span>
+                                    ) : (
+                                        <button
+                                            onClick={() => {
+                                                setAddingPlayer(player)
+                                                if (!atRosterLimit) handleAddPlayer(player)
+                                            }}
+                                            className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium hover:bg-blue-200 transition-colors"
+                                        >
+                                            + Add
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </Link>
                     ))}
@@ -205,9 +302,10 @@ export default function PlayerList({ players, teams }: Props) {
                     <div className="grid grid-cols-12 gap-4 px-4 py-2 bg-gray-50 border-b border-gray-100 text-xs font-medium text-gray-400 uppercase tracking-wide">
                         <div className="col-span-1">#</div>
                         <div className="col-span-1"></div>
-                        <div className="col-span-4">Name</div>
+                        <div className="col-span-3">Name</div>
                         <div className="col-span-3">Team</div>
                         <div className="col-span-2">Position</div>
+                        <div className="col-span-2">Status</div>
                     </div>
 
                     {/* Table Rows */}
@@ -262,9 +360,80 @@ export default function PlayerList({ players, teams }: Props) {
                                         {getPositionShort(player.position_id)}
                                     </span>
                                 </div>
+
+                                {/* STATUS */}
+                                <div
+                                    className="col-span-2"
+                                    onClick={e => { e.preventDefault(); e.stopPropagation() }}
+                                >
+                                    {isOnMyTeam(player.id) ? (
+                                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
+                                            Your Team
+                                        </span>
+                                    ) : getOwnership(player.id) ? (
+                                        <span className="text-xs text-gray-400 truncate block">
+                                            {getOwnership(player.id)!.fantasyTeam.user.username}
+                                        </span>
+                                    ) : (
+                                        <button
+                                            onClick={() => {
+                                                setAddingPlayer(player)
+                                                if (!atRosterLimit) handleAddPlayer(player)
+                                            }}
+                                            className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium hover:bg-blue-200 transition-colors"
+                                        >
+                                            + Add
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </Link>
                     ))}
+                </div>
+            )}
+
+            {/* Drop Modal - Shown when at roster limit */}
+            {addingPlayer && atRosterLimit && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-xl">
+                        <h3 className="text-base font-medium text-gray-900 mb-1">
+                            Add {addingPlayer.display_name}
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-4">
+                            Your roster is full (23 players). Drop a player to make room.
+                        </p>
+
+                        <select
+                            value={dropPlayerId}
+                            onChange={e => setDropPlayerId(e.target.value)}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 mb-4"
+                        >
+                            <option value="">Select a player to drop...</option>
+                            {myFantasyTeam!.players
+                                .filter(p => p.rosterSlot !== 'IR')
+                                .map(p => (
+                                    <option key={p.id} value={p.playerId}>
+                                        {p.player.display_name}
+                                    </option>  
+                            ))}
+                        </select>
+
+                        <div className="flex gap-3 justify-end">
+                            <button
+                                onClick={() => { setAddingPlayer(null); setDropPlayerId('') }}
+                                className="px-4 py-2 text-sm rounded-lg border broder-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => handleAddPlayer(addingPlayer)}
+                                disabled={saving || !dropPlayerId}
+                                className="px-4 py-2 text-sm rounded-lg bg-blue-700 text-white hover:bg-blue-600 transition-colors disabled:opacity-50 font-medium"
+                            >
+                                {saving ? 'Adding...' : 'Confirm' }
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
