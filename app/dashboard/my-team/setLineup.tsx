@@ -98,10 +98,9 @@ function EmptySlot({ slotId, variant, slot }: {
 }
 
 // Draggable player on pitch
-function DraggablePitchPlayer({ fp, onClick, positionLabel }: 
+function DraggablePitchPlayer({ fp, positionLabel }: 
 { 
     fp: PlayerWithDetails
-    onClick: (e: React.MouseEvent) => void 
     positionLabel?: string
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: fp.id })
@@ -111,7 +110,6 @@ function DraggablePitchPlayer({ fp, onClick, positionLabel }:
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
       {...attributes}
       {...listeners}
-      onClick={onClick}
       className="cursor-grab active:cursor-grabbing"
     >
       <PlayerCard player={fp.player} positionLabel={positionLabel}/>
@@ -341,8 +339,6 @@ export default function SetLineup({ team, onUpdate }: Props) {
 
   function handlePlayerClick(fp: PlayerWithDetails, e: React.MouseEvent) {
     e.stopPropagation()
-    // If dragging don't open popover
-    if (activeId) return
     setPopover({ playerId: fp.id, x: e.clientX, y: e.clientY })
   }
 
@@ -539,7 +535,6 @@ export default function SetLineup({ team, onUpdate }: Props) {
                                 ? <DraggablePitchPlayer 
                                         key={fp.id} 
                                         fp={fp} 
-                                        onClick={(e) => handlePlayerClick(fp, e)} 
                                         positionLabel={slotPositionLabel}
                                     />
                                 : <EmptySlot key={slotId} slotId={slotId} variant="pitch" slot={slot}/>
