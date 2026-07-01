@@ -548,7 +548,7 @@ export default function SetLineup({ team, onUpdate }: Props) {
                 <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-xl overflow-hidden">
                     <div className="px-3 py-2 bg-yellow-100 border-b border-yellow-200">
                         <p className="text-xs font-medium text-yellow-700 uppercase tracking-wide">
-                            Doesn't Fit Formation: ({overflowStarters.length})
+                            Does Not Fit Formation: ({overflowStarters.length})
                         </p>
                     </div>
                     {overflowStarters.map(fp => (
