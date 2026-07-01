@@ -258,14 +258,40 @@ export function getFormationRows(formation: Formation): { label: string; slots: 
     if (gk.length) rows.push({ label: 'GK', slots: gk})
 
     // defenders row = CBs and FBs together
-    const defenders = [...cb, ...fb]
+    const defenders: FormationSlot[] = []
+    if (fb.length >= 2 && cb.length >= 2) {
+        defenders.push(fb[0])
+        defenders.push(...cb)
+        defenders.push(fb[1])
+    } else {
+        defenders.push(...cb, ...fb)
+    }
+
     if (defenders.length) rows.push({ label: 'DEF', slots: defenders })
 
-    //Midfield row = CMs - flex slots - Ws together
-    const midfield = [...cm, ...flexibleSlots, ...w]
+    //Midfield row = CMs - flex slots
+    const midfield: FormationSlot[] = []
+    if (flexibleSlots.length >= 2) {
+        midfield.push(flexibleSlots[0])
+        midfield.push(...cm)
+        midfield.push(flexibleSlots[1])
+    } else {
+        midfield.push(...cm)
+    }
+
     if (midfield.length) rows.push({ label: 'MID', slots: midfield })
 
-    if (st.length) rows.push({ label: 'ATT', slots: st })
+    // Attacking row: STs and Ws
+    const attackers: FormationSlot[] = []
+    if (w.length >= 2) {
+        attackers.push(w[0])
+        attackers.push(...st)
+        attackers.push(w[1])
+    } else {
+        attackers.push(...st)
+    }
+
+    if (attackers.length) rows.push({ label: 'ATT', slots: attackers })
 
     return rows
 }

@@ -98,7 +98,12 @@ function EmptySlot({ slotId, variant, slot }: {
 }
 
 // Draggable player on pitch
-function DraggablePitchPlayer({ fp, onClick }: { fp: PlayerWithDetails; onClick: (e: React.MouseEvent) => void }) {
+function DraggablePitchPlayer({ fp, onClick, positionLabel }: 
+{ 
+    fp: PlayerWithDetails
+    onClick: (e: React.MouseEvent) => void 
+    positionLabel?: string
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: fp.id })
   return (
     <div
@@ -109,7 +114,7 @@ function DraggablePitchPlayer({ fp, onClick }: { fp: PlayerWithDetails; onClick:
       onClick={onClick}
       className="cursor-grab active:cursor-grabbing"
     >
-      <PlayerCard player={fp.player} />
+      <PlayerCard player={fp.player} positionLabel={positionLabel}/>
     </div>
   )
 }
@@ -432,6 +437,36 @@ export default function SetLineup({ team, onUpdate }: Props) {
     }
   }, [team, formation, players, onUpdate])
 
+  function assignAllRows(rows: { label: string; slots: FormationSlot[] }[], availablePlayers: PlayerWithDetails[]) {
+    const remaining = [...availablePlayers]
+    const result = rows.map(row => ({
+        ...row,
+        assigned: row.slots.map(slot => {
+            const idx = remaining.findIndex(p => {
+                const posType = getPositionType(
+                    p.player.detailed_position_id,
+                    p.player.position_id
+                )
+                return posType !== null && canFillSlot(slot, posType)
+            })
+            if (idx !== -1) {
+                const player = remaining[idx]
+                remaining.splice(idx, 1)
+                return player
+            }
+            return null
+        })
+    }))
+    console.log(remaining.length)
+
+    return { result, overflow: remaining}
+  }
+
+  const { result: assignedRows, overflow: overflowStarters } = assignAllRows(
+    getFormationRows(formation),
+    starters
+  )
+
   return (
     <DndContext
       sensors={sensors}
@@ -491,19 +526,21 @@ export default function SetLineup({ team, onUpdate }: Props) {
 
               {/* Players / empty slots */}
               <div className="relative z-10 py-4 px-2" style={{ minHeight: '400px' }}>
-                {rows.map(row => {
+                {assignedRows.map(row => {
                   const assigned = assignPlayersToRow(row.slots, starters)
                   return (
                     <div key={row.label} className="flex justify-around items-center py-3">
                         {row.slots.map((slot, i) => {
                             const fp = assigned[i]
                             const slotId = `pitch-${row.label}-${i}`
+                            const slotPositionLabel = slot.type === 'fixed' ? slot.position : slot.label
 
                             return fp
                                 ? <DraggablePitchPlayer 
                                         key={fp.id} 
                                         fp={fp} 
                                         onClick={(e) => handlePlayerClick(fp, e)} 
+                                        positionLabel={slotPositionLabel}
                                     />
                                 : <EmptySlot key={slotId} slotId={slotId} variant="pitch" slot={slot}/>
                         })}
@@ -511,8 +548,26 @@ export default function SetLineup({ team, onUpdate }: Props) {
                   )
                 })}
               </div>
+              {/* Overflow Starters */}
+            {overflowStarters.length > 0 && (
+                <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-xl overflow-hidden">
+                    <div className="px-3 py-2 bg-yellow-100 border-b border-yellow-200">
+                        <p className="text-xs font-medium text-yellow-700 uppercase tracking-wide">
+                            Doesn't Fit Formation: ({overflowStarters.length})
+                        </p>
+                    </div>
+                    {overflowStarters.map(fp => (
+                        <DraggableListPlayer
+                            key={fp.id}
+                            fp={fp}
+                            onClick={e => handlePlayerClick(fp, e)}
+                        />
+                    ))}
+                </div>
+            )}
             </div>
           </div>
+          
 
           {/* Subs + Reserves + IR */}
           <div className="w-56 flex flex-col gap-4">

@@ -16,9 +16,10 @@ type Props = {
     size?: 'sm' | 'md'
     showName?: boolean
     points?: number
+    positionLabel?: string
 }
 
-export default function PlayerCard({ player, size = 'md', showName = true, points }: Props) {
+export default function PlayerCard({ player, size = 'md', showName = true, points, positionLabel }: Props) {
     const imageSize = size === 'sm' ? 'w-8 h-8' : 'w-10 h-10'
     const borderColor = size === 'sm' ? 'border' : 'border-2'
 
@@ -38,7 +39,7 @@ export default function PlayerCard({ player, size = 'md', showName = true, point
                         {player.display_name.split(' ').pop()}
                     </p>
                     <span className={`text-xs px-1 rounded font-medium border ${getPositionColor(player.position_id)}`}>
-                        {getPositionShort(player.position_id)}
+                        {positionLabel ?? getPositionShort(player.position_id)}
                     </span>
                     {points !== undefined && (
                         <span className="text-xs font-medium bg-gray-800 text-white px-1.5 py0.5 rounded-md">
