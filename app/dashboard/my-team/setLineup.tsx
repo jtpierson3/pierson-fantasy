@@ -20,6 +20,7 @@ import {
     type Formation,
     type FormationSlot,
 } from '@/lib/formations'
+import { createPortal } from 'react-dom'
 import { CSS } from '@dnd-kit/utilities'
 import { useSortable } from '@dnd-kit/sortable'
 import { FantasyTeamWithPlayers, PlayerWithDetails } from './types'
@@ -98,9 +99,10 @@ function EmptySlot({ slotId, variant, slot }: {
 }
 
 // Draggable player on pitch
-function DraggablePitchPlayer({ fp, positionLabel }: 
+function DraggablePitchPlayer({ fp, onClick, positionLabel }: 
 { 
     fp: PlayerWithDetails
+    onClick: (e: React.MouseEvent) => void
     positionLabel?: string
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: fp.id })
@@ -110,6 +112,7 @@ function DraggablePitchPlayer({ fp, positionLabel }:
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
       {...attributes}
       {...listeners}
+      onClick={onClick}
       className="cursor-grab active:cursor-grabbing"
     >
       <PlayerCard player={fp.player} positionLabel={positionLabel}/>
@@ -148,16 +151,23 @@ type PopoverOption = {
 function PlayerPopover({
     options,
     onClose,
+    x,
+    y
 } : {
     options: PopoverOption[]
     onClose: () => void
+    x: number
+    y: number
 }) {
-    return (
+    return createPortal(
         <>
             {/* BACKDROP */}
             <div className="fixed inset-0 z-40" onClick={onClose} />
             {/* Menu */}
-            <div className="absolute z-50 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg py-1 min-w-[160px]">
+            <div 
+                className="absolute z-50 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg py-1 min-w-[160px]"
+                style={{ top: y, left: x }}    
+            >
                 {options.map((opt, i) => (
                    <button 
                     key={i}
@@ -169,66 +179,13 @@ function PlayerPopover({
                    </button> 
                 ))}
             </div>
-        </>
+        </>,
+        document.body
     )
 }
 
-function ReplaceModal({
-    title,
-    players,
-    onConfirm,
-    onClose,
-} : {
-    title: string
-    players: PlayerWithDetails[]
-    onConfirm: (replaceId: string) => void
-    onClose: () => void
-}) {
-    const [selected, setSelected] = useState('')
-
-    return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z=50 p-4">
-            <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl">
-                <h3 className="text-base font-medium text-gray-900 mb-1">{title}</h3>
-                <p className="text-sm text-gray-500 mb-4">
-                    Select a player to replace:
-                </p>
-                <select
-                    value={selected}
-                    onChange={e => setSelected(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600 mb-4"
-                >
-                    <option value="">Select a player...</option>
-                    {players.map(fp => (
-                        <option key={fp.id} value={fp.id}>
-                            {fp.player.display_name}
-                        </option>
-                    ))}
-                </select>
-                <div className="flex gap-3 justify-end">
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={() => { if (selected) onConfirm(selected) }}
-                        disabled={!selected}
-                        className="px-4 py-2 text-sm rounded-lg bg-green-800 text-white hover:bg-green-700 transition-colors disabled:opacity-50 font-medium"
-                    >
-                        Confirm
-                    </button>
-                </div>
-            </div>
-        </div>
-    )
-}
-
-type PopoverState = {
-    playerId: string
-    x: number
-    y: number
+type SelectedPlayer = {
+    fp: PlayerWithDetails
 } | null
 
 type ReplaceState = {
@@ -242,9 +199,9 @@ export default function SetLineup({ team, onUpdate }: Props) {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
-
-  const rows = getFormationRows(formation)
+  const [selectedPlayer, setSelectedPlayer] = useState<SelectedPlayer>(null)
+  const [targetSlot, setTargetSlot] = useState<string>('')
+  const [replaceId, setReplaceId] = useState<string>('')
   
   //Map players to rows
   function assignPlayersToRow(slots: FormationSlot[], availablePlayers: PlayerWithDetails[]) {
@@ -330,16 +287,19 @@ export default function SetLineup({ team, onUpdate }: Props) {
       return updated
     })
   }
-
-  const [popover, setPopover] = useState<PopoverState>(null)
-  const [replaceModal, setReplaceModal] = useState<ReplaceState>(null)
   
   const starterCount = starters.length
   const subCount = subs.length
 
+  const sensors = useSensors(useSensor(PointerSensor, { 
+    activationConstraint: { distance: 8 } 
+  }))
+
   function handlePlayerClick(fp: PlayerWithDetails, e: React.MouseEvent) {
     e.stopPropagation()
-    setPopover({ playerId: fp.id, x: e.clientX, y: e.clientY })
+    setSelectedPlayer({ fp })
+    setTargetSlot('')
+    setReplaceId('')
   }
 
   function movePlayers(playerId: string, targetSlot: string, replaceId?: string) {
@@ -359,53 +319,6 @@ export default function SetLineup({ team, onUpdate }: Props) {
         updated[idx] = { ...updated[idx], rosterSlot: targetSlot as PlayerWithDetails['rosterSlot'] }
         return updated
     })
-  }
-
-  function getPopoverOptions(fp: PlayerWithDetails): PopoverOption[] {
-    const options: PopoverOption[] = []
-    const currentSlot = fp.rosterSlot
-
-    if (currentSlot !== 'STARTER') {
-        options.push({
-            label: 'Set as Starter',
-            onClick: () => {
-                if (starterCount >= 11) {
-                    setReplaceModal({ playerId: fp.id, targetSlot: 'STARTER' })
-                } else {
-                    movePlayers(fp.id, 'STARTER')
-                }
-            }
-        })
-    }
-
-    if (currentSlot !== 'SUB') {
-        options.push({
-            label: 'Set as Sub',
-            onClick: () => {
-                if (subCount >= 5) {
-                    setReplaceModal({ playerId: fp.id, targetSlot: 'SUB' })
-                } else {
-                    movePlayers(fp.id, 'SUB')
-                }
-            }
-        })
-    }
-
-    if (currentSlot !== 'RESERVE') {
-        options.push({
-            label: 'Move to Reserve',
-            onClick: () => movePlayers(fp.id, 'RESERVE')
-        })
-    }
-
-    if (currentSlot !== 'IR') {
-        options.push({
-            label: 'Move to IR',
-            onClick: () => movePlayers(fp.id, 'IR')
-        })
-    }
-
-    return options
   }
 
   const handleSave = useCallback(async () => {
@@ -536,6 +449,7 @@ export default function SetLineup({ team, onUpdate }: Props) {
                                         key={fp.id} 
                                         fp={fp} 
                                         positionLabel={slotPositionLabel}
+                                        onClick={e => handlePlayerClick(fp, e)}
                                     />
                                 : <EmptySlot key={slotId} slotId={slotId} variant="pitch" slot={slot}/>
                         })}
@@ -562,6 +476,104 @@ export default function SetLineup({ team, onUpdate }: Props) {
             )}
             </div>
           </div>
+
+          {/* Player Management Panel*/}
+          {selectedPlayer && (
+            <div className="w-64 flex-shrink-0 bg-white border-gray-100 rounded-xl overlow-hidden">
+                <div className="px-3 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                    <p>
+                        {selectedPlayer.fp.player.display_name}
+                    </p>
+                    <button
+                        onClick={() => setSelectedPlayer(null)}
+                        className="text-gray-400 hover:text-gray-600"
+                    >
+                        X
+                    </button>
+                </div>
+
+                <div className="p-3 flex flex-col gap-2">
+                    <p className="text-xs text-gray-400 mb-1">Move to:</p>
+
+                    <div>
+                        <select
+                            value={targetSlot}
+                            onChange={e => { setTargetSlot(e.target.value); setReplaceId('') }}
+                            className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600"
+                        >
+                            <option value="">Select slot...</option>
+                            {selectedPlayer.fp.rosterSlot !== 'STARTER' && <option value="STARTER">Starter</option>}
+                            {selectedPlayer.fp.rosterSlot !== 'SUB' && <option value="SUB">Sub</option>}
+                            {selectedPlayer.fp.rosterSlot !== 'RESERVE' && <option value="RESERVE">Reserve</option>}
+                            {selectedPlayer.fp.rosterSlot !== 'IR' && <option value="IR">IR</option>}
+                        </select>
+                    </div>
+
+                    {/*Show replace dropdown if slot is full */}
+                    {targetSlot === 'STARTER' && starterCount >= 11 && (
+                        <div>
+                            <p className="text-xs text-gray-400 mb-1">Replace Starter:</p>
+                            <select
+                                value={replaceId}
+                                onChange={e => setReplaceId(e.target.value)}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg foucs:outline-none focus:ring-1 focus:ring-green-600"
+                            >
+                                <option value="">Select player...</option>
+                                {starters
+                                    .filter(fp => fp.id !== selectedPlayer.fp.id)
+                                    .map(fp => (
+                                        <option key={fp.id} value={fp.id}>
+                                            {fp.player.display_name}
+                                        </option>
+                                    ))}
+                            </select>
+                        </div>
+                    )}
+
+                    {targetSlot === 'SUB' && subCount >= 5 && (
+                        <div>
+                            <p className="text-xs text-gray-400 mb-1">Replace Sub:</p>
+                            <select
+                                value={replaceId}
+                                onChange={e => setReplaceId(e.target.value)}
+                                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg foucs:outline-none focus:ring-1 focus:ring-green-600"
+                            >
+                                <option value="">Select player...</option>
+                                {subs
+                                    .filter(fp => fp.id !== selectedPlayer.fp.id)
+                                    .map(fp => (
+                                        <option key={fp.id} value={fp.id}>
+                                            {fp.player.display_name}
+                                        </option>
+                                    ))}
+                            </select>
+                        </div>
+                    )}
+
+                    <button
+                        onClick={() => {
+                            if (!targetSlot) return
+                            const needsReplace = 
+                                (targetSlot === 'STARTER' && starterCount >= 11) ||
+                                (targetSlot === 'SUB' && subCount >= 5)
+                            if (needsReplace && !replaceId) return
+                            movePlayers(selectedPlayer.fp.id, targetSlot, replaceId || undefined)
+                            setSelectedPlayer(null)
+                            setTargetSlot('')
+                            setReplaceId('')
+                        }}
+                        disabled={
+                            !targetSlot || 
+                            (targetSlot === 'STARTER' && starterCount >= 11 && !replaceId) ||
+                            (targetSlot === 'SUB' && subCount >= 5 && !replaceId)
+                        }
+                        className="w-full py-2 text-sm rounded-lg bg-green-800 text-white hover:bg-green-700 transition-colors disabled:opacity-50 font-medium"
+                    >
+                        Confirm
+                    </button>
+                </div>
+            </div>
+          )}
           
 
           {/* Subs + Reserves + IR */}
@@ -630,35 +642,6 @@ export default function SetLineup({ team, onUpdate }: Props) {
         {activePlayer && <PlayerCard player={activePlayer.player} />}
       </DragOverlay>
 
-      {/* Popover */}
-      {popover && (() => {
-        const fp = players.find(p => p.id === popover.playerId)
-        if (!fp) return null
-        return (
-            <div
-                className="fixed z=50"
-                style={{ top: popover.y, left: popover.x }}
-            >
-                <PlayerPopover 
-                    options={getPopoverOptions(fp)}
-                    onClose={() => setPopover(null)}
-                />
-            </div>
-        )
-      })()}
-
-      {/* Replace Modal */}
-      {replaceModal && (
-        <ReplaceModal 
-            title={replaceModal.targetSlot === 'STARTER' ? 'Replace a Starter' : 'Replace a Sub'}
-            players={replaceModal.targetSlot === 'STARTER' ? starters : subs}
-            onConfirm={(replaceId) => {
-                movePlayers(replaceModal.playerId, replaceModal.targetSlot, replaceId)
-                setReplaceModal(null)
-            }}
-            onClose={() => setReplaceModal(null)}
-        />
-      )}
     </DndContext>
   )
 }
