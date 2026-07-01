@@ -151,16 +151,17 @@ model Team {
 }
 
 model Player {
-  id             Int                 @id
-  display_name   String
-  image_path     String
-  position_id    Int
-  jersey_number  Int?
-  date_of_birth  String?
-  team           Team                @relation(fields: [teamId], references: [id])
-  teamId         Int
-  fantasyPlayers FantasyTeamPlayer[]
-  updatedAt      DateTime            @updatedAt
+  id                   Int                 @id
+  display_name         String
+  image_path           String
+  position_id          Int
+  detailed_position_id Int?
+  jersey_number        Int?
+  date_of_birth        String?
+  team                 Team                @relation(fields: [teamId], references: [id])
+  teamId               Int
+  fantasyPlayers       FantasyTeamPlayer[]
+  updatedAt            DateTime            @updatedAt
 }
 
 //------------------------------ SURVIVOR ----------------------------------

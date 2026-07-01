@@ -12,10 +12,17 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core'
+import {
+    FORMATIONS,
+    getFormationRows,
+    getPositionType,
+    canFillSlot,
+    type Formation,
+    type FormationSlot,
+} from '@/lib/formations'
 import { CSS } from '@dnd-kit/utilities'
 import { useSortable } from '@dnd-kit/sortable'
 import { FantasyTeamWithPlayers, PlayerWithDetails } from './types'
-import { FORMATIONS, parseFormation, type Formation } from './types'
 import PlayerCard from '@/app/components/playerCard'
 import PlayerListRow from '@/app/components/PlayerListRow'
 
@@ -42,8 +49,18 @@ function slotLabel(slotId: string): string {
 }
 
 // Droppable empty slot
-function EmptySlot({ slotId, variant }: { slotId: string; variant: 'pitch' | 'list' }) {
+function EmptySlot({ slotId, variant, slot }: { 
+    slotId: string 
+    variant: 'pitch' | 'list'
+    slot?: FormationSlot
+}) {
   const { setNodeRef, isOver } = useDroppable({ id: slotId })
+
+  const label = slot
+    ? slot.type === 'fixed'
+        ? slot.position
+        : slot.label
+    : slotLabel(slotId)
 
   if (variant === 'pitch') {
     return (
@@ -57,7 +74,7 @@ function EmptySlot({ slotId, variant }: { slotId: string; variant: 'pitch' | 'li
       >
         <div className="flex flex-col items-center gap-0.5">
           <span className="text-white/60 text-lg leading-none">+</span>
-          <span className="text-white/40 text-xs">{slotLabel(slotId)}</span>
+          <span className="text-white/40 text-xs">{label}</span>
         </div>
       </div>
     )
@@ -75,7 +92,7 @@ function EmptySlot({ slotId, variant }: { slotId: string; variant: 'pitch' | 'li
       }`}>
         <span className={`text-xs leading-none ${isOver ? 'text-green-500' : 'text-gray-300'}`}>+</span>
       </div>
-      <span className="text-xs text-gray-300">{slotLabel(slotId)}</span>
+      <span className="text-xs text-gray-300">{label}</span>
     </div>
   )
 }
@@ -224,37 +241,41 @@ export default function SetLineup({ team, onUpdate }: Props) {
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
 
-  const { def, mid, att } = parseFormation(formation)
+  const rows = getFormationRows(formation)
+  
+  //Map players to rows
+  function assignPlayersToRow(slots: FormationSlot[], availablePlayers: PlayerWithDetails[]) {
+    const assigned: (PlayerWithDetails | null)[] = []
+    const remaining = [...availablePlayers]
+
+
+    for (const slot of slots) {
+        const idx = remaining.findIndex(p => {
+            const posType = getPositionType(
+                p.player.detailed_position_id,
+                p.player.position_id
+            )
+            return posType !== null && canFillSlot(slot, posType)
+        })
+
+        if (idx !== -1) {
+            assigned.push(remaining[idx])
+            remaining.splice(idx, 1)
+        } else {
+            assigned.push(remaining[idx])
+            remaining.splice(idx, 1)
+            // TODO: PUT A WARNING HERE THAT THIS PLAYER NORMALLY DOESN'T Play here.
+        }
+    }
+
+    return assigned
+  }
 
   // Build slot maps
   const starters = players.filter(p => p.rosterSlot === 'STARTER')
   const subs = players.filter(p => p.rosterSlot === 'SUB')
   const reserves = players.filter(p => p.rosterSlot === 'RESERVE')
   const ir = players.filter(p => p.rosterSlot === 'IR')
-
-  // Pitch rows — each is an array of slotId strings, filled by player or empty
-  const pitchRows: { pos: string; slots: string[]; players: (PlayerWithDetails | null)[] }[] = [
-    {
-      pos: 'GK',
-      slots: ['pitch-GK-0'],
-      players: [starters.find(p => p.player.position_id === 24) ?? null],
-    },
-    {
-      pos: 'DEF',
-      slots: Array.from({ length: def }, (_, i) => `pitch-DEF-${i}`),
-      players: Array.from({ length: def }, (_, i) => starters.filter(p => p.player.position_id === 25)[i] ?? null),
-    },
-    {
-      pos: 'MID',
-      slots: Array.from({ length: mid }, (_, i) => `pitch-MID-${i}`),
-      players: Array.from({ length: mid }, (_, i) => starters.filter(p => p.player.position_id === 26)[i] ?? null),
-    },
-    {
-      pos: 'ATT',
-      slots: Array.from({ length: att }, (_, i) => `pitch-ATT-${i}`),
-      players: Array.from({ length: att }, (_, i) => starters.filter(p => p.player.position_id === 27)[i] ?? null),
-    },
-  ]
 
   const activePlayer = activeId ? players.find(p => p.id === activeId) : null
 
@@ -470,20 +491,25 @@ export default function SetLineup({ team, onUpdate }: Props) {
 
               {/* Players / empty slots */}
               <div className="relative z-10 py-4 px-2" style={{ minHeight: '400px' }}>
-                {pitchRows.map(row => (
-                  <div key={row.pos} className="flex justify-around items-center py-3">
-                    {row.slots.map((slotId, i) => {
-                      const fp = row.players[i]
-                      return fp
-                        ? <DraggablePitchPlayer 
-                                key={fp.id} 
-                                fp={fp} 
-                                onClick={(e) => handlePlayerClick(fp, e)} 
-                            />
-                        : <EmptySlot key={slotId} slotId={slotId} variant="pitch" />
-                    })}
-                  </div>
-                ))}
+                {rows.map(row => {
+                  const assigned = assignPlayersToRow(row.slots, starters)
+                  return (
+                    <div key={row.label} className="flex justify-around items-center py-3">
+                        {row.slots.map((slot, i) => {
+                            const fp = assigned[i]
+                            const slotId = `pitch-${row.label}-${i}`
+
+                            return fp
+                                ? <DraggablePitchPlayer 
+                                        key={fp.id} 
+                                        fp={fp} 
+                                        onClick={(e) => handlePlayerClick(fp, e)} 
+                                    />
+                                : <EmptySlot key={slotId} slotId={slotId} variant="pitch" slot={slot}/>
+                        })}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </div>
