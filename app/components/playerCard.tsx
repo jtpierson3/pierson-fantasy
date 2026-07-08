@@ -17,9 +17,10 @@ type Props = {
     showName?: boolean
     points?: number
     positionLabel?: string
+    outOfPosition?: boolean
 }
 
-export default function PlayerCard({ player, size = 'md', showName = true, points, positionLabel }: Props) {
+export default function PlayerCard({ player, size = 'md', showName = true, points, positionLabel, outOfPosition }: Props) {
     const imageSize = size === 'sm' ? 'w-8 h-8' : 'w-10 h-10'
     const borderColor = size === 'sm' ? 'border' : 'border-2'
 
@@ -30,6 +31,7 @@ export default function PlayerCard({ player, size = 'md', showName = true, point
                     src={player.image_path}
                     alt={player.display_name}
                     fill
+                    sizes="32px"
                     className={`object-contain rounded-full bg-white ${borderColor} border-white shadow-sm`}
                 />
             </div>
@@ -45,6 +47,11 @@ export default function PlayerCard({ player, size = 'md', showName = true, point
                         <span className="text-xs font-medium bg-gray-800 text-white px-1.5 py0.5 rounded-md">
                             {points}pts
                         </span>
+                    )}
+                    {outOfPosition && (
+                        <div className="absolute top-0 right-0 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center" style={{ fontSize: '8px' }}>
+                            !
+                        </div>
                     )}
                 </div>
             )}

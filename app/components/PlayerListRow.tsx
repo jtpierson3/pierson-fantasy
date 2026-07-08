@@ -52,6 +52,7 @@ export default function PlayerListRow({
                     src={player.image_path}
                     alt={player.display_name}
                     fill
+                    sizes="32px"
                     className="object-contain rounded-full"
                 />
             </div>
@@ -73,6 +74,7 @@ export default function PlayerListRow({
                                         src={team.image_path}
                                         alt={team.name}
                                         fill
+                                        sizes="32px"
                                         className="object-contain"
                                     />
                                 </div>
@@ -95,6 +97,7 @@ export default function PlayerListRow({
                                     src={team.image_path}
                                     alt={team.name}
                                     fill
+                                    sizes="32px"
                                     className="object-contain"
                                 />
                             </div>

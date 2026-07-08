@@ -19,11 +19,10 @@ import {
     canFillSlot,
     type Formation,
     type FormationSlot,
+    getFormationSlots,
 } from '@/lib/formations'
-import { createPortal } from 'react-dom'
-import { CSS } from '@dnd-kit/utilities'
-import { useSortable } from '@dnd-kit/sortable'
 import { FantasyTeamWithPlayers, PlayerWithDetails } from './types'
+import DraggableWrapper from '@/app/components/DraggableWrapper'
 import PlayerCard from '@/app/components/playerCard'
 import PlayerListRow from '@/app/components/PlayerListRow'
 
@@ -98,99 +97,8 @@ function EmptySlot({ slotId, variant, slot }: {
   )
 }
 
-// Draggable player on pitch
-function DraggablePitchPlayer({ fp, onClick, positionLabel }: 
-{ 
-    fp: PlayerWithDetails
-    onClick: (e: React.MouseEvent) => void
-    positionLabel?: string
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: fp.id })
-  return (
-    <div
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
-      {...attributes}
-      {...listeners}
-      onClick={onClick}
-      className="cursor-grab active:cursor-grabbing"
-    >
-      <PlayerCard player={fp.player} positionLabel={positionLabel}/>
-    </div>
-  )
-}
-
-// Draggable player in list
-function DraggableListPlayer({ fp, onClick }: { fp: PlayerWithDetails; onClick: (e: React.MouseEvent) => void }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: fp.id })
-  return (
-    <div
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
-      {...attributes}
-      {...listeners}
-      onClick={onClick}
-      className="cursor-grab active:cursor-grabbing"
-    >
-      <PlayerListRow
-        player={fp.player}
-        team={fp.player.team}
-        isIR={fp.rosterSlot === 'IR'}
-        size="sm"
-      />
-    </div>
-  )
-}
-
-type PopoverOption = {
-    label: string
-    onClick: () => void
-    disabled?: boolean
-}
-
-function PlayerPopover({
-    options,
-    onClose,
-    x,
-    y
-} : {
-    options: PopoverOption[]
-    onClose: () => void
-    x: number
-    y: number
-}) {
-    return createPortal(
-        <>
-            {/* BACKDROP */}
-            <div className="fixed inset-0 z-40" onClick={onClose} />
-            {/* Menu */}
-            <div 
-                className="absolute z-50 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg py-1 min-w-[160px]"
-                style={{ top: y, left: x }}    
-            >
-                {options.map((opt, i) => (
-                   <button 
-                    key={i}
-                    onClick={() => { opt.onClick(); onClose() }}
-                    disabled={opt.disabled}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                   >
-                    {opt.label}
-                   </button> 
-                ))}
-            </div>
-        </>,
-        document.body
-    )
-}
-
 type SelectedPlayer = {
     fp: PlayerWithDetails
-} | null
-
-type ReplaceState = {
-    playerId: string
-    targetSlot: 'STARTER' | 'SUB'
 } | null
 
 export default function SetLineup({ team, onUpdate }: Props) {
@@ -202,34 +110,8 @@ export default function SetLineup({ team, onUpdate }: Props) {
   const [selectedPlayer, setSelectedPlayer] = useState<SelectedPlayer>(null)
   const [targetSlot, setTargetSlot] = useState<string>('')
   const [replaceId, setReplaceId] = useState<string>('')
-  
-  //Map players to rows
-  function assignPlayersToRow(slots: FormationSlot[], availablePlayers: PlayerWithDetails[]) {
-    const assigned: (PlayerWithDetails | null)[] = []
-    const remaining = [...availablePlayers]
 
-
-    for (const slot of slots) {
-        const idx = remaining.findIndex(p => {
-            const posType = getPositionType(
-                p.player.detailed_position_id,
-                p.player.position_id
-            )
-            return posType !== null && canFillSlot(slot, posType)
-        })
-
-        if (idx !== -1) {
-            assigned.push(remaining[idx])
-            remaining.splice(idx, 1)
-        } else {
-            assigned.push(remaining[idx])
-            remaining.splice(idx, 1)
-            // TODO: PUT A WARNING HERE THAT THIS PLAYER NORMALLY DOESN'T Play here.
-        }
-    }
-
-    return assigned
-  }
+  const [targetSlotIndex, setTargetSlotIndex] = useState<number>(0)
 
   // Build slot maps
   const starters = players.filter(p => p.rosterSlot === 'STARTER')
@@ -261,26 +143,47 @@ export default function SetLineup({ team, onUpdate }: Props) {
       if (overPlayerIndex !== -1) {
         const activeSlot = updated[activeIndex].rosterSlot
         const overSlot = updated[overPlayerIndex].rosterSlot
-        updated[activeIndex] = { ...updated[activeIndex], rosterSlot: overSlot }
-        updated[overPlayerIndex] = { ...updated[overPlayerIndex], rosterSlot: activeSlot }
+        const activeOrder = updated[activeIndex].slotOrder
+        const overOrder = updated[overPlayerIndex].slotOrder
+        updated[activeIndex] = { ...updated[activeIndex], rosterSlot: overSlot, slotOrder: overOrder }
+        updated[overPlayerIndex] = { ...updated[overPlayerIndex], rosterSlot: activeSlot, slotOrder: activeOrder }
         return updated
       }
 
-      // Dropped onto an empty slot
+      // Dropped onto an empty slot - extract slot index from slotId
       if (overId.startsWith('pitch-')) {
-        updated[activeIndex] = { ...updated[activeIndex], rosterSlot: 'STARTER' }
+        // slotId format: "pitch-DEF-0" - need to find the global index
+        const allRows = getFormationRows(formation)
+        const allSlots = allRows.flatMap(r => r.slots)
+        let globalIdx = 0
+        let found = false
+        allRows.forEach(row => {
+            row.slots.forEach((_, i) => {
+                const slotId = `pitch-${row.label}-${i}`
+                if (slotId === overId) found = true
+                if (!found) globalIdx++
+            })
+        })
+        updated[activeIndex] = { ...updated[activeIndex], rosterSlot: 'STARTER', slotOrder: globalIdx }
         return updated
       }
+
+      // Dropped onto empty sub slot
       if (overId.startsWith('sub-')) {
-        updated[activeIndex] = { ...updated[activeIndex], rosterSlot: 'SUB' }
+        const currentSubs = updated.filter(p => p.rosterSlot === 'SUB' && p.id !== activePlayerId)
+        updated[activeIndex] = { ...updated[activeIndex], rosterSlot: 'SUB', slotOrder: currentSubs.length + 1}
         return updated
       }
+
+      // Dropped onto empty reserve slot
       if (overId.startsWith('reserve-')) {
-        updated[activeIndex] = { ...updated[activeIndex], rosterSlot: 'RESERVE' }
+        const currentReserves = updated.filter(p => p.rosterSlot === 'RESERVE' && p.id !== activePlayerId)
+        updated[activeIndex] = { ...updated[activeIndex], rosterSlot: 'RESERVE', slotOrder: currentReserves.length + 1}
         return updated
       }
+
       if (overId.startsWith('ir-')) {
-        updated[activeIndex] = { ...updated[activeIndex], rosterSlot: 'IR' }
+        updated[activeIndex] = { ...updated[activeIndex], rosterSlot: 'IR', slotOrder: 0}
         return updated
       }
 
@@ -302,7 +205,12 @@ export default function SetLineup({ team, onUpdate }: Props) {
     setReplaceId('')
   }
 
-  function movePlayers(playerId: string, targetSlot: string, replaceId?: string) {
+  function movePlayers(
+    playerId: string, 
+    targetSlot: string, 
+    replaceId?: string,
+    slotIndex?: number
+) {
     setPlayers(prev => {
         const updated = [...prev]
         const idx = updated.findIndex(p => p.id === playerId)
@@ -312,11 +220,46 @@ export default function SetLineup({ team, onUpdate }: Props) {
         if (replaceId) {
             const replaceIdx = updated.findIndex(p => p.id === replaceId)
             if (replaceIdx !== -1) {
-                updated[replaceIdx] = { ...updated[replaceIdx], rosterSlot: updated[idx].rosterSlot}
+                // Incoming player takes the replaced player's exact slot
+                const replacedSlotOrder = updated[replaceIdx].slotOrder
+                const replacedRosterSlot = updated[replaceIdx].rosterSlot
+
+                //Replaced Player takes the incoming player's old slot
+                updated[replaceIdx] = {
+                    ...updated[replaceIdx], 
+                    rosterSlot: updated[idx].rosterSlot as PlayerWithDetails['rosterSlot'],
+                    slotOrder: updated[idx].slotOrder
+                }
+
+                updated[idx] = {
+                    ...updated[idx],
+                    rosterSlot: targetSlot as PlayerWithDetails['rosterSlot'],
+                    slotOrder: replacedSlotOrder
+                }
+
+                return updated
             }
         }
 
-        updated[idx] = { ...updated[idx], rosterSlot: targetSlot as PlayerWithDetails['rosterSlot'] }
+        // Calculate slotOrder for the target slot
+        let newSlotOrder = 0
+        if (targetSlot === 'STARTER') {
+            newSlotOrder = slotIndex ?? 0
+        } else if (targetSlot === 'SUB') {
+            const currentSubs = updated.filter(p => p.rosterSlot === 'SUB' && p.id !== playerId)
+            newSlotOrder = currentSubs.length + 1
+        } else if (targetSlot === 'RESERVE') {
+            const currentReserves = updated.filter(p => p.rosterSlot === 'RESERVE' && p.id !== playerId)
+            newSlotOrder = currentReserves.length + 1
+        } else {
+            newSlotOrder = 0
+        }
+
+        updated[idx] = { 
+            ...updated[idx], 
+            rosterSlot: targetSlot as PlayerWithDetails['rosterSlot'],
+            slotOrder: newSlotOrder
+        }
         return updated
     })
   }
@@ -346,27 +289,51 @@ export default function SetLineup({ team, onUpdate }: Props) {
     }
   }, [team, formation, players, onUpdate])
 
-  function assignAllRows(rows: { label: string; slots: FormationSlot[] }[], availablePlayers: PlayerWithDetails[]) {
+  function assignAllRows(
+    rows: { label: string; slots: FormationSlot[] }[], 
+    availablePlayers: PlayerWithDetails[]
+) {
+    const allSlots = rows.flatMap(r => r.slots)
+    const slotCount = allSlots.length
+
+    //Initialize Slot Array
+    const slotAssignments: (PlayerWithDetails | null)[] = Array(slotCount).fill(null)
+
+    // Players not yet assigned
     const remaining = [...availablePlayers]
+
+    // First Pass - Pin Players with a Valid slotOrder
+    availablePlayers.forEach(p => {
+        const idx = p.slotOrder
+        if (idx >= 0 && idx < slotCount && slotAssignments[idx] === null) {
+            slotAssignments[idx] = p
+            remaining.splice(remaining.findIndex(r => r.id === p.id), 1)
+        }
+    })
+
+    // Second Pass - fill empty slots by natural position
+    slotAssignments.forEach((assigned, idx) => {
+        if (assigned !== null) return
+        const slot = allSlots[idx]
+        const matchIdx = remaining.findIndex(p => {
+            const posType = getPositionType(
+                p.player.detailed_position_id,
+                p.player.position_id
+            )
+            return posType !== null && canFillSlot(slot, posType)
+        })
+        if (matchIdx !== -1) {
+            slotAssignments[idx] = remaining[matchIdx]
+            remaining.splice(matchIdx, 1)
+        }
+    })
+
+    // Map back to rows
+    let slotIdx = 0
     const result = rows.map(row => ({
         ...row,
-        assigned: row.slots.map(slot => {
-            const idx = remaining.findIndex(p => {
-                const posType = getPositionType(
-                    p.player.detailed_position_id,
-                    p.player.position_id
-                )
-                return posType !== null && canFillSlot(slot, posType)
-            })
-            if (idx !== -1) {
-                const player = remaining[idx]
-                remaining.splice(idx, 1)
-                return player
-            }
-            return null
-        })
+        assigned: row.slots.map(() => slotAssignments[slotIdx++])
     }))
-    console.log(remaining.length)
 
     return { result, overflow: remaining}
   }
@@ -436,21 +403,32 @@ export default function SetLineup({ team, onUpdate }: Props) {
               {/* Players / empty slots */}
               <div className="relative z-10 py-4 px-2" style={{ minHeight: '400px' }}>
                 {assignedRows.map(row => {
-                  const assigned = assignPlayersToRow(row.slots, starters)
                   return (
                     <div key={row.label} className="flex justify-around items-center py-3">
                         {row.slots.map((slot, i) => {
-                            const fp = assigned[i]
+                            const fp = row.assigned[i]
                             const slotId = `pitch-${row.label}-${i}`
                             const slotPositionLabel = slot.type === 'fixed' ? slot.position : slot.label
+                            
+                            const naturalPositionType = getPositionType(
+                                fp?.player.detailed_position_id,
+                                fp?.player.position_id
+                            )
+                            const slotPosType = slot.type === 'fixed' ? slot.position : null
+                            const outOfPosition = slotPosType !== null && naturalPositionType !== slotPosType
 
                             return fp
-                                ? <DraggablePitchPlayer 
-                                        key={fp.id} 
-                                        fp={fp} 
+                                ? <DraggableWrapper
+                                    key={fp.id}
+                                    id={fp.id}
+                                    onClick={e => handlePlayerClick(fp, e)}
+                                >
+                                    <PlayerCard
+                                        player={fp.player}
                                         positionLabel={slotPositionLabel}
-                                        onClick={e => handlePlayerClick(fp, e)}
+                                        outOfPosition={outOfPosition}
                                     />
+                                </DraggableWrapper>
                                 : <EmptySlot key={slotId} slotId={slotId} variant="pitch" slot={slot}/>
                         })}
                     </div>
@@ -466,11 +444,18 @@ export default function SetLineup({ team, onUpdate }: Props) {
                         </p>
                     </div>
                     {overflowStarters.map(fp => (
-                        <DraggableListPlayer
+                        <DraggableWrapper
                             key={fp.id}
-                            fp={fp}
+                            id={fp.id}
                             onClick={e => handlePlayerClick(fp, e)}
-                        />
+                        >
+                            <PlayerListRow 
+                                player={fp.player}
+                                team={fp.player.team}
+                                isIR={fp.rosterSlot === 'IR'}
+                                size="sm"
+                            />
+                        </DraggableWrapper>
                     ))}
                 </div>
             )}
@@ -498,7 +483,18 @@ export default function SetLineup({ team, onUpdate }: Props) {
                     <div>
                         <select
                             value={targetSlot}
-                            onChange={e => { setTargetSlot(e.target.value); setReplaceId('') }}
+                            onChange={e => {
+                                setTargetSlot(e.target.value) 
+                                setReplaceId('')
+                                if (e.target.value === 'STARTER') {
+                                    const allSlots = getFormationSlots(formation)
+                                    const usedIndices = new Set(
+                                        players.filter(p => p.rosterSlot === 'STARTER').map(p => p.slotOrder)
+                                    )
+                                    const nextIdx = allSlots.findIndex((_, i) => !usedIndices.has(i))
+                                    setTargetSlotIndex(nextIdx === -1 ? 0 : nextIdx)
+                                }
+                            }}
                             className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600"
                         >
                             <option value="">Select slot...</option>
@@ -557,7 +553,12 @@ export default function SetLineup({ team, onUpdate }: Props) {
                                 (targetSlot === 'STARTER' && starterCount >= 11) ||
                                 (targetSlot === 'SUB' && subCount >= 5)
                             if (needsReplace && !replaceId) return
-                            movePlayers(selectedPlayer.fp.id, targetSlot, replaceId || undefined)
+                            movePlayers(
+                                selectedPlayer.fp.id, 
+                                targetSlot, 
+                                replaceId || undefined,
+                                targetSlot === 'STARTER' ? targetSlotIndex : undefined
+                            )
                             setSelectedPlayer(null)
                             setTargetSlot('')
                             setReplaceId('')
@@ -586,11 +587,18 @@ export default function SetLineup({ team, onUpdate }: Props) {
                 </p>
               </div>
               {subs.map(fp => 
-                <DraggableListPlayer 
-                    key={fp.id} 
-                    fp={fp} 
-                    onClick={(e) => handlePlayerClick(fp, e)}
-                />
+                <DraggableWrapper
+                    key={fp.id}
+                    id={fp.id}
+                    onClick={e => handlePlayerClick(fp, e)}
+                >
+                    <PlayerListRow 
+                        player={fp.player}
+                        team={fp.player.team}
+                        isIR={fp.rosterSlot === 'IR'}
+                        size="sm"
+                    />
+                </DraggableWrapper>
               )}
               {Array.from({ length: Math.max(0, 5 - subs.length) }, (_, i) => (
                 <EmptySlot key={`sub-${subs.length + i}`} slotId={`sub-${subs.length + i}`} variant="list" />
@@ -605,11 +613,18 @@ export default function SetLineup({ team, onUpdate }: Props) {
                 </p>
               </div>
               {reserves.map(fp => 
-                <DraggableListPlayer 
-                    key={fp.id} 
-                    fp={fp} 
-                    onClick={(e) => handlePlayerClick(fp, e)}
-                />  
+                <DraggableWrapper
+                    key={fp.id}
+                    id={fp.id}
+                    onClick={e => handlePlayerClick(fp, e)}
+                >
+                    <PlayerListRow 
+                        player={fp.player}
+                        team={fp.player.team}
+                        isIR={fp.rosterSlot === 'IR'}
+                        size="sm"
+                    />
+                </DraggableWrapper>
               )}
               {Array.from({ length: Math.max(0, 7 - reserves.length) }, (_, i) => (
                 <EmptySlot key={`reserve-${reserves.length + i}`} slotId={`reserve-${reserves.length + i}`} variant="list" />
@@ -624,11 +639,18 @@ export default function SetLineup({ team, onUpdate }: Props) {
                 </p>
               </div>
               {ir.map(fp => 
-                <DraggableListPlayer 
-                    key={fp.id} 
-                    fp={fp} 
-                    onClick={(e) => handlePlayerClick(fp, e)}
-                />
+                <DraggableWrapper
+                    key={fp.id}
+                    id={fp.id}
+                    onClick={e => handlePlayerClick(fp, e)}
+                >
+                    <PlayerListRow 
+                        player={fp.player}
+                        team={fp.player.team}
+                        isIR={fp.rosterSlot === 'IR'}
+                        size="sm"
+                    />
+                </DraggableWrapper>
               )}
               {Array.from({ length: Math.max(0, 4 - ir.length) }, (_, i) => (
                 <EmptySlot key={`ir-${ir.length + i}`} slotId={`ir-${ir.length + i}`} variant="list" />
