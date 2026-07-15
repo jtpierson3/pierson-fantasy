@@ -25,6 +25,7 @@ import { FantasyTeamWithPlayers, PlayerWithDetails } from './types'
 import DraggableWrapper from '@/app/components/DraggableWrapper'
 import PlayerCard from '@/app/components/playerCard'
 import PlayerListRow from '@/app/components/PlayerListRow'
+import next from 'next'
 
 type Props = {
   team: FantasyTeamWithPlayers
@@ -103,7 +104,7 @@ type SelectedPlayer = {
 
 export default function SetLineup({ team, onUpdate }: Props) {
   const [formation, setFormation] = useState<Formation>(team.formation as Formation)
-  const [players, setPlayers] = useState(team.players)
+  const [players, setPlayers] = useState(() => normalizeSlotOrder(team.players, team.formation as Formation))
   const [activeId, setActiveId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -120,6 +121,77 @@ export default function SetLineup({ team, onUpdate }: Props) {
   const ir = players.filter(p => p.rosterSlot === 'IR')
 
   const activePlayer = activeId ? players.find(p => p.id === activeId) : null
+
+  function normalizeSlotOrder(players: PlayerWithDetails[], formation: Formation): PlayerWithDetails[] {
+    const slotCount = getFormationSlots(formation).length
+    const updated = [...players]
+
+    // Normalize Starters
+    const starters = updated.filter(p => p.rosterSlot === 'STARTER')
+    const usedStarterSlots = new Set<number>()
+    const startersNeedingSlot: PlayerWithDetails[] = []
+
+    starters.forEach(p => {
+        if (p.slotOrder >= 0 && p.slotOrder < slotCount && !usedStarterSlots.has(p.slotOrder)) {
+            usedStarterSlots.add(p.slotOrder)
+        } else {
+            startersNeedingSlot.push(p)
+        }
+    })
+
+    // assign remaining starters to the first open slot
+    let nextOpenSlot = 0
+    startersNeedingSlot.forEach(p => {
+        while (usedStarterSlots.has(nextOpenSlot) && nextOpenSlot < slotCount) nextOpenSlot++
+        const idx = updated.findIndex(u => u.id === p.id)
+        updated[idx] = { ...updated[idx], slotOrder: nextOpenSlot }
+        usedStarterSlots.add(nextOpenSlot)
+    })
+
+    // Normalize Subs (1-5)
+    const subs = updated.filter(p => p.rosterSlot === 'SUB')
+    const usedSubOrders = new Set<number>()
+    const subsNeedingOrder: PlayerWithDetails[] = []
+
+    subs.forEach(p => {
+        if (p.slotOrder >= 1 && p.slotOrder <= 5 && !usedSubOrders.has(p.slotOrder)) {
+            usedSubOrders.add(p.slotOrder)
+        } else {
+            subsNeedingOrder.push(p)
+        }
+    })
+
+    let nextSubOrder = 1
+    subsNeedingOrder.forEach(p => {
+        while (usedSubOrders.has(nextSubOrder)) nextSubOrder++
+        const idx = updated.findIndex(u => u.id === p.id)
+        updated[idx] = { ...updated[idx], slotOrder: nextSubOrder }
+        usedSubOrders.add(nextSubOrder)
+    })
+
+    //Normalize Reserves (1-7)
+    const reserves = updated.filter(p => p.rosterSlot === 'RESERVE')
+    const usedReserveOrders = new Set<number>()
+    const reservesNeedingOrder: PlayerWithDetails[] = []
+
+    reserves.forEach(p => {
+        if (p.slotOrder >= 1 && p.slotOrder <= 7 && !usedReserveOrders.has(p.slotOrder)) {
+            usedReserveOrders.add(p.slotOrder)
+        } else {
+            reservesNeedingOrder.push(p)
+        }
+    })
+
+    let nextReserveOrder = 1
+    reservesNeedingOrder.forEach(p => {
+        while (usedReserveOrders.has(nextReserveOrder)) nextReserveOrder++
+        const idx = updated.findIndex(u => u.id === p.id)
+        updated[idx] = { ...updated[idx], slotOrder: nextReserveOrder }
+        usedReserveOrders.add(nextReserveOrder)
+    })
+
+    return updated
+  }
 
   function handleDragStart(event: DragStartEvent) {
     setActiveId(event.active.id as string)
@@ -221,20 +293,22 @@ export default function SetLineup({ team, onUpdate }: Props) {
             const replaceIdx = updated.findIndex(p => p.id === replaceId)
             if (replaceIdx !== -1) {
                 // Incoming player takes the replaced player's exact slot
-                const replacedSlotOrder = updated[replaceIdx].slotOrder
-                const replacedRosterSlot = updated[replaceIdx].rosterSlot
+                const activeSlot = updated[idx].rosterSlot
+                const activeOrder = updated[idx].slotOrder
+                const replacedSlot = updated[replaceIdx].rosterSlot
+                const replacedOrder = updated[replaceIdx].slotOrder
 
                 //Replaced Player takes the incoming player's old slot
                 updated[replaceIdx] = {
                     ...updated[replaceIdx], 
-                    rosterSlot: updated[idx].rosterSlot as PlayerWithDetails['rosterSlot'],
-                    slotOrder: updated[idx].slotOrder
+                    rosterSlot: replacedSlot,
+                    slotOrder: replacedOrder
                 }
 
                 updated[idx] = {
                     ...updated[idx],
-                    rosterSlot: targetSlot as PlayerWithDetails['rosterSlot'],
-                    slotOrder: replacedSlotOrder
+                    rosterSlot: activeSlot,
+                    slotOrder: activeOrder
                 }
 
                 return updated
@@ -251,8 +325,6 @@ export default function SetLineup({ team, onUpdate }: Props) {
         } else if (targetSlot === 'RESERVE') {
             const currentReserves = updated.filter(p => p.rosterSlot === 'RESERVE' && p.id !== playerId)
             newSlotOrder = currentReserves.length + 1
-        } else {
-            newSlotOrder = 0
         }
 
         updated[idx] = { 
