@@ -29,6 +29,14 @@ export async function POST(req: Request) {
                 }
             }
         })
+        
+        await prisma.fantasyTeam.create({
+            data: {
+                name: `${currentUser.username}&apos Team`,
+                userId: currentUser.id,
+                fantasyLeagueId: league.id
+            }
+        })
 
         return NextResponse.json({ success: true, league })
     } catch (err) {

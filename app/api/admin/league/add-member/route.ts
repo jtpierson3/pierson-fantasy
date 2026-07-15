@@ -40,6 +40,27 @@ export async function POST(req: Request) {
             }
         })
 
+        //Check to see if they have a team, if not create one
+        const existingTeam = await prisma.fantasyTeam.findUnique({
+            where: {
+                userId_fantasyLeagueId: {
+                    userId,
+                    fantasyLeagueId: leagueId,
+                }
+            }
+        })
+
+        if (!existingTeam) {
+            const newUser = await prisma.user.findUnique({ where: { id: userId } })
+            await prisma.fantasyTeam.create({
+                data: {
+                    name: `${newUser?.username ?? 'New'}&aposs Team`,
+                    userId,
+                    fantasyLeagueId: leagueId
+                }
+            })
+        }
+
         return NextResponse.json({ success: true })
     } catch (err) {
         console.error('[add-member] error: ', err)
