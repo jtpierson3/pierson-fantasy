@@ -32,7 +32,7 @@ export async function POST(req: Request) {
         
         await prisma.fantasyTeam.create({
             data: {
-                name: `${currentUser.username}&apos Team`,
+                name: `${currentUser.username}'s Team`,
                 userId: currentUser.id,
                 fantasyLeagueId: league.id
             }

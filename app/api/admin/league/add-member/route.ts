@@ -54,7 +54,7 @@ export async function POST(req: Request) {
             const newUser = await prisma.user.findUnique({ where: { id: userId } })
             await prisma.fantasyTeam.create({
                 data: {
-                    name: `${newUser?.username ?? 'New'}&aposs Team`,
+                    name: `${newUser?.username ?? 'New'}'s Team`,
                     userId,
                     fantasyLeagueId: leagueId
                 }
