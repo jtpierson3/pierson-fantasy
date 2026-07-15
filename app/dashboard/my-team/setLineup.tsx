@@ -187,8 +187,12 @@ export default function SetLineup({ team, onUpdate }: Props) {
 
   // Build slot maps
   const starters = players.filter(p => p.rosterSlot === 'STARTER')
-  const subs = players.filter(p => p.rosterSlot === 'SUB')
-  const reserves = players.filter(p => p.rosterSlot === 'RESERVE')
+  const subs = players
+    .filter(p => p.rosterSlot === 'SUB')
+    .sort((a, b) => a.slotOrder - b.slotOrder)
+  const reserves = players
+    .filter(p => p.rosterSlot === 'RESERVE')
+    .sort((a, b) => a.slotOrder - b.slotOrder)
   const ir = players.filter(p => p.rosterSlot === 'IR')
 
   const activePlayer = activeId ? players.find(p => p.id === activeId) : null
@@ -217,6 +221,7 @@ export default function SetLineup({ team, onUpdate }: Props) {
         const overSlot = updated[overPlayerIndex].rosterSlot
         const activeOrder = updated[activeIndex].slotOrder
         const overOrder = updated[overPlayerIndex].slotOrder
+
         updated[activeIndex] = { ...updated[activeIndex], rosterSlot: overSlot, slotOrder: overOrder }
         updated[overPlayerIndex] = { ...updated[overPlayerIndex], rosterSlot: activeSlot, slotOrder: activeOrder }
         return updated
