@@ -13,7 +13,6 @@ type Props = {
 const LEAGUE_ADMIN_LINKS = [
     { href: '/admin/users', label: 'Users'},
     { href: '/admin/league', label: 'League'},
-    { href: '/admin/gameweeks', label: 'Gameweeks'},
 ]
 
 const SITE_ADMIN_LINKS = [

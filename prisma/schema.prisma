@@ -38,14 +38,15 @@ model User {
 }
 
 model FantasyLeague {
-  id          String                @id @default(cuid())
-  name        String
-  description String?
-  members     FantasyLeagueMember[]
-  teams       FantasyTeam[]
-  gameweeks   FantasyGameweek[]
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
+  id                String                @id @default(cuid())
+  name              String
+  description       String?
+  scheduleGenerated Boolean               @default(false)
+  members           FantasyLeagueMember[]
+  teams             FantasyTeam[]
+  gameweeks         FantasyGameweek[]
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
 }
 
 model FantasyLeagueMember {
@@ -119,8 +120,8 @@ model FantasyMatchup {
   homeTeamId String
   awayTeam   FantasyTeam     @relation("AwayMatchups", fields: [awayTeamId], references: [id])
   awayTeamId String
-  homePoints Int             @default(0)
-  awayPoints Int             @default(0)
+  homePoints Float           @default(0)
+  awayPoints Float           @default(0)
   isComplete Boolean         @default(false)
   createdAt  DateTime        @default(now())
 }

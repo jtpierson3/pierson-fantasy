@@ -23,6 +23,14 @@ const FOOTBALL_NAV = [
             </svg>
         ),
     },*/
+        { href: '/dashboard/league',
+        label: "League (Beta)",
+        icon: (
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 1l1.5 4.5H14l-3.75 2.75 1.5 4.5L8 10l-3.75 2.75 1.5-4.5L2 5.5h4.5z" />
+            </svg>
+        ),
+    },
     {
         href: '/dashboard/my-team',
         label: 'My Team',
@@ -30,14 +38,6 @@ const FOOTBALL_NAV = [
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                 <circle cx="8" cy="5" r="3"/>
                 <path d="M2 14c0-3.314 2.686-6 6-6s6 2.686 6 6" />
-            </svg>
-        ),
-    },
-    { href: '/dashboard/league',
-        label: "League",
-        icon: (
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M8 1l1.5 4.5H14l-3.75 2.75 1.5 4.5L8 10l-3.75 2.75 1.5-4.5L2 5.5h4.5z" />
             </svg>
         ),
     },
@@ -102,19 +102,6 @@ const SURVIVOR_NAV = [
     }
 ]
 
-const ACCOUNT_NAV = [
-    {
-        href: '/dashboard/settings',
-        label: 'Settings',
-        icon: (
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M8 10a2 2 0 100-4 2 2 0 000 4z" />
-                <path d="M13.3 9.31.9-1.3-1.492.491.6.5a5 5 0 00-.9-.5L10 4H7.9l-.3 1.6a5 5" />
-            </svg>
-        ),
-    },
-]
-
 export default function Sidebar({hasFootball, hasSurvivor }: Props) {
     const pathname = usePathname()
 
@@ -173,13 +160,7 @@ export default function Sidebar({hasFootball, hasSurvivor }: Props) {
                         {SURVIVOR_NAV.map(navItem)}
                     </div>
                 )}
-
-                <div className="mb-2">
-                    <p className="px-3 pb-1 pt-2 text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Account
-                    </p>
-                    {ACCOUNT_NAV.map(navItem)}                    
-                </div>
+                
             </nav>
 
 
