@@ -98,30 +98,6 @@ function EmptySlot({ slotId, variant, slot }: {
   )
 }
 
-type SelectedPlayer = {
-    fp: PlayerWithDetails
-} | null
-
-export default function SetLineup({ team, onUpdate }: Props) {
-  const [formation, setFormation] = useState<Formation>(team.formation as Formation)
-  const [players, setPlayers] = useState(() => normalizeSlotOrder(team.players, team.formation as Formation))
-  const [activeId, setActiveId] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
-
-  const [selectedPlayer, setSelectedPlayer] = useState<SelectedPlayer>(null)
-  const [targetSlot, setTargetSlot] = useState<string>('')
-  const [replaceId, setReplaceId] = useState<string>('')
-
-  const [targetSlotIndex, setTargetSlotIndex] = useState<number>(0)
-
-  // Build slot maps
-  const starters = players.filter(p => p.rosterSlot === 'STARTER')
-  const subs = players.filter(p => p.rosterSlot === 'SUB')
-  const reserves = players.filter(p => p.rosterSlot === 'RESERVE')
-  const ir = players.filter(p => p.rosterSlot === 'IR')
-
-  const activePlayer = activeId ? players.find(p => p.id === activeId) : null
-
   function normalizeSlotOrder(players: PlayerWithDetails[], formation: Formation): PlayerWithDetails[] {
     const slotCount = getFormationSlots(formation).length
     const updated = [...players]
@@ -188,10 +164,34 @@ export default function SetLineup({ team, onUpdate }: Props) {
         const idx = updated.findIndex(u => u.id === p.id)
         updated[idx] = { ...updated[idx], slotOrder: nextReserveOrder }
         usedReserveOrders.add(nextReserveOrder)
-    })
+  })
 
-    return updated
-  }
+  return updated
+}
+
+type SelectedPlayer = {
+    fp: PlayerWithDetails
+} | null
+
+export default function SetLineup({ team, onUpdate }: Props) {
+  const [formation, setFormation] = useState<Formation>(team.formation as Formation)
+  const [players, setPlayers] = useState(() => normalizeSlotOrder(team.players, team.formation as Formation))
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  const [selectedPlayer, setSelectedPlayer] = useState<SelectedPlayer>(null)
+  const [targetSlot, setTargetSlot] = useState<string>('')
+  const [replaceId, setReplaceId] = useState<string>('')
+
+  const [targetSlotIndex, setTargetSlotIndex] = useState<number>(0)
+
+  // Build slot maps
+  const starters = players.filter(p => p.rosterSlot === 'STARTER')
+  const subs = players.filter(p => p.rosterSlot === 'SUB')
+  const reserves = players.filter(p => p.rosterSlot === 'RESERVE')
+  const ir = players.filter(p => p.rosterSlot === 'IR')
+
+  const activePlayer = activeId ? players.find(p => p.id === activeId) : null
 
   function handleDragStart(event: DragStartEvent) {
     setActiveId(event.active.id as string)
