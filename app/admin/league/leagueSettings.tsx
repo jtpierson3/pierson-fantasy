@@ -20,6 +20,7 @@ type League = {
     id: string
     name: string
     description: string | null
+    scheduleGenerated: boolean
     members: LeagueMember[]
     teams: { id: string }[]
 }
@@ -71,6 +72,10 @@ export default function LeagueSettings({
     const [addMemberLoading, setAddMemberLoading] = useState(false)
 
     const displayedLeagues = showAllLeagues ? allLeagues : adminLeagues
+
+    // Schedule
+    const [generatingSchedule, setGeneratingSchedule] = useState<string | null>(null)
+    const [scheduleError, setScheduleError] = useState<string | null>(null)
 
     const handleCreateLeague = useCallback(async () => {
         if (!createForm.name) {
@@ -237,6 +242,33 @@ export default function LeagueSettings({
         })
     }, [router])
 
+    const handleGenerateSchedule = useCallback((league: League) => {
+        setConfirm({
+            title: 'Generate Season Schedule',
+            message: `This will generate a 38-week round-robin schedule for ${league.name} with ${league.teams.length} teams. This can only be done once. Are you sure?`,
+            confirmLabel: 'Generate Schedule',
+            onConfirm: async () => {
+                setGeneratingSchedule(league.id)
+                setScheduleError(null)
+                try {
+                    const res = await fetch('/api/admin/league/generate-schedule', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ leagueId: league.id })
+                    })
+                    const data = await res.json()
+                    if (!res.ok) throw new Error(data.error ?? 'Failed to generate schedule')
+                    router.refresh()
+                } catch (err) {
+                    setScheduleError(err instanceof Error ? err.message : 'Failed to generate schedule')
+                } finally {
+                    setGeneratingSchedule(null)
+                    setConfirm(null)
+                }
+            }
+        })
+    }, [router])
+
     return (
         <div>
             {/* Header */}
@@ -278,6 +310,12 @@ export default function LeagueSettings({
                     {error}
                 </div>
             )}
+            
+            {scheduleError && (
+                <div className="bg-red-900/30 border border-red-800 rounded-lg px-4 py-3 mb-4 text-sm text-red-400">
+                    {scheduleError}
+                </div>
+            )}
 
             {/* Leagues */}
             <div className="flex flex-col gap-6">
@@ -301,6 +339,28 @@ export default function LeagueSettings({
                                 </p>
                             </div>
                             <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => handleGenerateSchedule(league)}
+                                    disabled={league.scheduleGenerated || league.teams.length < 2 || generatingSchedule === league.id}
+                                    className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+                                        league.scheduleGenerated
+                                            ? 'bg-gray-800/50 text-gray-500 border-gray-800 cursor-not-allowed'
+                                            : 'bg-blue-900/30 text-blue-400 hover:bg-blue-900/60 border-blue-800'
+                                    }`}
+                                    title={
+                                        league.scheduleGenerated
+                                            ? 'Schedule already generated'
+                                            : league.teams.length < 2
+                                            ? 'Need at least 2 teams'
+                                            : 'Generate the 38-week schedule'
+                                    }
+                                >
+                                    {league.scheduleGenerated
+                                        ? 'Schedule Generated'
+                                        : generatingSchedule === league.id
+                                        ? 'Generating...'
+                                        : 'Generate Schedule'}
+                                </button>
                                 <button
                                     onClick={() => setShowAddMember(league.id)}
                                     className="px-3 py-1.5 text-xs rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700 transition-colors"
