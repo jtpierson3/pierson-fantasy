@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 type User = {
     id: string
@@ -310,7 +311,7 @@ export default function LeagueSettings({
                     {error}
                 </div>
             )}
-            
+
             {scheduleError && (
                 <div className="bg-red-900/30 border border-red-800 rounded-lg px-4 py-3 mb-4 text-sm text-red-400">
                     {scheduleError}
@@ -339,6 +340,12 @@ export default function LeagueSettings({
                                 </p>
                             </div>
                             <div className="flex items-center gap-2">
+                                <Link
+                                    href={`/admin/lague/${league.id}/matchups`}
+                                    className="px-3 py-1.5 text-xs rounded-lg bg-purple-900/30 text-purple-400 hover:bg-purple-900/60 border border-purple-800 transition-colors"
+                                >
+                                    Matchups
+                                </Link>
                                 <button
                                     onClick={() => handleGenerateSchedule(league)}
                                     disabled={league.scheduleGenerated || league.teams.length < 2 || generatingSchedule === league.id}
