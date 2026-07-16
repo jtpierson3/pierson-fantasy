@@ -141,14 +141,16 @@ model League {
 }
 
 model Team {
-  id         Int      @id
-  name       String
-  short_code String?
-  image_path String
-  league     League   @relation(fields: [leagueId], references: [id])
-  leagueId   Int
-  players    Player[]
-  updatedAt  DateTime @updatedAt
+  id           Int       @id
+  name         String
+  short_code   String?
+  image_path   String
+  league       League    @relation(fields: [leagueId], references: [id])
+  leagueId     Int
+  players      Player[]
+  updatedAt    DateTime  @updatedAt
+  homeFixtures Fixture[] @relation("HomeFixtures")
+  AwayFixtures Fixture[] @relation("AwayFixtures")
 }
 
 model Player {
@@ -163,6 +165,33 @@ model Player {
   teamId               Int
   fantasyPlayers       FantasyTeamPlayer[]
   updatedAt            DateTime            @updatedAt
+}
+
+model Fixture {
+  id             Int      @id
+  leagueId       Int
+  seasonId       Int
+  round          String?
+  gameweekNumber Int?
+  homeTeamId     Int?
+  awayTeamId     Int?
+  homeTeam       Team?    @relation("HomeFixtures", fields: [homeTeamId], references: [id])
+  awayTeam       Team?    @relation("AwayFixtures", fields: [awayTeamId], references: [id])
+  homeTeamName   String
+  awayTeamName   String
+  homeTeamImage  String?
+  awayTeamImage  String?
+  homeScore      Int?
+  awayScore      Int?
+  status         String
+  kickoff        DateTime
+  venue          String?
+  competition    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now())
+
+  @@index([kickoff])
+  @@index([gameweekNumber])
 }
 
 //------------------------------ SURVIVOR ----------------------------------
