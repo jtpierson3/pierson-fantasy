@@ -17,12 +17,12 @@ export async function POST(req: Request) {
 
   try {
     for (const key of Object.keys(COMPETITIONS) as CompetitionKey[]) {
-      const { leagueId } = COMPETITIONS[key]
+      const { leagueId, seasonId } = COMPETITIONS[key]
       let created = 0
       let updated = 0
 
       try {
-        const fixtures = await getFixturesBySeason(leagueId)
+        const fixtures = await getFixturesBySeason(seasonId)
 
         for (const fx of fixtures) {
           const participants = fx.participants ?? []

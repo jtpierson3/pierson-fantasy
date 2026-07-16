@@ -109,9 +109,9 @@ export async function getFixturesByRound(roundId: number): Promise<Fixture[]> {
 }
 
 // Fetch all fixtures for a given league/season, for the fixtures sync route
-export async function getFixturesBySeason(leagueId: number): Promise<Fixture[]> {
+export async function getFixturesBySeason(seasonId: number): Promise<Fixture[]> {
     const data = await sportmonksFetch(
-        `/fixtures?filters=fixtureLeagues:${leagueId}&include=participants;scores;venue;state;round;stage&per_page=50`,
+        `/fixtures?filters=fixtureSeasons:${seasonId}&include=participants;scores;venue;state;round;stage&per_page=50`,
         DAILY_RESET
     ) as SportmonksListResponse<Fixture>
     return data.data ?? []
