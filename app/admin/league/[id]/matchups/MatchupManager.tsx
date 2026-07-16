@@ -38,6 +38,34 @@ export default function MatchupManager({ league }: Props) {
     [league.gameweeks, selectedWeek]
   )
 
+  const [finalizing, setFinalizing] = useState(false)
+  const [finalizeError, setFinalizeError] = useState<string | null>(null)
+
+  const handleFinalizeWeek = useCallback(async () => {
+    if (!currentGameweek) return
+    const confirmed = window.confirm(
+        `Finalize Gameweek ${currentGameweek.gameweekNumber}? This will update standings and cannot be undone from here.`
+    )
+    if (!confirmed) return
+
+    setFinalizing(true)
+    setFinalizeError(null)
+    try {
+        const res = await fetch('/api/admin/league/matchups/finalize-week', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ gameweekId: currentGameweek.id })
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error ?? 'Failed to finalize week')
+        router.refresh()
+    } catch (err) {
+        setFinalizeError(err instanceof Error ? err.message : 'Failed to finalize week')
+    } finally {
+        setFinalizing(false)
+    }
+  }, [currentGameweek, router])
+
   const getScoreInput = useCallback((matchupId: string, field: 'home' | 'away', fallback: number) => {
     return scores[matchupId]?.[field] ?? fallback.toString()
   }, [scores])
@@ -144,14 +172,29 @@ export default function MatchupManager({ league }: Props) {
             <h2 className="text-sm font-medium text-gray-900">
               Gameweek {currentGameweek.gameweekNumber}
             </h2>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-              currentGameweek.isComplete
-                ? 'bg-gray-100 text-gray-500'
-                : 'bg-blue-100 text-blue-600'
-            }`}>
-              {currentGameweek.isComplete ? 'Complete' : 'In Progress'}
-            </span>
+                <div className="flex items-center gap-2">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    currentGameweek.isComplete
+                        ? 'bg-gray-100 text-gray-500'
+                        : 'bg-blue-100 text-blue-600'
+                    }`}>
+                    {currentGameweek.isComplete ? 'Complete' : 'In Progress'}
+                    </span>
+                    <button
+                        onClick={handleFinalizeWeek}
+                        disabled={currentGameweek.isComplete || finalizing}
+                        className="px-3 py-1.5 text-xs rounded-lg bg-purple-700 text-white hover:bg-purple-600 transition-colors disabled:opacity-50 font-medium"
+                    >
+                        {finalizing ? 'Finalizing...' : currentGameweek.isComplete ? 'Finalized' : 'Finalize Week'}
+                    </button>
+                </div>
           </div>
+
+          {finalizeError && (
+            <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">
+                {finalizeError}
+            </p>
+          )}
 
           {currentGameweek.matchups.length === 0 && (
             <p className="text-sm text-gray-400">No matchups this week.</p>
