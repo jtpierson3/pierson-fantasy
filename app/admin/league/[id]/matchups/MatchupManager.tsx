@@ -164,7 +164,7 @@ export default function MatchupManager({ league }: Props) {
             >
               <div className="grid grid-cols-12 gap-3 items-center">
                 {/* Home team */}
-                <div className="col-span-4">
+                <div className="col-span-3">
                   <p className="text-sm font-medium text-gray-900 truncate">
                     {matchup.homeTeam.name}
                   </p>
@@ -180,11 +180,11 @@ export default function MatchupManager({ league }: Props) {
                     step="0.01"
                     value={getScoreInput(matchup.id, 'home', matchup.homePoints)}
                     onChange={e => handleScoreChange(matchup.id, 'home', e.target.value)}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600 text-center"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600 text-center text-gray-900"
                   />
                 </div>
 
-                <div className="col-span-0 text-center text-xs text-gray-300">vs</div>
+                <div className="col-span-2 text-center text-xs text-gray-300">vs</div>
 
                 {/* Away score input */}
                 <div className="col-span-2">
@@ -198,7 +198,7 @@ export default function MatchupManager({ league }: Props) {
                 </div>
 
                 {/* Away team */}
-                <div className="col-span-4 text-right">
+                <div className="col-span-3 text-right">
                   <p className="text-sm font-medium text-gray-900 truncate">
                     {matchup.awayTeam.name}
                   </p>

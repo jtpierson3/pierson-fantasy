@@ -175,7 +175,7 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
                     placeholder="Search players..."
                     value={search}
                     onChange={handleSearch}
-                    className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600 w-48"
+                    className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600 w-48 text-gray-900"
                 />
 
                 {/* Position Filter */}
@@ -199,7 +199,7 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
                 <select
                     value={teamFilter}
                     onChange={handleTeamFilter}
-                    className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600"
+                    className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600 text-gray-900"
                 >
                     <option value="ALL">All Teams</option>
                     {teams.map(team => (
@@ -406,7 +406,7 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
                         <select
                             value={dropPlayerId}
                             onChange={e => setDropPlayerId(e.target.value)}
-                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 mb-4"
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 mb-4 text-gray-900"
                         >
                             <option value="">Select a player to drop...</option>
                             {myFantasyTeam!.players
