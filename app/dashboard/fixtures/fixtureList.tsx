@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import Image from 'next/image'
 import type { Prisma } from '@prisma/client'
-import { COMPETITIONS, type CompetitionKey } from '@/lib/sportmonks'
+import { COMPETITIONS, type CompetitionKey } from '@/lib/sportmonksConstants'
 
 type FixtureWithTeams = Prisma.FixtureGetPayload<{
   include: { homeTeam: true; awayTeam: true }
