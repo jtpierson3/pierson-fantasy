@@ -78,7 +78,7 @@ export async function POST(req: Request) {
             let awayResult: 'win' | 'loss' | 'draw'
             if (awayWon) awayResult = 'win'
             else if (!homeWon) awayResult = 'draw'
-            else awayResult = topTeamIds.has(matchup.homeTeamId) ? 'draw': 'loss'
+            else awayResult = topTeamIds.has(matchup.awayTeamId) ? 'draw': 'loss'
 
             await updateTeamResult(matchup.homeTeamId, homeResult, matchup.homePoints)
             await updateTeamResult(matchup.awayTeamId, awayResult, matchup.awayPoints)
