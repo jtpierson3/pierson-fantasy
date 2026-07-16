@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { env } from '@/lib/env'
-import { COMPETITIONS, getFixturesBySeason, mapFixtureStatus, type CompetitionKey } from '@/lib/sportmonks'
+import { getFixturesBySeason } from '@/lib/sportmonks'
+import { COMPETITIONS, mapFixtureStatus, type CompetitionKey } from '@/lib/sportmonksConstants'
 
 export async function POST(req: Request) {
   const authHeader = req.headers.get('authorization')
@@ -42,6 +43,8 @@ export async function POST(req: Request) {
 
           const existing = await prisma.fixture.findUnique({ where: { id: fx.id } })
 
+          const roundOrStageName = fx.round?.name ?? fx.stage?.name ?? null
+
           const gameweekNumber =
             key === 'premier_league' && fx.round?.name
               ? parseInt(fx.round.name) || null
@@ -50,7 +53,7 @@ export async function POST(req: Request) {
           const data = {
             leagueId,
             seasonId: COMPETITIONS[key].seasonId,
-            round: fx.round?.name ?? null,
+            round: roundOrStageName,
             gameweekNumber,
             homeTeamId: homeTeamExists ? home.id : null,
             awayTeamId: awayTeamExists ? away.id : null,

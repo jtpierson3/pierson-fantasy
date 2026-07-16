@@ -45,6 +45,7 @@ export type Fixture = {
   state: { name: string; short_name: string; developer_name: string }
   venue: { name: string; city_name: string } | null
   round: { name: string }
+  stage: { name: string } | null
   participants: Participant[]
   scores: Score[]
 }
@@ -110,7 +111,7 @@ export async function getFixturesByRound(roundId: number): Promise<Fixture[]> {
 // Fetch all fixtures for a given league/season, for the fixtures sync route
 export async function getFixturesBySeason(leagueId: number): Promise<Fixture[]> {
     const data = await sportmonksFetch(
-        `/fixtures?filters=fixtureLeagues:${leagueId}&include=participants;scores;venue;state;round&per_page=50`,
+        `/fixtures?filters=fixtureLeagues:${leagueId}&include=participants;scores;venue;state;round;stage&per_page=50`,
         DAILY_RESET
     ) as SportmonksListResponse<Fixture>
     return data.data ?? []
