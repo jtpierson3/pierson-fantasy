@@ -4,7 +4,7 @@ import { env } from '@/lib/env'
 
 const BASE_URL = 'https://api.sportmonks.com/v3/football'
 const LEAGUE_ID = 8
-const SEASON_ID = 25583
+const SEASON_ID = 28083
 
 async function sportmonksFetch(endpoint: string) {
   const separator = endpoint.includes('?') ? '&' : '?'

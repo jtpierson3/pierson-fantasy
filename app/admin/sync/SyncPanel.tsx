@@ -9,12 +9,13 @@ type SyncResult = {
   [key: string]: unknown
 }
 
-type SyncKey = 'league' | 'teams' | 'players'
+type SyncKey = 'league' | 'teams' | 'players' | 'fixtures'
 
 const SYNC_ACTIONS: { key: SyncKey; label: string; description: string }[] = [
   { key: 'league', label: 'Sync League', description: 'Fetch and upsert league info from Sportmonks' },
   { key: 'teams', label: 'Sync Teams', description: 'Fetch and upsert all teams for the current season' },
   { key: 'players', label: 'Sync Players', description: 'Fetch each team\'s squad and upsert players' },
+  { key: 'fixtures', label: 'Sync Fixtures', description: 'Fetch fixtures for Premier League, FA Cup, and Carabao Cup'}
 ]
 
 export default function SyncPanel() {
@@ -23,6 +24,7 @@ export default function SyncPanel() {
     league: null,
     teams: null,
     players: null,
+    fixtures: null
   })
   const [secret, setSecret] = useState('')
 

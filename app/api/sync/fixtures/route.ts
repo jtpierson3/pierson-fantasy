@@ -1,33 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { env } from '@/lib/env'
-
-const BASE_URL = 'https://api.sportmonks.com/v3/football'
-
-const COMPETITIONS: { key: string; leagueId: number; seasonId: number }[] = [
-  { key: 'premier_league', leagueId: 8, seasonId: 25583 },
-  { key: 'fa_cup', leagueId: 24, seasonId: 25583 }, // TODO: confirm actual FA Cup season_id
-  { key: 'carabao_cup', leagueId: 27, seasonId: 25583 }, // TODO: confirm actual Carabao Cup season_id
-]
-
-async function sportmonksFetch(endpoint: string) {
-  const separator = endpoint.includes('?') ? '&' : '?'
-  const res = await fetch(`${BASE_URL}${endpoint}${separator}api_token=${env.SPORTMONKS_API_KEY}`)
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`Sportmonks error: ${res.status} - ${text}`)
-  }
-  return res.json()
-}
-
-function mapStatus(stateId: number): string {
-  // Sportmonks fixture state IDs — common ones
-  // 1 = Not Started, 2-6ish = live variants, 5 = Finished, others = postponed/cancelled
-  if (stateId === 1) return 'scheduled'
-  if (stateId === 5) return 'finished'
-  if ([2, 3, 4, 6, 7, 8].includes(stateId)) return 'live'
-  return 'other'
-}
+import { COMPETITIONS, getFixturesBySeason, mapFixtureStatus, type CompetitionKey } from '@/lib/sportmonks'
 
 export async function POST(req: Request) {
   const authHeader = req.headers.get('authorization')
@@ -41,80 +15,73 @@ export async function POST(req: Request) {
   const competitionResults: { competition: string; created: number; updated: number; fetched: number }[] = []
 
   try {
-    for (const comp of COMPETITIONS) {
+    for (const key of Object.keys(COMPETITIONS) as CompetitionKey[]) {
+      const { leagueId } = COMPETITIONS[key]
       let created = 0
       let updated = 0
 
       try {
-        const fixturesData = await sportmonksFetch(
-          `/fixtures?filters=fixtureLeagues:${comp.leagueId}&include=participants;venue;round`
-        )
-        const fixtures = fixturesData.data ?? []
+        const fixtures = await getFixturesBySeason(leagueId)
 
         for (const fx of fixtures) {
           const participants = fx.participants ?? []
-          const home = participants.find((p: { meta?: { location?: string } }) => p.meta?.location === 'home')
-          const away = participants.find((p: { meta?: { location?: string } }) => p.meta?.location === 'away')
+          const home = participants.find(p => p.meta?.location === 'home')
+          const away = participants.find(p => p.meta?.location === 'away')
 
           if (!home || !away) continue
 
-          // Check if these teams exist in our Team table (Premier League teams will, others may not)
           const homeTeamExists = await prisma.team.findUnique({ where: { id: home.id } })
           const awayTeamExists = await prisma.team.findUnique({ where: { id: away.id } })
 
+          const homeScoreEntry = fx.scores?.find(
+            s => s.score.participant === 'home' && s.description === 'CURRENT'
+          )
+          const awayScoreEntry = fx.scores?.find(
+            s => s.score.participant === 'away' && s.description === 'CURRENT'
+          )
+
           const existing = await prisma.fixture.findUnique({ where: { id: fx.id } })
+
+          const gameweekNumber =
+            key === 'premier_league' && fx.round?.name
+              ? parseInt(fx.round.name) || null
+              : null
+
+          const data = {
+            leagueId,
+            seasonId: COMPETITIONS[key].seasonId,
+            round: fx.round?.name ?? null,
+            gameweekNumber,
+            homeTeamId: homeTeamExists ? home.id : null,
+            awayTeamId: awayTeamExists ? away.id : null,
+            homeTeamName: home.name,
+            awayTeamName: away.name,
+            homeTeamImage: home.image_path ?? null,
+            awayTeamImage: away.image_path ?? null,
+            homeScore: homeScoreEntry?.score.goals ?? null,
+            awayScore: awayScoreEntry?.score.goals ?? null,
+            status: mapFixtureStatus(fx.state_id),
+            kickoff: new Date(fx.starting_at),
+            venue: fx.venue?.name ?? null,
+            competition: key,
+          }
 
           await prisma.fixture.upsert({
             where: { id: fx.id },
-            update: {
-              leagueId: comp.leagueId,
-              seasonId: comp.seasonId,
-              round: fx.round?.name ?? null,
-              gameweekNumber: comp.key === 'premier_league' ? (fx.round?.name ? parseInt(fx.round.name) || null : null) : null,
-              homeTeamId: homeTeamExists ? home.id : null,
-              awayTeamId: awayTeamExists ? away.id : null,
-              homeTeamName: home.name,
-              awayTeamName: away.name,
-              homeTeamImage: home.image_path ?? null,
-              awayTeamImage: away.image_path ?? null,
-              homeScore: home.meta?.score ?? null,
-              awayScore: away.meta?.score ?? null,
-              status: mapStatus(fx.state_id),
-              kickoff: new Date(fx.starting_at),
-              venue: fx.venue?.name ?? null,
-              competition: comp.key,
-            },
-            create: {
-              id: fx.id,
-              leagueId: comp.leagueId,
-              seasonId: comp.seasonId,
-              round: fx.round?.name ?? null,
-              gameweekNumber: comp.key === 'premier_league' ? (fx.round?.name ? parseInt(fx.round.name) || null : null) : null,
-              homeTeamId: homeTeamExists ? home.id : null,
-              awayTeamId: awayTeamExists ? away.id : null,
-              homeTeamName: home.name,
-              awayTeamName: away.name,
-              homeTeamImage: home.image_path ?? null,
-              awayTeamImage: away.image_path ?? null,
-              homeScore: home.meta?.score ?? null,
-              awayScore: away.meta?.score ?? null,
-              status: mapStatus(fx.state_id),
-              kickoff: new Date(fx.starting_at),
-              venue: fx.venue?.name ?? null,
-              competition: comp.key,
-            }
+            update: data,
+            create: { id: fx.id, ...data },
           })
 
           if (existing) updated++
           else created++
         }
 
-        competitionResults.push({ competition: comp.key, created, updated, fetched: fixtures.length })
+        competitionResults.push({ competition: key, created, updated, fetched: fixtures.length })
         totalCreated += created
         totalUpdated += updated
       } catch (err) {
         errors.push({
-          competition: comp.key,
+          competition: key,
           message: err instanceof Error ? err.message : 'Unknown error',
         })
       }
@@ -122,7 +89,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: errors.length === 0,
-      message: `${totalCreated} fixture(s) created, ${totalUpdated} updated across ${COMPETITIONS.length} competitions`,
+      message: `${totalCreated} fixture(s) created, ${totalUpdated} updated across ${Object.keys(COMPETITIONS).length} competitions`,
       competitionResults,
       errors,
     })
