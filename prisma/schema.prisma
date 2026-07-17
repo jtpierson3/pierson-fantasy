@@ -80,6 +80,8 @@ model FantasyTeam {
   awayMatchups       FantasyMatchup[]    @relation("AwayMatchups")
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
+  waiverPriority     Int                 @default(0)
+  waiverClaims       WaiverClaim[]
 
   @@unique([userId, fantasyLeagueId])
 }
@@ -108,6 +110,8 @@ model FantasyGameweek {
   isCurrent       Boolean          @default(false)
   matchups        FantasyMatchup[]
   createdAt       DateTime         @default(now())
+  waiverLock      DateTime?
+  waiverClaims    WaiverClaim[]
 
   @@unique([fantasyLeagueId, gameweekNumber])
 }
@@ -124,6 +128,24 @@ model FantasyMatchup {
   awayPoints Float           @default(0)
   isComplete Boolean         @default(false)
   createdAt  DateTime        @default(now())
+}
+
+model WaiverClaim {
+  id             String          @id @default(cuid())
+  fantasyTeam    FantasyTeam     @relation(fields: [fantasyTeamId], references: [id])
+  fantasyTeamId  String
+  gameweek       FantasyGameweek @relation(fields: [gameweekId], references: [id])
+  gameweekId     String
+  playerToAddId  Int
+  playerToAdd    Player          @relation("ClaimAddPlayer", fields: [playerToAddId], references: [id])
+  playerToDropId Int?
+  playerToDrop   Player?         @relation("ClaimDropPlayer", fields: [playerToDropId], references: [id])
+  status         String          @default("pending")
+  submittedAt    DateTime        @default(now())
+  processedAt    DateTime?
+
+  @@unique([fantasyTeamId, playerToAddId, gameweekId])
+  @@index([gameweekId, status])
 }
 
 // ===========================================
@@ -165,6 +187,8 @@ model Player {
   teamId               Int
   fantasyPlayers       FantasyTeamPlayer[]
   updatedAt            DateTime            @updatedAt
+  waiverAddClaims      WaiverClaim[]       @relation("ClaimAddPlayer")
+  waiverDropClaims     WaiverClaim[]       @relation("ClaimDropPlayer")
 }
 
 model Fixture {
