@@ -37,7 +37,9 @@ export default async function LeagueSettingsPage() {
                     user: true,
                 }
             },
-            teams: true,
+            teams: {
+                include: { user: true }
+            },
         },
         orderBy: { createdAt: 'desc'}
     })
@@ -49,7 +51,9 @@ export default async function LeagueSettingsPage() {
                 members:{
                     include: { user: true }
                 },
-                teams: true,
+                teams: {
+                    include: { user: true }
+                },
             },
             orderBy: { createdAt: 'desc'}
         }) : []

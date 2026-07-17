@@ -17,13 +17,19 @@ type LeagueMember = {
     user: User
 }
 
+type TeamWithUser = {
+    id: string
+    name: string
+    user: { username: string }
+}
+
 type League = {
     id: string
     name: string
     description: string | null
     scheduleGenerated: boolean
     members: LeagueMember[]
-    teams: { id: string }[]
+    teams: TeamWithUser[]
 }
 
 type Props = {
@@ -270,6 +276,59 @@ export default function LeagueSettings({
         })
     }, [router])
 
+    // Set Draft Order
+    const [showDraftOrder, setShowDraftOrder] = useState<League | null>(null)
+    const [draftOrder, setDraftOrder] = useState<{ id: string; name: string; username: string }[]>([])
+    const [draftOrderSaving, setDraftOrderSaving] = useState(false)
+    const [draftOrderError, setDraftOrderError] = useState<string | null>(null)
+
+    const openDraftOrder = useCallback((league: League) => {
+        // Initialize with current team order (admin will reorder)
+        setDraftOrder(
+            league.teams.map(t => ({
+                id: t.id,
+                name: t.name,
+                username: t.user.username
+            }))
+        )
+        setDraftOrderError(null)
+        setShowDraftOrder(league)
+    }, [])
+
+    const moveTeam = useCallback((index: number, direction: -1 | 1) => {
+        setDraftOrder(prev => {
+            const updated = [...prev]
+            const targetIndex = index + direction
+            if (targetIndex < 0 || targetIndex >= updated.length) return prev
+            ;[updated[index], updated[targetIndex]] = [updated[targetIndex], updated[index]]
+            return updated
+        })
+    }, [])
+
+    const handleSaveDraftOrder = useCallback(async () => {
+        if (!showDraftOrder) return
+        setDraftOrderSaving(true)
+        setDraftOrderError(null)
+        try {
+            const res = await fetch('/api/admin/league/set-draft-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    leagueId: showDraftOrder.id,
+                    orderedTeamIds: draftOrder.map(t => t.id)
+                })
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error ?? 'Failed to save draft order')
+            setShowDraftOrder(null)
+            router.refresh()
+        } catch (err) {
+            setDraftOrderError(err instanceof Error ? err.message : 'Failed to save draft order ')
+        } finally {
+            setDraftOrderSaving(false)
+        }
+    }, [showDraftOrder, draftOrder, router])
+
     return (
         <div>
             {/* Header */}
@@ -346,6 +405,13 @@ export default function LeagueSettings({
                                 >
                                     Matchups
                                 </Link>
+                                <button
+                                    onClick={() => openDraftOrder(league)}
+                                    disabled={league.teams.length < 1}
+                                    className="px-3 py-1.5 text-xs rounded-lg bg-yellow-900/30 text-yellow-400 hover:bg-yellow-900/60 border border-yellow-800 transition-colors disabled:opacity-50"
+                                >
+                                    Set Draft Order
+                                </button>
                                 <button
                                     onClick={() => handleGenerateSchedule(league)}
                                     disabled={league.scheduleGenerated || league.teams.length < 2 || generatingSchedule === league.id}
@@ -634,6 +700,72 @@ export default function LeagueSettings({
                                 className="px-4 py-2 text-sm rounded-lg br-green-700 text-white hover:bg-green-600 transition-colors disabled:opacity-50 font-medium"
                             >
                                 {addMemberLoading ? 'Adding...' : 'Add Member' }
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* SHOW DRAFT ORDER MODAL */}
+            {showDraftOrder && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 max-w-md w-full shadow-xl max-h-[85vh] overflow-y-auto">
+                        <h3 className="text-base font-medium text-white mb-1">Set Draft Order</h3>
+                        <p className="text-sm text-gray-400 mb-6">
+                            Order teams from 1st pick to last pick. Waiver priority will be set as the inverse (last pick gets first waiver priority).
+                        </p>
+
+                        <div className="flex flex-col gap-2 mb-4">
+                            {draftOrder.map((team, i) => (
+                                <div
+                                    key={team.id}
+                                    className="flex items-center gap-3 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2"
+                                >
+                                    <span className="text-xs font-medium text-gray-500 w-6">{i + 1}</span>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm text-white truncate">{team.name}</p>
+                                        <p className="text-xs text-gray-500 truncate">{team.username}</p>
+                                    </div>
+                                    <div className="flex flex-col gap-0.5">
+                                        <button
+                                            onClick={() => moveTeam(i, -1)}
+                                            disabled={i === 0}
+                                            className="text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                                        >
+                                            ▲
+                                        </button>
+                                        <button
+                                            onClick={() => moveTeam(i, 1)}
+                                            disabled={i === draftOrder.length - 1}
+                                            className="text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                                        >
+                                            ▼
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {draftOrderError && (
+                            <p className="text-xs text-red-400 bg-red-900/30 border border-red-800 rounded-lg px-3 py-2 mb-4">
+                                {draftOrderError}
+                            </p>
+                        )}
+
+                        <div className="flex gap-3 justify-end">
+                            <button
+                                onClick={() => setShowDraftOrder(null)}
+                                disabled={draftOrderSaving}
+                                className="px-4 py-2 text-sm rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSaveDraftOrder}
+                                disabled={draftOrderSaving}
+                                className="px-4 py-2 text-sm rounded-lg bg-green-700 text-white hover:bg-green-600 transition-colors disabled:opacity-50 font-medium"
+                            >
+                                {draftOrderSaving ? 'Saving...' : 'Save Draft Order & Set Priority'}
                             </button>
                         </div>
                     </div>
