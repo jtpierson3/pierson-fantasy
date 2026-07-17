@@ -33,7 +33,7 @@ type Props = {
     teams: Team[]
     myFantasyTeam: FantasyTeamWithPlayers
     allRosteredPlayers: RosteredPlayer[]
-    draftComplete: Boolean
+    draftComplete: boolean
 }
 
 type Layout = 'grid' | 'list'
