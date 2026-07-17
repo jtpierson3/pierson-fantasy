@@ -42,6 +42,7 @@ model FantasyLeague {
   name              String
   description       String?
   scheduleGenerated Boolean               @default(false)
+  draftComplete     Boolean               @default(false)
   members           FantasyLeagueMember[]
   teams             FantasyTeam[]
   gameweeks         FantasyGameweek[]

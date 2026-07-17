@@ -28,6 +28,7 @@ type League = {
     name: string
     description: string | null
     scheduleGenerated: boolean
+    draftComplete: boolean
     members: LeagueMember[]
     teams: TeamWithUser[]
 }
@@ -329,6 +330,36 @@ export default function LeagueSettings({
         }
     }, [showDraftOrder, draftOrder, router])
 
+    // Draft toggler
+    const [togglingDraft, setTogglingDraft] = useState<string | null>(null)
+
+    const handleToggleDraftComplete = useCallback((league: League) => {
+        setConfirm({
+            title: league.draftComplete ? 'Reopen Draft' : 'Complete Draft',
+            message: league.draftComplete
+                ? `Mark the draft as not yet complete for ${league.name}? This will switch the Players browser back to instant-add mode.`
+                : `Mark the draft as complete for ${league.name}? This will switch the Players browser to waiver claims for all users going forward.`,
+            confirmLabel: league.draftComplete ? 'Reopen Draft' : 'Complete Draft',
+            onConfirm: async () => {
+                setTogglingDraft(league.id)
+                try {
+                    const res = await fetch('/api/admin/league/toggle-draft-complete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ leagueId: league.id, draftComplete: !league.draftComplete})
+                    })
+                    if (!res.ok) throw new Error('Failed to update')
+                    router.refresh()
+                } catch {
+                    setError('Failed to updated draft status')
+                } finally {
+                    setTogglingDraft(null)
+                    setConfirm(null)
+                }
+            }
+        })
+    }, [router])
+
     return (
         <div>
             {/* Header */}
@@ -405,6 +436,17 @@ export default function LeagueSettings({
                                 >
                                     Matchups
                                 </Link>
+                                <button
+                                    onClick={() => handleToggleDraftComplete(league)}
+                                    disabled={togglingDraft === league.id}
+                                    className={`px-3 py-1.5 text-xs rounded-lg border transition-colors disabled:opacity-50 ${
+                                        league.draftComplete
+                                            ? 'bg-green-900/30 text-green-400 border-green-800 hover:bg-green-900/60'
+                                            : 'bg-orange-900/30 text-orange-400 border-orange-800 hover:bg-orange-900/60'
+                                    }`}
+                                >
+                                    {league.draftComplete ? 'Draft Cmomplete' : 'Mark Draft Complete'}
+                                </button>
                                 <button
                                     onClick={() => openDraftOrder(league)}
                                     disabled={league.teams.length < 1}
