@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
+import { getCurrentWaiverWindow } from '@/lib/waiverWindow'
 import SyncPanel from './SyncPanel'
 
 export default async function SyncPage() {
@@ -12,5 +13,7 @@ export default async function SyncPage() {
     })
     if (!currentUser?.isSiteAdmin) notFound()
 
-    return <SyncPanel />
+    const waiverWindow = await getCurrentWaiverWindow()
+
+    return <SyncPanel waiverWindow={waiverWindow} />
 }

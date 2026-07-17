@@ -9,6 +9,17 @@ type SyncResult = {
   [key: string]: unknown
 }
 
+type WaiverWindowInfo = {
+    closesAt: string
+    triggeringFixture: {
+        id: number
+        competition: string
+        homeTeamName: string
+        awayTeamName: string
+        kickoff: string
+    }
+} | null
+
 type SyncKey = 'league' | 'teams' | 'players' | 'fixtures'
 
 const SYNC_ACTIONS: { key: SyncKey; label: string; description: string }[] = [
@@ -18,7 +29,11 @@ const SYNC_ACTIONS: { key: SyncKey; label: string; description: string }[] = [
   { key: 'fixtures', label: 'Sync Fixtures', description: 'Fetch fixtures for Premier League, FA Cup, and Carabao Cup'}
 ]
 
-export default function SyncPanel() {
+type Props = {
+    waiverWindow: WaiverWindowInfo
+}
+
+export default function SyncPanel({ waiverWindow }: Props) {
   const [loading, setLoading] = useState<SyncKey | null>(null)
   const [results, setResults] = useState<Record<SyncKey, SyncResult | null>>({
     league: null,
@@ -69,6 +84,31 @@ export default function SyncPanel() {
         <p className="text-sm text-gray-400 mt-0.5">
           Run sync operations against the Sportmonks API.
         </p>
+      </div>
+
+      {/* Waiver window debug info */}
+      <div className="mb-6 bg-gray-900 border border-gray-800 rounded-xl p-4">
+        <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">
+            Current Waiver Window (live)
+        </p>
+        {waiverWindow ? (
+            <div className="flex flex-col gap-1">
+                <p className="text-sm text-white">
+                    Closes: <span className="font-medium">{new Date(waiverWindow.closesAt).toLocaleString()}</span>
+                </p>
+                <p className="text-sm text-gray-400">
+                    Triggering Fixture ({waiverWindow.triggeringFixture.competition}): {' '}
+                    <span className="text-white">
+                        {waiverWindow.triggeringFixture.homeTeamName} vs {waiverWindow.triggeringFixture.awayTeamName}
+                    </span>
+                </p>
+                <p className="text-xs text-gray-500">
+                    Kickoff: {new Date(waiverWindow.triggeringFixture.kickoff).toLocaleString()}
+                </p>
+            </div>
+        ) : (
+            <p className="text-sm text-gray-500">No upcoming qualifying fixtures found.</p>
+        )}
       </div>
 
       {/* Secret input */}
