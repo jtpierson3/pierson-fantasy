@@ -44,7 +44,7 @@ export type Fixture = {
   state_id: number
   state: { name: string; short_name: string; developer_name: string }
   venue: { name: string; city_name: string } | null
-  round: { name: string }
+  round: { name: string } | null
   stage: { name: string } | null
   participants: Participant[]
   scores: Score[]
@@ -54,6 +54,16 @@ export type League = {
     id: number
     name: string
     currentseason: Season
+}
+
+type SportmonksPaginatedResponse<T> = {
+    data: T[]
+    pagination?: {
+        count: number
+        per_page: number
+        current_page: number
+        has_more: boolean
+    }
 }
 
 type SportmonksResponse<T> = { data: T }
@@ -108,11 +118,31 @@ export async function getFixturesByRound(roundId: number): Promise<Fixture[]> {
   return data.data ?? []
 }
 
+async function sportmonksFetchPaginated<T>(endpoint: string, revalidate = 60): Promise<T[]> {
+    let allData: T[] = []
+    let page = 1
+    let hasMore = true
+
+    while (hasMore) {
+        const separator = endpoint.includes('?') ? '&' : '?'
+        const pageUrl = `${endpoint}${separator}page=${page}`
+        const result = await sportmonksFetch(pageUrl, revalidate) as SportmonksPaginatedResponse<T>
+
+        allData = allData.concat(result.data ?? [])
+        hasMore = result.pagination?.has_more ?? false
+        page++
+
+        // Safety Valve - avoid infinite loops if something goes wrong
+        if (page > 40) break
+    }
+
+    return allData
+}
+
 // Fetch all fixtures for a given league/season, for the fixtures sync route
 export async function getFixturesBySeason(seasonId: number): Promise<Fixture[]> {
-    const data = await sportmonksFetch(
+    return await sportmonksFetchPaginated<Fixture>(
         `/fixtures?filters=fixtureSeasons:${seasonId}&include=participants;scores;venue;state;round;stage&per_page=50`,
         DAILY_RESET
-    ) as SportmonksListResponse<Fixture>
-    return data.data ?? []
+    )
 }
