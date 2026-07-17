@@ -10,13 +10,13 @@ type SyncResult = {
 }
 
 type WaiverWindowInfo = {
-    closesAt: string
+    closesAt: Date
     triggeringFixture: {
         id: number
         competition: string
         homeTeamName: string
         awayTeamName: string
-        kickoff: string
+        kickoff: Date
     }
 } | null
 
