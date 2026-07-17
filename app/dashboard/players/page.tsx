@@ -44,7 +44,8 @@ async function PlayersContent() {
     include: {
       players: {
         include: { player: true }
-      }
+      },
+      fantasyLeague: true,
     }
   })
 
@@ -83,6 +84,7 @@ async function PlayersContent() {
       teams={teams} 
       myFantasyTeam={myFantasyTeam}
       allRosteredPlayers={allRosteredPlayers}
+      draftComplete={myFantasyTeam?.fantasyLeague.draftComplete ?? false}
     />
   )
 }

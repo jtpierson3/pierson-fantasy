@@ -8,6 +8,7 @@ import { getPositionShort, getPositionColor } from '@/lib/helpers'
 import type { Player, Team } from '@prisma/client'
 import { useRouter } from 'next/navigation'
 import { Prisma } from '@prisma/client'
+import ClaimModal from '@/app/components/ClaimModal'
 
 type PlayerWithTeam = Player & { team: Team }
 
@@ -32,6 +33,7 @@ type Props = {
     teams: Team[]
     myFantasyTeam: FantasyTeamWithPlayers
     allRosteredPlayers: RosteredPlayer[]
+    draftComplete: Boolean
 }
 
 type Layout = 'grid' | 'list'
@@ -45,7 +47,7 @@ const POSITION_IDS: Record<PositionFilter, number | null> = {
     ATT: 27
 }
 
-export default function PlayerList({ players, teams, myFantasyTeam, allRosteredPlayers }: Props) {
+export default function PlayerList({ players, teams, myFantasyTeam, allRosteredPlayers, draftComplete }: Props) {
     const [layout, setLayout] = useState<Layout>('grid')
     const [search, setSearch] = useState('')
     const [positionFilter, setPositionFilter] = useState<PositionFilter>('ALL')
@@ -119,6 +121,9 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
             setSaving(false)
         }
     }
+
+    // Waiver Claiming
+    const [claimingPlayer, setClaimingPlayer] = useState<PlayerWithTeam | null>(null)
 
     return (
         <div className="p-6">
@@ -280,12 +285,16 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
                                     ) : (
                                         <button
                                             onClick={() => {
-                                                setAddingPlayer(player)
-                                                if (!atRosterLimit) handleAddPlayer(player)
+                                                if (draftComplete) {
+                                                    setClaimingPlayer(player)
+                                                } else {
+                                                    setAddingPlayer(player)
+                                                    if (!atRosterLimit) handleAddPlayer(player)
+                                                }
                                             }}
                                             className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium hover:bg-blue-200 transition-colors"
                                         >
-                                            + Add
+                                            {draftComplete ? 'Claim' : '+ Add'}
                                         </button>
                                     )}
                                 </div>
@@ -390,6 +399,17 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
                         </Link>
                     ))}
                 </div>
+            )}
+
+            {/* Claim Modal */}
+            {claimingPlayer && myFantasyTeam && (
+                <ClaimModal 
+                    playerId={claimingPlayer.id}
+                    playerName={claimingPlayer.display_name}
+                    fantasyTeamId={myFantasyTeam.id}
+                    rosterPlayers={myFantasyTeam.players}
+                    onClose={() => setClaimingPlayer(null)}
+                />
             )}
 
             {/* Drop Modal - Shown when at roster limit */}
