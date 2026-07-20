@@ -28,7 +28,7 @@ export async function GET(req: Request) {
             myClaims.map(async claim => {
                 const competingClaims = await prisma.waiverClaim.findMany({
                     where: {
-                        playerToAddIn: claim.playerToAddId,
+                        playerToAddId: claim.playerToAddId,
                         status: 'pending',
                         fantasyTeam: { fantasyLeagueId: myTeam.fantasyLeagueId }
                     },
@@ -44,7 +44,7 @@ export async function GET(req: Request) {
                     submittedAt: claim.submittedAt.toISOString(),
                     player: {
                         id: claim.playerToAdd.id,
-                        display_name = claim.playerToAdd.display_name,
+                        display_name: claim.playerToAdd.display_name,
                         image_path: claim.playerToAdd.image_path
                     },
                     playerToDrop: claim.playerToDrop
