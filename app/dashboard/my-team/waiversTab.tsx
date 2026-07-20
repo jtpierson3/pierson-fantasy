@@ -54,18 +54,18 @@ export default function WaiversTab({ team }: Props) {
   useEffect(() => {
     const timeout = setTimeout(async () => {
         if (search.length < 2) {
-        setResults([])
-        return
+            setResults([])
+            return
         }
         setSearching(true)
         try {
-        const res = await fetch(`/api/waivers/search-players?q=${encodeURIComponent(search)}&fantasyLeagueId=${team.fantasyLeagueId}`)
-        const data = await res.json()
-        setResults(data.players ?? [])
+            const res = await fetch(`/api/waivers/search-players?q=${encodeURIComponent(search)}&fantasyLeagueId=${team.fantasyLeagueId}`)
+            const data = await res.json()
+            setResults(data.players ?? [])
         } catch {
-        // handle error
+            // handle error
         } finally {
-        setSearching(false)
+            setSearching(false)
         }
     }, 300)
     return () => clearTimeout(timeout)
