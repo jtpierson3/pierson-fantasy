@@ -34,22 +34,32 @@ export default function WaiversTab({ team }: Props) {
   const [myClaims, setMyClaims] = useState<ClaimStatus[]>([])
   const [loadingClaims, setLoadingClaims] = useState(true)
 
-  const loadClaims = useCallback(async () => {
-    setLoadingClaims(true)
+  const refreshClaims = useCallback(async () => {
     try {
-      const res = await fetch(`/api/waivers/my-claims?fantasyTeamId=${team.id}`)
-      const data = await res.json()
-      setMyClaims(data.claims ?? [])
+        const res = await fetch(`/api/waivers/my-claims?fantasyTeamId=${team.id}`)
+        const data = await res.json()
+        setMyClaims(data.claims ?? [])
     } catch {
-      // handle error
-    } finally {
-      setLoadingClaims(false)
+        // handle error 
     }
   }, [team.id])
 
   useEffect(() => {
+    let cancelled = false
+
+    async function loadClaims() {
+        try {
+            const res = await fetch(`/api/waivers/my-claims?fantasyTeamId=${team.id}`)
+        } catch {
+            // handle error
+        } finally {
+            if (!cancelled) setLoadingClaims(false)
+        }
+    }
+
     loadClaims()
-  }, [loadClaims])
+    return () => { cancelled = true }
+  }, [team.id])
 
   useEffect(() => {
     const timeout = setTimeout(async () => {
@@ -178,7 +188,7 @@ export default function WaiversTab({ team }: Props) {
             setClaimingPlayer(null)
             setSearch('')
             setResults([])
-            loadClaims()
+            refreshClaims()
           }}
         />
       )}
