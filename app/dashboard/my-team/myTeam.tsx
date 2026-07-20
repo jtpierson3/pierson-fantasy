@@ -6,6 +6,7 @@ import LatestLineup from './latestLineup'
 import TeamStats from './teamStats'
 import SetLineup from './setLineup'
 import WaiversTab from './waiversTab'
+import { ClaimStatus } from './waiversTab'
 
 
 type Tab = 'lineup' | 'performance' | 'set-lineup' | 'waivers'
@@ -14,14 +15,15 @@ const TABS: { id: Tab; label: string } [] = [
     { id: 'lineup', label: 'Latest Lineup'},
     { id: 'performance', label: 'Team Stats' },
     { id: 'set-lineup', label: 'Set Lineup'},
-    { id: 'waivers', label: 'waivers' }
+    { id: 'waivers', label: 'Waivers' }
 ]
 
 type Props = {
     fantasyTeam: FantasyTeamWithPlayers
+    myClaims: ClaimStatus[]
 }
 
-export default function MyTeam({ fantasyTeam }: Props) {
+export default function MyTeam({ fantasyTeam, myClaims }: Props) {
     const [activeTab, setActiveTab] = useState<Tab>('lineup')
     const [team, setTeam] = useState(fantasyTeam)
 
@@ -54,7 +56,7 @@ export default function MyTeam({ fantasyTeam }: Props) {
             {activeTab === 'lineup' && <LatestLineup team={team} />}
             {activeTab === 'performance' && <TeamStats team={team} />}
             {activeTab === 'set-lineup' && <SetLineup team={team} onUpdate={setTeam}/>}
-            {activeTab === 'waivers' && <WaiversTab team={team} />}
+            {activeTab === 'waivers' && <WaiversTab team={team} initialClaims={myClaims} />}
         </div>
     )
 }

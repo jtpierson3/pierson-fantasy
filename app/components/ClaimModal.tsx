@@ -86,6 +86,7 @@ export default function ClaimModal({
                     <select
                         value={dropPlayerId}
                         onChange={e => setDropPlayerId(e.target.value)}
+                        onClick={e => e.stopPropagation()}
                         className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 mb-4"
                     >
                         <option value="">Select a player to drop...</option>

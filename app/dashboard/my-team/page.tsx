@@ -54,7 +54,50 @@ async function MyTeamContent() {
     )
   }
 
-  return <MyTeam fantasyTeam={fantasyTeam} />
+  // Fetch pending claims for this team
+  const myClaimsRaw = await prisma.waiverClaim.findMany({
+    where: { fantasyTeamId: fantasyTeam.id, status: 'pending' },
+    include: {
+      playerToAdd: { include: { team: true } },
+      playerToDrop: true,
+    },
+    orderBy: { submittedAt: 'desc' }
+  })
+
+  // For each claim, compute leading/losing against competing claims
+  const myClaims = await Promise.all(
+    myClaimsRaw.map(async claim => {
+      const competingClaims = await prisma.waiverClaim.findMany({
+        where: {
+          playerToAddId: claim.playerToAddId,
+          status: 'pending',
+          fantasyTeam: { fantasyLeagueId: fantasyTeam.fantasyLeagueId }
+        },
+        include: { fantasyTeam: true }
+      })
+
+      const bestPriority = Math.min(...competingClaims.map(c => c.fantasyTeam.waiverPriority))
+      const isLeading = fantasyTeam.waiverPriority === bestPriority
+
+      return {
+        id: claim.id,
+        status: claim.status,
+        submittedAt: claim.submittedAt.toISOString(),
+        player: {
+          id: claim.playerToAdd.id,
+          display_name: claim.playerToAdd.display_name,
+          image_path: claim.playerToAdd.image_path,
+        },
+        playerToDrop: claim.playerToDrop
+          ? { display_name: claim.playerToDrop.display_name }
+          : null,
+        isLeading,
+        competingClaimsCount: competingClaims.length,
+      }
+    })
+  )
+
+  return <MyTeam fantasyTeam={fantasyTeam} myClaims={myClaims} />
 }
 
 export default function MyTeamPage() {
