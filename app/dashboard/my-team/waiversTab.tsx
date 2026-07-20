@@ -52,24 +52,24 @@ export default function WaiversTab({ team }: Props) {
   }, [loadClaims])
 
   useEffect(() => {
-    if (search.length < 2) {
-      setResults([])
-      return
-    }
     const timeout = setTimeout(async () => {
-      setSearching(true)
-      try {
+        if (search.length < 2) {
+        setResults([])
+        return
+        }
+        setSearching(true)
+        try {
         const res = await fetch(`/api/waivers/search-players?q=${encodeURIComponent(search)}&fantasyLeagueId=${team.fantasyLeagueId}`)
         const data = await res.json()
         setResults(data.players ?? [])
-      } catch {
+        } catch {
         // handle error
-      } finally {
+        } finally {
         setSearching(false)
-      }
+        }
     }, 300)
     return () => clearTimeout(timeout)
-  }, [search, team.fantasyLeagueId])
+    }, [search, team.fantasyLeagueId])
 
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
