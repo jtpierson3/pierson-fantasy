@@ -30,6 +30,16 @@ export type ClaimStatus = {
 }
 
 export default function WaiversTab({ team, initialClaims }: Props) {
+  return (
+    <WaiversTabInner 
+      key={initialClaims.map(c => c.id).join(',')}
+      team={team}
+      initialClaims={initialClaims}
+    />
+  )
+}
+
+function WaiversTabInner({ team, initialClaims }: Props) {
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [results, setResults] = useState<SearchPlayer[]>([])
@@ -39,12 +49,6 @@ export default function WaiversTab({ team, initialClaims }: Props) {
   const [orderedClaims, setOrderedClaims] = useState(initialClaims)
   const [savingOrder, setSavingOrder] = useState(false)
   const [orderDirty, setOrderDirty] = useState(false)
-
-  // Keep local order in sync if server data refreshes
-  useEffect(() => {
-    setOrderedClaims(initialClaims)
-    setOrderDirty(false)
-  }, [initialClaims])
 
   useEffect(() => {
       const timeout = setTimeout(async () => {
