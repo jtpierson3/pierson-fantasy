@@ -75,7 +75,7 @@ function WaiversTabInner({ team, initialClaims }: Props) {
       const updated = [...prev]
       const targetIndex = index + direction
       if (targetIndex < 0 || targetIndex >= updated.length) return prev
-      ;[updated[index], updated[targetIndex]] = [updated[targetIndex], updated[targetIndex]]
+      ;[updated[index], updated[targetIndex]] = [updated[targetIndex], updated[index]]
       return updated
     })
     setOrderDirty(true)
