@@ -61,7 +61,7 @@ async function MyTeamContent() {
       playerToAdd: { include: { team: true } },
       playerToDrop: true,
     },
-    orderBy: { submittedAt: 'desc' }
+    orderBy: { rank: 'asc' }
   })
 
   // For each claim, compute leading/losing against competing claims
@@ -81,6 +81,7 @@ async function MyTeamContent() {
 
       return {
         id: claim.id,
+        rank: claim.rank,
         status: claim.status,
         submittedAt: claim.submittedAt.toISOString(),
         player: {

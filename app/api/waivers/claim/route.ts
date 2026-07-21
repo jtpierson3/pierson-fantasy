@@ -69,13 +69,19 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'You already have a pending claim on this player' }, { status: 400 })
         }
 
+        // Before creating the claim, find the next available rank for this team
+        const existingClaimsCount = await prisma.waiverClaim.count({
+            where: { fantasyTeamId, status: 'pending' }
+        })
+
         const claim = await prisma.waiverClaim.create({
             data: {
                 fantasyTeamId,
                 playerToAddId,
                 playerToDropId: playerToDropId || null,
                 gameweekId: currentGameweek.id,
-                status: 'pending'
+                status: 'pending',
+                rank: existingClaimsCount + 1
             }
         })
 
