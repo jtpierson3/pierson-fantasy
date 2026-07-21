@@ -141,6 +141,7 @@ model WaiverClaim {
   playerToAdd    Player          @relation("ClaimAddPlayer", fields: [playerToAddId], references: [id])
   playerToDropId Int?
   playerToDrop   Player?         @relation("ClaimDropPlayer", fields: [playerToDropId], references: [id])
+  rank           Int             @default(1)
   status         String          @default("pending")
   submittedAt    DateTime        @default(now())
   processedAt    DateTime?
