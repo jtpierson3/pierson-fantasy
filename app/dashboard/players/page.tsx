@@ -65,6 +65,15 @@ async function PlayersContent() {
     })
     : []
 
+  //Get this team's pending waiver claims, so we know which players are already claimed.
+  const myPendingClaims = myFantasyTeam
+    ? await prisma.waiverClaim.findMany({
+      where: { fantasyTeamId: myFantasyTeam.id, status: 'pending' },
+      select: { playerToAddId: true }
+    })
+    : []
+  const myPendingClaimPlayerIds = myPendingClaims.map(c => c.playerToAddId)
+
   const [players, teams] = await Promise.all([
     prisma.player.findMany({
       include: { team: true },
@@ -85,6 +94,7 @@ async function PlayersContent() {
       myFantasyTeam={myFantasyTeam}
       allRosteredPlayers={allRosteredPlayers}
       draftComplete={myFantasyTeam?.fantasyLeague.draftComplete ?? false}
+      myPendingClaimPlayerIds={myPendingClaimPlayerIds}
     />
   )
 }

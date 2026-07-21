@@ -34,6 +34,7 @@ type Props = {
     myFantasyTeam: FantasyTeamWithPlayers
     allRosteredPlayers: RosteredPlayer[]
     draftComplete: boolean
+    myPendingClaimPlayerIds: number[]
 }
 
 type Layout = 'grid' | 'list'
@@ -47,7 +48,7 @@ const POSITION_IDS: Record<PositionFilter, number | null> = {
     ATT: 27
 }
 
-export default function PlayerList({ players, teams, myFantasyTeam, allRosteredPlayers, draftComplete }: Props) {
+export default function PlayerList({ players, teams, myFantasyTeam, allRosteredPlayers, draftComplete, myPendingClaimPlayerIds }: Props) {
     const [layout, setLayout] = useState<Layout>('grid')
     const [search, setSearch] = useState('')
     const [positionFilter, setPositionFilter] = useState<PositionFilter>('ALL')
@@ -87,6 +88,10 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
         allRosteredPlayers.forEach(rp => map.set(rp.playerId, rp))
         return map
     }, [allRosteredPlayers])
+
+    function hasMyPendingClaim(playerId: number) {
+        return myPendingClaimPlayerIds.includes(playerId)
+    }
 
     function getOwnership(playerId: number) {
         return ownershipMap.get(playerId) ?? null
@@ -282,6 +287,10 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
                                         <span className="text-xs text-gray-400 truncate block">
                                             {getOwnership(player.id)!.fantasyTeam.user.username}
                                         </span>
+                                    ) : draftComplete && hasMyPendingClaim(player.id) ? (
+                                        <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 font-medium">
+                                            Claim In
+                                        </span>
                                     ) : (
                                         <button
                                             onClick={() => {
@@ -383,15 +392,23 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
                                         <span className="text-xs text-gray-400 truncate block">
                                             {getOwnership(player.id)!.fantasyTeam.user.username}
                                         </span>
+                                    ) : draftComplete && hasMyPendingClaim(player.id) ? (
+                                        <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow font-medium">
+                                            Class In
+                                        </span>
                                     ) : (
                                         <button
                                             onClick={() => {
-                                                setAddingPlayer(player)
-                                                if (!atRosterLimit) handleAddPlayer(player)
+                                                if (draftComplete) {
+                                                    setClaimingPlayer(player)
+                                                } else {
+                                                    setAddingPlayer(player)
+                                                    if (!atRosterLimit) handleAddPlayer(player)
+                                                } 
                                             }}
                                             className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium hover:bg-blue-200 transition-colors"
                                         >
-                                            + Add
+                                            {draftComplete ? 'Claim' : '+ Add'}
                                         </button>
                                     )}
                                 </div>
