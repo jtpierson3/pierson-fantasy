@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import type { FantasyTeamWithPlayers } from './types'
 import LatestLineup from './latestLineup'
 import TeamStats from './teamStats'
@@ -24,14 +25,89 @@ type Props = {
 }
 
 export default function MyTeam({ fantasyTeam, myClaims }: Props) {
+    const router = useRouter()
     const [activeTab, setActiveTab] = useState<Tab>('lineup')
     const [team, setTeam] = useState(fantasyTeam)
+
+    const [isEditingName, setIsEditingName] = useState(false)
+    const [nameInput, setNameInput] = useState(team.name)
+    const [savingName, setSavingName] = useState(false)
+    const [nameError, setNameError] = useState<string | null>(null)
+
+    const handleSaveName = useCallback(async () => {
+        if (!nameInput.trim()) {
+            setNameError('Team name is required')
+            return
+        }
+        setSavingName(true)
+        setNameError(null)
+        try {
+            const res = await fetch('/api/my-team/rename', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fantasyTeamId: team.id, name: nameInput })
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error ?? 'Failed to rename team')
+            setTeam(prev => ({ ...prev, name: nameInput.trim() }))
+            setIsEditingName(false)
+            router.refresh()
+        } catch (err) {
+            setNameError(err instanceof Error ? err.message : 'Failed to rename team')
+        } finally {
+            setSavingName(false)
+        }
+    }, [nameInput, team.id, router])
 
     return(
         <div className="p-6">
             {/* Header */}
             <div className="mb-6">
-                <h1 className="text-xl font-medium text-gray-900">{team.name}</h1>
+                {isEditingName ? (
+                    <div className="flex items-center gap-2">
+                        <input 
+                            type="text"
+                            value={nameInput}
+                            onChange={e => setNameInput(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleSaveName()}
+                            autoFocus
+                            className="text-xl font-medium text-gray-900 border-b-2 border-green-600 focus:outline-none bg-transparent"
+                        />
+                        <button
+                            onClick={handleSaveName}
+                            disabled={savingName}
+                            className="px-3 py-1 text-xs rounded-lg bg-green-700 text-white hover:bg-green-600 transtition-colors disabled:opacity-50"
+                        >
+                            {savingName ? 'Saving...' : 'Save'}
+                        </button>
+                        <button
+                            onClick={() => {
+                                setIsEditingName(false)
+                                setNameInput(team.name)
+                                setNameError(null)
+                            }}
+                            className="px-3 py-1 text-xs rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-xl font-medium text-gray-900">{team.name}</h1>
+                        <button
+                            onClick={() => setIsEditingName(true)}
+                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                            title="Rename team"
+                        >
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                <path d="M9.5 2.5l2 2L4 12H2v-2L9.5 2.5z" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                )}
+                {nameError && (
+                    <p className="text-xs text-red-500 mt-1">{nameError}</p>
+                )}
                 <p className="text-sm text-gray-500 mt-1">{team.fantasyLeague.name}</p>
             </div>
 
