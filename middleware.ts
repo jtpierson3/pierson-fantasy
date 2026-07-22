@@ -6,6 +6,7 @@ const isPublicRoute = createRouteMatcher ([
     '/api/sportmonks(.*)',
     '/api/sync(.*)',
     '/api/survivor(.*)',
+    '/api/waivers(.*)',
 ])
 
 export default clerkMiddleware(async(auth, request) => {
