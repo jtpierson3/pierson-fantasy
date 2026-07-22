@@ -567,6 +567,7 @@ export default function SetLineup({ team, onUpdate }: Props) {
                   <button
                     onClick={saveNotes}
                     disabled={savingNotes}
+                    className="text-xs px-3 py-1 rounded-lg bg-green-700 text-white hover:bg-green-600 transition-colors disabled:opacity-50 font-medium"
                   >
                     {savingNotes ? 'Saving...' : 'Save'}
                   </button>
