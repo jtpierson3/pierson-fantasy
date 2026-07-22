@@ -33,7 +33,7 @@ def process_waivers() -> dict:
 
 if __name__ == "__main__":
     try:
-        result: process_waivers()
+        result = process_waivers()
         print(result)
     except Exception as err:
         print(f"Waiver processing failed: {err}", file=sys.stderr)

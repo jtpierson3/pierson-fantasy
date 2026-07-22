@@ -24,4 +24,4 @@ jobs:
         env: 
           APP_URL: https://pierson-fantasy.vercel.app
           SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
-        run: python pyton/waiver_processor.py
+        run: python python/waiver_processor.py
