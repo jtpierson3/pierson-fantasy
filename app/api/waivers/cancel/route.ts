@@ -29,7 +29,7 @@ export async function POST(req: Request) {
 
         //Re-rank this team's remaining claims to close the gap left behind
         const remaining = await prisma.waiverClaim.findMany({
-            where: { fantasyTeamId: claim.fantasyTeamId, status 'pending' },
+            where: { fantasyTeamId: claim.fantasyTeamId, status: 'pending' },
             orderBy: { rank: 'asc' }
         })
 
