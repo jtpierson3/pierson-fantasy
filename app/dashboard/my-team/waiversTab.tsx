@@ -102,6 +102,25 @@ function WaiversTabInner({ team, initialClaims }: Props) {
     }
   }
 
+  const [cancellingId, setCancellingId] = useState<string | null>(null)
+
+  const cancelClaim = async (claimId: string) => {
+    setCancellingId(claimId)
+    try {
+      const res = await fetch('/api/waivers/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ claimId })
+      })
+      if (!res.ok) throw new Error('Failed to cancel claim')
+      router.refresh()
+    } catch {
+      //handle error
+    } finally {
+      setCancellingId(null)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
       {/* Search */}
@@ -212,7 +231,7 @@ function WaiversTabInner({ team, initialClaims }: Props) {
                         )}
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right flex items-center gap-2">
                     {claim.competingClaimsCount > 1 ? (
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                         claim.isLeading
@@ -226,6 +245,13 @@ function WaiversTabInner({ team, initialClaims }: Props) {
                         Only Claim
                       </span>
                     )}
+                    <button
+                      onClick={() => cancelClaim(claim.id)}
+                      disabled={cancellingId === claim.id}
+                      className="text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50 font-medium"
+                    >
+                      {cancellingId === claim.id ? '...' : 'Cancel'}
+                    </button>
                   </div>
                 </div>
               ))}
