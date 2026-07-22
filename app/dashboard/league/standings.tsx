@@ -36,7 +36,7 @@ export default function Standings({ teams, currentTeamId }: Props) {
                     <div
                         key={team.id}
                         onClick={() => router.push(`/dashboard/league/team/${team.id}`)}
-                        className={`grid grid-cols-12 gap-2 px-4 py-3 border-b border-gray-50 last:border-0 text-sm transition-colors ${
+                        className={`grid grid-cols-12 gap-2 px-4 py-3 border-b border-gray-50 last:border-0 text-sm transition-colors cursor-pointer ${
                             isCurrentTeam
                                 ? 'bg-green-50'
                                 : 'hover:bg-gray-50'
