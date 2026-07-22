@@ -17,14 +17,21 @@ import requests
 
 APP_URL = os.environ.get("APP_URL", "https://pierson-fantasy.vercel.app")
 SYNC_SECRET = os.environ.get("SYNC_SECRET")
+VERCEL_BYPASS_SECRET = os.environ.get("VERCEL_BYPASS_SECRET")
 
 def process_waivers() -> dict:
     if not SYNC_SECRET:
         raise RuntimeError("SYNC_SECRET environment variable is not set")
+    if not VERCEL_BYPASS_SECRET:
+        raise RuntimeError("VERCEL_BYPASS_SECRET environment variable is not set")
     
     response = requests.post(
         f"{APP_URL}/api/waivers/process",
-        headers={"Authorization": f"Bearer {SYNC_SECRET}"},
+        headers={
+            "Authorization": f"Bearer {SYNC_SECRET}",
+            "x-vercel-protection-bypass": VERCEL_BYPASS_SECRET,
+            "User-Agent": "Mozilla/5.0 (compatible; PiersonFantasyWaiverBot/1.0)"
+        },
         timeout=30,
     )
 
