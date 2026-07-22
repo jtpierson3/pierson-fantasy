@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import type { TeamWithRecord } from "./types"
 
 type Props = {
@@ -8,6 +9,8 @@ type Props = {
 }
 
 export default function Standings({ teams, currentTeamId }: Props) {
+    const router = useRouter()
+
     return (
         <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
             {/* Header */}
@@ -32,6 +35,7 @@ export default function Standings({ teams, currentTeamId }: Props) {
                 return (
                     <div
                         key={team.id}
+                        onClick={() => router.push(`/dashboard/league/team/${team.id}`)}
                         className={`grid grid-cols-12 gap-2 px-4 py-3 border-b border-gray-50 last:border-0 text-sm transition-colors ${
                             isCurrentTeam
                                 ? 'bg-green-50'

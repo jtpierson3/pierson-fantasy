@@ -1,62 +1,17 @@
 'use client'
 
-import type { FantasyTeamWithPlayers, PlayerWithDetails } from './types'
-import {
-  getFormationRows,
-  getPositionType,
-  canFillSlot,
-  type Formation,
-  type FormationSlot,
-} from '@/lib/formations'
+import type { PlayerWithDetails } from './types'
+import { getFormationRows, type Formation } from '@/lib/formations'
+import { assignAllRows } from '@/lib/lineupAssignment'
 import PlayerCard from '@/app/components/playerCard'
 
-type Props = {
-  team: FantasyTeamWithPlayers
+type TeamForLineup = {
+  formation: string
+  players: PlayerWithDetails[]
 }
 
-function assignAllRows(
-  rows: { label: string; slots: FormationSlot[] }[],
-  availablePlayers: PlayerWithDetails[]
-) {
-  const allSlots = rows.flatMap(r => r.slots)
-  const slotCount = allSlots.length
-  const slotAssignments: (PlayerWithDetails | null)[] = Array(slotCount).fill(null)
-  const remaining = [...availablePlayers]
-
-  // First pass — pin players with a valid slotOrder, no position checking
-  availablePlayers.forEach(p => {
-    const idx = p.slotOrder
-    if (idx >= 0 && idx < slotCount && slotAssignments[idx] === null) {
-      slotAssignments[idx] = p
-      remaining.splice(remaining.findIndex(r => r.id === p.id), 1)
-    }
-  })
-
-  // Second pass — fill remaining empty slots by natural position
-  slotAssignments.forEach((assigned, idx) => {
-    if (assigned !== null) return
-    const slot = allSlots[idx]
-    const matchIdx = remaining.findIndex(p => {
-      if (p.slotOrder !== 0) return false
-      const posType = getPositionType(
-        p.player.detailed_position_id,
-        p.player.position_id
-      )
-      return posType !== null && canFillSlot(slot, posType)
-    })
-    if (matchIdx !== -1) {
-      slotAssignments[idx] = remaining[matchIdx]
-      remaining.splice(matchIdx, 1)
-    }
-  })
-
-  let slotIdx = 0
-  const result = rows.map(row => ({
-    ...row,
-    assigned: row.slots.map(() => slotAssignments[slotIdx++])
-  }))
-
-  return { result, overflow: remaining }
+type Props = {
+  team: TeamForLineup
 }
 
 export default function LatestLineup({ team }: Props) {
