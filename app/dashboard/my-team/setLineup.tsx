@@ -420,6 +420,27 @@ export default function SetLineup({ team, onUpdate }: Props) {
     starters
   )
 
+  const [notes, setNotes] = useState(team.lineupNotes ?? '')
+  const [savingNotes, setSavingNotes] = useState(false)
+  const [notesDirty, setNotesDirty] = useState(false)
+
+  const saveNotes = async () => {
+    setSavingNotes(true)
+    try {
+      const res = await fetch('/api/my-team/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fantasyTeamId: team.id, notes })
+      })
+      if (!res.ok) throw new Error('Failed to save notes')
+      setNotesDirty(false)
+    } catch {
+      //handle error
+    } finally {
+      setSavingNotes(false)
+    }
+  }
+
   return (
     <DndContext
       sensors={sensors}
@@ -536,6 +557,31 @@ export default function SetLineup({ team, onUpdate }: Props) {
                     ))}
                 </div>
             )}
+            </div>
+
+            {/* Notes */}
+            <div className="mt-3 bg-white border border-gray-100 rounded-xl overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-100">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Notes</p>
+                {notesDirty && (
+                  <button
+                    onClick={saveNotes}
+                    disabled={savingNotes}
+                  >
+                    {savingNotes ? 'Saving...' : 'Save'}
+                  </button>
+                )}
+              </div>
+              <textarea 
+                value={notes}
+                onChange={e => {
+                  setNotes(e.target.value)
+                  setNotesDirty(true)
+                }}
+                placeholder="Jot down notes about your lineup - injuries to watch, players to consider swapping in..."
+                rows={4}
+                className="w-full px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none resize-none"
+              />
             </div>
           </div>
 
