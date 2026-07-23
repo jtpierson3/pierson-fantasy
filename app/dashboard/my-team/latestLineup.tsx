@@ -17,6 +17,7 @@ type Props = {
 export default function LatestLineup({ team }: Props) {
   const starters = team.players.filter(p => p.rosterSlot === 'STARTER')
   const subs = team.players.filter(p => p.rosterSlot === 'SUB')
+  const reserves = team.players.filter(p => p.rosterSlot === 'RESERVE')
 
   const { result: assignedRows } = assignAllRows(
     getFormationRows(team.formation as Formation),
@@ -24,69 +25,93 @@ export default function LatestLineup({ team }: Props) {
   )
 
   return (
-    <div className="flex gap-4 h-full">
-      {/* Pitch */}
-      <div className="w-3/4">
-        <div
-          className="relative rounded-xl overflow-hidden h-full"
-          style={{ background: 'linear-gradient(180deg, #2d7a3a 0%, #1e5c29 100%)' }}
-        >
-          <svg
-            className="absolute inset-0 w-full h-full"
-            viewBox="0 0 400 500"
-            preserveAspectRatio="none"
+    <div className="flex flex-col gap-4">
+      <div className="flex gap-4 h-full">
+        {/* Pitch */}
+        <div className="w-3/4">
+          <div
+            className="relative rounded-xl overflow-hidden h-full"
+            style={{ background: 'linear-gradient(180deg, #2d7a3a 0%, #1e5c29 100%)' }}
           >
-            <line x1="0" y1="250" x2="400" y2="250" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
-            <circle cx="200" cy="250" r="50" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
-            <rect x="100" y="20" width="200" height="100" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
-            <rect x="150" y="20" width="100" height="40" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
-            <rect x="10" y="10" width="380" height="480" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
-          </svg>
+            <svg
+              className="absolute inset-0 w-full h-full"
+              viewBox="0 0 400 500"
+              preserveAspectRatio="none"
+            >
+              <line x1="0" y1="250" x2="400" y2="250" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+              <circle cx="200" cy="250" r="50" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+              <rect x="100" y="20" width="200" height="100" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+              <rect x="150" y="20" width="100" height="40" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+              <rect x="10" y="10" width="380" height="480" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
+            </svg>
 
-          {/* Formation Badge */}
-          <div className="absolute top-6 left-6 z-20">
-            <span className="text-sm font-bold bg-white/20 text-white px-3.5 py-1.5 rounded-lg backdrop-blur-sm border border-white/30">
-              {team.formation}
-            </span>
+            {/* Formation Badge */}
+            <div className="absolute top-6 left-6 z-20">
+              <span className="text-sm font-bold bg-white/20 text-white px-3.5 py-1.5 rounded-lg backdrop-blur-sm border border-white/30">
+                {team.formation}
+              </span>
+            </div>
+
+            <div className="relative z-10 flex flex-col justify-around py-6 px-4" style={{ minHeight: '500px' }}>
+              {assignedRows.map(row => (
+                <div key={row.label} className="flex justify-around items-center py-3">
+                  {row.slots.map((slot, i) => {
+                    const fp = row.assigned[i]
+                    if (!fp) return <div key={i} className="w-14 h-14" />
+                    const slotPositionLabel = slot.type === 'fixed' ? slot.position : slot.label
+                    return (
+                      <PlayerCard
+                        key={fp.id}
+                        player={fp.player}
+                        positionLabel={slotPositionLabel}
+                        points={0}
+                      />
+                    )
+                  })}
+                </div>
+              ))}
+            </div>
           </div>
+        </div>
 
-          <div className="relative z-10 flex flex-col justify-around py-6 px-4" style={{ minHeight: '500px' }}>
-            {assignedRows.map(row => (
-              <div key={row.label} className="flex justify-around items-center py-3">
-                {row.slots.map((slot, i) => {
-                  const fp = row.assigned[i]
-                  if (!fp) return <div key={i} className="w-14 h-14" />
-                  const slotPositionLabel = slot.type === 'fixed' ? slot.position : slot.label
-                  return (
-                    <PlayerCard
-                      key={fp.id}
-                      player={fp.player}
-                      positionLabel={slotPositionLabel}
-                      points={0}
-                    />
-                  )
-                })}
+        {/* Subs */}
+        <div className="w-1/4 flex flex-col gap-2">
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide px-1 mb-1">
+            Subs ({subs.length})
+          </p>
+          {subs
+            .sort((a, b) => a.slotOrder - b.slotOrder)
+            .map(fp => (
+              <div
+                key={fp.id}
+                className="bg-white border border-gray-100 rounded-xl p-3 flex flex-col items-center"
+              >
+                <PlayerCard player={fp.player} points={0} size="sm" />
               </div>
             ))}
-          </div>
         </div>
       </div>
 
-      {/* Subs */}
-      <div className="w-1/4 flex flex-col gap-2">
-        <p className="text-xs font-medium text-gray-400 uppercase tracking-wide px-1 mb-1">
-          Subs ({subs.length})
+      {/* Reserves */}
+      <div>
+        <p className="text-xs font-medium text-gray-400 uppercase tracking wide px-1 mb-2">
+          Reserves ({reserves.length})
         </p>
-        {subs
-          .sort((a, b) => a.slotOrder - b.slotOrder)
-          .map(fp => (
-            <div
-              key={fp.id}
-              className="bg-white border border-gray-100 rounded-xl p-3 flex flex-col items-center"
-            >
-              <PlayerCard player={fp.player} points={0} size="sm" />
-            </div>
-          ))}
+        <div className="grid grid-cols-7 gap-2">
+          {reserves
+            .sort((a,b) => a.slotOrder - b.slotOrder)
+            .map(fp => (
+              <div
+                key={fp.id}
+                className="bg-white border border-gray-100 rounded-xl p-3 flex flex-col items-center relative"
+              >
+                <span className="absolute top-1.5 left-1.5 text-xs font-medium text-medium text-gray-400 bg-gray-50 rounded-full w-5 h-5 flex items-center justify-center">
+                  {fp.slotOrder}
+                </span>
+                <PlayerCard player={fp.player} points={0} size="sm" />
+              </div>
+            ))}
+        </div>
       </div>
     </div>
   )
