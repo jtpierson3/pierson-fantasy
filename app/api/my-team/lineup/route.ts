@@ -11,7 +11,7 @@ export async function POST(req: Request) {
         const user = await prisma.user.findUnique({ where: { clerkId } })
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        const { fantasyTeamId, formation, players } = await req.json()
+        const { fantasyTeamId, gameweekId, formation, players } = await req.json()
 
         // Verify team belongs to user
         const team = await prisma.fantasyTeam.findFirst({
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
             data: { formation }
         })
 
-        // Update each player's slot
+        // Update each player's slot (live roster state)
         await Promise.all(
             players.map((p: { id: string; rosterSlot: string; slotOrder: number }) =>
                 prisma.fantasyTeamPlayer.update({
@@ -37,6 +37,56 @@ export async function POST(req: Request) {
                 })
             )
         )
+
+        // Snapshot this save into gameweeklineup if we know which gameweek this is for
+        if (gameweekId) {
+            const existingSnapshot = await prisma.gameweekLineup.findUnique({
+                where: {
+                    fantasyTeamId_gameweekId: {
+                        fantasyTeamId,
+                        gameweekId,
+                    }
+                }
+            })
+
+            if (existingSnapshot) {
+                //Replace the snapshot player rows entirely
+                await prisma.gameweekLineupPlayer.deleteMany({
+                    where: { gameweekLineupId: existingSnapshot.id }
+                })
+                await prisma.gameweekLineup.update({
+                    where: { id: existingSnapshot.id },
+                    data: {
+                        formation,
+                        lockedAt: new Date(),
+                        players: {
+                            create: players.map((p: { playerId: number; rosterSlot: string; slotOrder: number}) => ({
+                                playerId: p.playerId,
+                                rosterSlot: p.rosterSlot as RosterSlot,
+                                slotOrder: p.slotOrder,
+                            }))
+                        }
+                    }
+                })
+            } else {
+                await prisma.gameweekLineup.create({
+                    data: {
+                        fantasyTeamId,
+                        gameweekId,
+                        formation,
+                        players: {
+                            create: players.map((p: { playerId: number; rosterSlot: string; slotOrder: number }) => ({
+                                playerId: p.playerId,
+                                rosterSlot: p.rosterSlot as RosterSlot,
+                                slotOrder: p.slotOrder
+                            }))
+                        }
+                    }
+                })
+            }
+        } else {
+            console.warn('[my-team/lineup] No gameweek Id provided - skipped snapshot write')
+        }
 
         return NextResponse.json({ success: true})
     } catch (err) {

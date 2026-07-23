@@ -9,6 +9,11 @@ export type FantasyTeamWithPlayers = FantasyTeam & {
     fantasyLeague: FantasyLeague
 }
 
+export type TargetGameweek = {
+    id: string
+    gameweekNumber: number
+} | null
+
 export const FORMATIONS = [
     '4-3-3',
     '4-4-2',

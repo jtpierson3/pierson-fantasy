@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import type { FantasyTeamWithPlayers } from './types'
+import type { FantasyTeamWithPlayers, TargetGameweek } from './types'
 import LatestLineup from './latestLineup'
 import TeamStats from './teamStats'
 import SetLineup from './setLineup'
@@ -22,9 +22,11 @@ const TABS: { id: Tab; label: string } [] = [
 type Props = {
     fantasyTeam: FantasyTeamWithPlayers
     myClaims: ClaimStatus[]
+    targetGameweek: TargetGameweek
+    targetGameweekLockTime: string | null
 }
 
-export default function MyTeam({ fantasyTeam, myClaims }: Props) {
+export default function MyTeam({ fantasyTeam, myClaims, targetGameweek, targetGameweekLockTime }: Props) {
     const router = useRouter()
     const [activeTab, setActiveTab] = useState<Tab>('lineup')
     const [team, setTeam] = useState(fantasyTeam)
@@ -131,7 +133,14 @@ export default function MyTeam({ fantasyTeam, myClaims }: Props) {
             {/* Tab Content */}
             {activeTab === 'lineup' && <LatestLineup team={team} />}
             {activeTab === 'performance' && <TeamStats team={team} />}
-            {activeTab === 'set-lineup' && <SetLineup team={team} onUpdate={setTeam}/>}
+            {activeTab === 'set-lineup' && (
+                <SetLineup 
+                    team={team} 
+                    onUpdate={setTeam}
+                    targetGameweek={targetGameweek}
+                    targetGameweekLockTime={targetGameweekLockTime}
+                />
+            )}
             {activeTab === 'waivers' && <WaiversTab team={team} initialClaims={myClaims} />}
         </div>
     )

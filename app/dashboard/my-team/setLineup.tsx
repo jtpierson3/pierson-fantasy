@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -21,15 +21,16 @@ import {
     type FormationSlot,
     getFormationSlots,
 } from '@/lib/formations'
-import { FantasyTeamWithPlayers, PlayerWithDetails } from './types'
+import { FantasyTeamWithPlayers, PlayerWithDetails, TargetGameweek } from './types'
 import DraggableWrapper from '@/app/components/DraggableWrapper'
 import PlayerCard from '@/app/components/playerCard'
 import PlayerListRow from '@/app/components/PlayerListRow'
-import next from 'next'
 
 type Props = {
   team: FantasyTeamWithPlayers
   onUpdate: (team: FantasyTeamWithPlayers) => void
+  targetGameweek: TargetGameweek
+  targetGameweekLockTime: string | null
 }
 
 // Slot ID format:
@@ -173,7 +174,7 @@ type SelectedPlayer = {
     fp: PlayerWithDetails
 } | null
 
-export default function SetLineup({ team, onUpdate }: Props) {
+export default function SetLineup({ team, onUpdate, targetGameweek, targetGameweekLockTime }: Props) {
   const [formation, setFormation] = useState<Formation>(team.formation as Formation)
   const [players, setPlayers] = useState(() => normalizeSlotOrder(team.players, team.formation as Formation))
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -184,6 +185,8 @@ export default function SetLineup({ team, onUpdate }: Props) {
   const [replaceId, setReplaceId] = useState<string>('')
 
   const [targetSlotIndex, setTargetSlotIndex] = useState<number>(0)
+
+  const [now, setNow] = useState(() => new Date())
 
   // Build slot maps
   const starters = players.filter(p => p.rosterSlot === 'STARTER')
@@ -271,11 +274,15 @@ export default function SetLineup({ team, onUpdate }: Props) {
   const starterCount = starters.length
   const subCount = subs.length
 
+  const lockDate = targetGameweekLockTime ? new Date(targetGameweekLockTime) : null
+  const isLocked = lockDate ? now >= lockDate: false
+
   const sensors = useSensors(useSensor(PointerSensor, { 
     activationConstraint: { distance: 8 } 
   }))
 
   function handlePlayerClick(fp: PlayerWithDetails, e: React.MouseEvent) {
+    if (isLocked) return
     e.stopPropagation()
     setSelectedPlayer({ fp })
     setTargetSlot('')
@@ -342,6 +349,7 @@ export default function SetLineup({ team, onUpdate }: Props) {
   }
 
   const handleSave = useCallback(async () => {
+    if (isLocked || !targetGameweek) return
     setSaving(true)
     try {
       const res = await fetch('/api/my-team/lineup', {
@@ -349,9 +357,11 @@ export default function SetLineup({ team, onUpdate }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           fantasyTeamId: team.id,
+          gameweekId: targetGameweek.id,
           formation,
           players: players.map(p => ({
             id: p.id,
+            playerId: p.playerId,
             rosterSlot: p.rosterSlot,
             slotOrder: p.slotOrder,
           }))
@@ -364,7 +374,7 @@ export default function SetLineup({ team, onUpdate }: Props) {
     } finally {
       setSaving(false)
     }
-  }, [team, formation, players, onUpdate])
+  }, [team, formation, players, onUpdate, isLocked, targetGameweek])
 
   function assignAllRows(
     rows: { label: string; slots: FormationSlot[] }[], 
@@ -440,10 +450,27 @@ export default function SetLineup({ team, onUpdate }: Props) {
       setSavingNotes(false)
     }
   }
+  
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(interval)
+  }, [])
+
+  function formatCountdown(target: Date, current: Date): string {
+    const diffMs = target.getTime() - current.getTime()
+    if (diffMs <= 0) return 'Locked'
+    const totalSeconds = Math.floor(diffMs / 1000)
+    const days = Math.floor(totalSeconds / 86400)
+    const hours = Math.floor((totalSeconds % 86400) / 3600)
+    const minutes = Math.floor((totalSeconds % 3600) / 60)
+    if (days > 0) return `${days}d ${hours}h`
+    if (hours > 0) return `${hours}h ${minutes}m`
+    return `${minutes}m`
+  }
 
   return (
     <DndContext
-      sensors={sensors}
+      sensors={isLocked ? [] : sensors}
       collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
@@ -458,6 +485,7 @@ export default function SetLineup({ team, onUpdate }: Props) {
                 <button
                   key={f}
                   onClick={() => setFormation(f)}
+                  disabled={isLocked}
                   className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
                     formation === f
                       ? 'bg-green-800 text-white'
@@ -477,6 +505,16 @@ export default function SetLineup({ team, onUpdate }: Props) {
             {saving ? 'Saving...' : 'Save Lineup'}
           </button>
         </div>
+
+        {targetGameweek && lockDate && (
+          <p className={`test-sm font-mediu ${isLocked ? 'text-red-600' : 'text-gray-600'}`}>
+            Lineup for Gameweek {targetGameweek.gameweekNumber} - {isLocked ? 'Locked' : `Closes in ${formatCountdown(lockDate,now)}`}
+          </p>
+        )}
+
+        {!targetGameweek && (
+          <p className="text-sm text-gray-400">No upcoming gameweek to set a lineup for.</p>
+        )}
 
         <div className="flex gap-4">
           {/* Pitch */}

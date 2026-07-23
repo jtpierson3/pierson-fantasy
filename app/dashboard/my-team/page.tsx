@@ -3,6 +3,9 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import MyTeam from './myTeam'
 import { redirect } from 'next/navigation'
+import { getGameweekLockTime } from '@/lib/fixtureTiming'
+import { mergeLineupWithSnapshot } from '@/lib/lineupSnapshot'
+import { selectTargetGameweek } from '@/lib/gameweekSelection'
 
 function MyTeamSkeleton() {
   return (
@@ -98,7 +101,66 @@ async function MyTeamContent() {
     })
   )
 
-  return <MyTeam fantasyTeam={fantasyTeam} myClaims={myClaims} />
+  // Determine which gameweek is currently being set = the earliest gameweek
+  // Whose locktime hasnt passed yet
+  const allGameweeks = await prisma.fantasyGameweek.findMany({
+    where: { fantasyLeagueId: fantasyTeam.fantasyLeagueId },
+    orderBy: { gameweekNumber: 'asc' }
+  })
+
+  const gameweeksWithLockInfo = await Promise.all(
+    allGameweeks.map(async gw => ({
+      id: gw.id,
+      gameweekNumber: gw.gameweekNumber,
+      lockTime: await getGameweekLockTime(gw.startDate, gw.endDate)
+    }))
+  )
+
+  const targetGameweekInfo = selectTargetGameweek(gameweeksWithLockInfo, new Date())
+  const targetGameweek = targetGameweekInfo
+    ? allGameweeks.find(gw => gw.id === targetGameweekInfo.id) ?? null
+    : null
+  const targetGameweekLockTime = targetGameweekInfo?.lockTime ?? null
+
+  // Load the most recent locked in snapshot (if any) to merge as the starting point
+  const lastSnapshot = await prisma.gameweekLineup.findFirst({
+    where:  { fantasyTeamId: fantasyTeam.id },
+    include: { players: true },
+    orderBy: { lockedAt: 'desc' }
+  })
+
+  const mergedPlayers = mergeLineupWithSnapshot(
+    fantasyTeam.players.map(p => ({ id: p.id, playerId: p.playerId })),
+    lastSnapshot?.players.map(p => ({
+      playerId: p.playerId,
+      rosterSlot: p.rosterSlot,
+      slotOrder: p.slotOrder,
+    })) ?? null
+  )
+
+  // Merge the computed rosterSlot/slotOrder back onto the full player objects
+  // (mreged players only has ids/ slot info, we need full player+team data for render)
+  const mergedFantasyTeamPlayers = fantasyTeam.players.map(p => {
+    const merged = mergedPlayers.find(m => m.id === p.id)
+    return {
+      ...p,
+      rosterSlot: (merged?.rosterSlot ?? p.rosterSlot) as typeof p.rosterSlot,
+      slotOrder: merged?.slotOrder ?? p.slotOrder
+    }
+  })
+
+  const teamForLineup = {
+    ...fantasyTeam,
+    players: mergedFantasyTeamPlayers,
+    formation: lastSnapshot?.formation ?? fantasyTeam.formation,
+  }
+
+  return <MyTeam 
+    fantasyTeam={teamForLineup} 
+    myClaims={myClaims} 
+    targetGameweek={targetGameweek}
+    targetGameweekLockTime={targetGameweekLockTime?.toISOString() ?? null}
+  />
 }
 
 export default function MyTeamPage() {
