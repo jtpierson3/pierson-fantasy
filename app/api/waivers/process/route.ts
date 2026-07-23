@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { isWaiverWindowClosed } from '@/lib/waiverWindow'
-import { resolveWaiverClaims, type WaiverClaimInput, type WaiverTeamInput } from '@/lib/waiverProcessing'
+import { resolveWaiverClaims, type WaiverClaimInput, type WaiverTeamInput } from '@/lib/fixtureTiming'
 import { env } from '@/lib/env'
 
 export async function POST(req: Request) {

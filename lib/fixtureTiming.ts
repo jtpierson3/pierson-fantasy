@@ -1,3 +1,17 @@
+import { prisma } from '@/lib/prisma'
+import { Fixture } from '@prisma/client'
+
+export type FixtureWindowInfo = {
+    closesAt: Date
+    triggeringFixture: {
+        id: number
+        competition: string
+        homeTeamName: string
+        awayTeamName: string
+        kickoff: Date
+    }
+} | null
+
 export type WaiverClaimInput = {
     id: string
     fantasyTeamId: string
@@ -27,6 +41,79 @@ export type WaiverProcessingResult = {
 }
 
 const MAX_NON_IR_ROSTER = 23
+const LOCK_HOURS_BEFORE_KICKOFF = 2
+
+/**
+ * Finds the next upcoming fixture chronologically taht involves at least one premier league team
+ * that we track (homeTeamId/awayTeamId not null). This naturally skips early cup rounds involving
+ * lower league sides without needing to hardcode the round PL teams join
+ */
+export async function getCurrentWaiverWindow(): Promise<FixtureWindowInfo> {
+    const now = new Date()
+
+    const nextFixture = await prisma.fixture.findFirst({
+        where: {
+            kickoff: { gt: now },
+            OR: [
+                { homeTeamId: { not: null } },
+                { awayTeamId: { not: null } }
+            ],
+        },
+        orderBy: { kickoff: 'asc' }
+    })
+
+    if (!nextFixture) return null
+
+    const closesAt = new Date(nextFixture.kickoff)
+    closesAt.setHours(closesAt.getHours() - LOCK_HOURS_BEFORE_KICKOFF)
+
+    return {
+        closesAt,
+        triggeringFixture: {
+            id: nextFixture.id,
+            competition: nextFixture.competition,
+            homeTeamName: nextFixture.homeTeamName,
+            awayTeamName: nextFixture.awayTeamName,
+            kickoff: nextFixture.kickoff
+        }
+    }
+}
+
+export async function isWaiverWindowClosed(): Promise<boolean> {
+    const window = await getCurrentWaiverWindow()
+    if (!window) return false
+    return new Date() >= window.closesAt
+}
+
+/**
+ * Finds the earliest upcoming Premier League fixture for a given FantasyGAmeweek's
+ * date trange. used to determine when lineups lock for that gameweek - the lock 
+ * time is the kickoff of the first fixture in the week. Not a rolling "next fixture"
+ * like the waiver window (lineups lock per gameweek not continuously)
+ */
+export async function getGameweekLockTime(
+    gameweekStart: Date,
+    gameweekEnd: Date
+): Promise<Date | null> {
+    const firstFixture = await prisma.fixture.findFirst({
+        where: {
+            kickoff: { gte: gameweekStart, lte: gameweekEnd },
+            competition: 'premier_league',
+        },
+        orderBy: { kickoff: 'asc' }
+    })
+
+    return firstFixture ? firstFixture.kickoff : null
+}
+
+export async function isGameweekLocked(
+    gameweekStart: Date,
+    gameweekEnd: Date
+): Promise<boolean> {
+    const lockTime = await getGameweekLockTime(gameweekStart, gameweekEnd)
+    if(!lockTime) return false 
+    return new Date() >= lockTime
+}
 
 /**
  * Pure function - resolves a batch of pending waiver claims for one league.
