@@ -175,6 +175,8 @@ type SelectedPlayer = {
 } | null
 
 export default function SetLineup({ team, onUpdate, targetGameweek, targetGameweekLockTime }: Props) {
+  console.log('Set Lineup', { targetGameweek, targetGameweekLockTime })
+
   const [formation, setFormation] = useState<Formation>(team.formation as Formation)
   const [players, setPlayers] = useState(() => normalizeSlotOrder(team.players, team.formation as Formation))
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -507,7 +509,7 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
         </div>
 
         {targetGameweek && lockDate && (
-          <p className={`test-sm font-mediu ${isLocked ? 'text-red-600' : 'text-gray-600'}`}>
+          <p className={`test-sm font-medium ${isLocked ? 'text-red-600' : 'text-gray-600'}`}>
             Lineup for Gameweek {targetGameweek.gameweekNumber} - {isLocked ? 'Locked' : `Closes in ${formatCountdown(lockDate,now)}`}
           </p>
         )}

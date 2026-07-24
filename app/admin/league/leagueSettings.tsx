@@ -85,6 +85,10 @@ export default function LeagueSettings({
     const [generatingSchedule, setGeneratingSchedule] = useState<string | null>(null)
     const [scheduleError, setScheduleError] = useState<string | null>(null)
 
+    // Syncing Schedule
+    const [syncingDates, setSyncingDates] = useState<string | null>(null)
+    const [syncDatesResult, setSyncDatesResult] = useState<string | null>(null)
+
     const handleCreateLeague = useCallback(async () => {
         if (!createForm.name) {
             setCreateError('League name is required')
@@ -360,6 +364,26 @@ export default function LeagueSettings({
         })
     }, [router])
 
+    const handleSyncGameweekDates = useCallback(async (league: League) => {
+        setSyncingDates(league.id)
+        setSyncDatesResult(null)
+        try {
+            const res = await fetch('/api/admin/league/sync-gameweek-dates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ leagueId: league.id })
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error ?? 'Failed to sync gameweek dates')
+            setSyncDatesResult(`Updated ${data.updated}, skipped ${data.skipped} of ${data.total} gameweeks`)
+            router.refresh()
+        } catch (err) {
+            setSyncDatesResult(err instanceof Error ? err.message : 'Failed to sync games')
+        } finally {
+            setSyncingDates(null)
+        }
+    }, [router])
+
     return (
         <div>
             {/* Header */}
@@ -437,6 +461,13 @@ export default function LeagueSettings({
                                     Matchups
                                 </Link>
                                 <button
+                                    onClick={() => handleSyncGameweekDates(league)}
+                                    disabled={syncingDates === league.id}
+                                    className="px-3 py-1.5 text-xs rounded-lg bg-blue-900/30 text-blue-400 hover:bg-blue-900/60 border border-blue-800 transition-colors disabled:opacity-50"
+                                >
+                                    {syncingDates === league.id ? 'Syncing...' : 'Sync Gameweek Dates' }
+                                </button>
+                                <button
                                     onClick={() => handleToggleDraftComplete(league)}
                                     disabled={togglingDraft === league.id}
                                     className={`px-3 py-1.5 text-xs rounded-lg border transition-colors disabled:opacity-50 ${
@@ -504,6 +535,10 @@ export default function LeagueSettings({
                                 )}
                             </div>
                         </div>
+
+                        {syncDatesResult && ( 
+                            <p className="text-xs text-gray-400 mt-2">{syncDatesResult}</p>
+                        )}
 
                         {/* Members Table */}
                         <div className="grid grid-cols-12 gap-4 px-4 py-2 bg-gray-800/50 text-xs font-medium text-gray-400 uppercase tracking-wide">
