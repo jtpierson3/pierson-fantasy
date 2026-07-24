@@ -47,10 +47,16 @@ export default async function FootballDashobard() {
                     { awayTeamId: myTeam.id }
                 ]
             },
-            include: {
-                gameweek: true,
-                homeTeam: { include: { user: true } },
-                awayTeam: { include: { user: true } }
+            select: {
+                id: true,
+                homePoints: true,
+                awayPoints: true,
+                isComplete: true,
+                homeTeamId: true,
+                awayTeamId: true,
+                gameweek: { select: { gameweekNumber: true } },
+                homeTeam: { select: { id: true, name: true, user: { select: { username: true } } } },
+                awayTeam: { select: { id: true, name: true, user: { select: { username: true } } } }
             }
         })
         : null
