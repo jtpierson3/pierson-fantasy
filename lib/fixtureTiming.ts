@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { Fixture } from '@prisma/client'
+import { calculateWaiverCloseTime } from './waiverWindowCalculation'
 
 export type FixtureWindowInfo = {
     closesAt: Date
@@ -42,6 +42,7 @@ export type WaiverProcessingResult = {
 
 const MAX_NON_IR_ROSTER = 23
 const LOCK_HOURS_BEFORE_KICKOFF = 2
+const EARLY_KICKOFF_HOUR_THRESHOLD = 10
 
 /**
  * Finds the next upcoming fixture chronologically taht involves at least one premier league team
@@ -64,8 +65,7 @@ export async function getCurrentWaiverWindow(): Promise<FixtureWindowInfo> {
 
     if (!nextFixture) return null
 
-    const closesAt = new Date(nextFixture.kickoff)
-    closesAt.setHours(closesAt.getHours() - LOCK_HOURS_BEFORE_KICKOFF)
+    const closesAt = calculateWaiverCloseTime(nextFixture.kickoff)
 
     return {
         closesAt,
