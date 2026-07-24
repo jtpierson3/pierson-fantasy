@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { getOpponent, getMyPoints, getTheirPoints } from '@/lib/matchupHelpers'
 
 type TeamSummary = {
     id: string
@@ -23,18 +24,6 @@ type MatchupSummary = {
 type Props = {
   matchup: MatchupSummary | null
   currentTeamId: string
-}
-
-function getOpponent(matchup: MatchupSummary, currentTeamId: string): TeamSummary {
-    return matchup.homeTeamId === currentTeamId ? matchup.awayTeam : matchup.homeTeam
-}
-
-function getMyPoints(matchup: MatchupSummary, currentTeamId: string): number {
-    return matchup.homeTeamId === currentTeamId ? matchup.homePoints : matchup.awayPoints
-}
-
-function getTheirPoints(matchup: MatchupSummary, currentTeamId: string): number {
-    return matchup.homeTeamId === currentTeamId ? matchup.awayPoints : matchup.homePoints
 }
 
 export default function CurrentMatchupTile({ matchup, currentTeamId }: Props) {
