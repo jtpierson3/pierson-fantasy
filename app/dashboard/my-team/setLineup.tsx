@@ -509,13 +509,25 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
         </div>
 
         {targetGameweek && lockDate && (
-          <p className={`test-sm font-medium ${isLocked ? 'text-red-600' : 'text-gray-600'}`}>
-            Lineup for Gameweek {targetGameweek.gameweekNumber} - {isLocked ? 'Locked' : `Closes in ${formatCountdown(lockDate,now)}`}
-          </p>
+          <div className={`px-4 py-3 rounded-xl border flex items-center justify-between ${
+            isLocked
+              ? 'bg-red-50 border-red-200'
+              : 'bg-blue-50 border-blue-200'
+          }`}>
+            <p className={`test-sm font-medium ${isLocked ? 'text-red-700' : 'text-blue-700'}`}>
+              Lineup for Gameweek {targetGameweek.gameweekNumber}
+            </p>
+            <p className={`text-sm font-semibold ${isLocked ? 'text-red-700' : 'text-blue-700'}`}>
+              {isLocked ? 'Locked' : `Closes in ${formatCountdown(lockDate, now)}`}
+            </p>
+          </div>
+          
         )}
 
         {!targetGameweek && (
-          <p className="text-sm text-gray-400">No upcoming gameweek to set a lineup for.</p>
+          <div className="px-4 py-3 rounded-xl border bg-gray-50 border-gray-200">
+            <p className="text-sm text-gray-500">No upcoming gameweek to set a lineup for.</p>
+          </div>
         )}
 
         <div className="flex gap-4">
