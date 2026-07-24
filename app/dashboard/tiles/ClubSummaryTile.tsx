@@ -31,19 +31,18 @@ export default function ClubSummaryTile({ team, rank, totalTeams }: Props) {
                         {team.name.slice(0, 2).toUpperCase()}
                     </span>
                 </div>
+                {/* Team Name */}
+                <div className="min-w-0">
+                    <p className="text-lg font-bold text-black leading-tight truncate">
+                        {team.name}
+                    </p>
+                    <p className="text-xs text-black/60 truncate">{team.fantasyLeague.name}</p>
+                </div>
                 {rank !== null && (
                     <span className="text-xs font-semibold bg-black/10 text-black/70 px-2 py-1 rounded-lg">
                         {ordinal(rank)} of {totalTeams}
                     </span>
                 )}
-            </div>
-
-            {/* Team Name */}
-            <div>
-                <p className="text-lg font-bold text-black leading-tight truncate">
-                    {team.name}
-                </p>
-                <p className="text-xs text-black/60 truncate">{team.fantasyLeague.name}</p>
             </div>
 
             {/* Standings Row */}
