@@ -3,8 +3,9 @@ import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import { getLeagueStandings } from '@/lib/leagueStandings'
 import { selectClosestGameweek } from '@/lib/gameweekSelection'
-import ClubSummaryTile from '../components/tiles/ClubSummaryTile'
-import CurrentMatchupTile from '../components/tiles/CurrentMatchupTile'
+import ClubSummaryTile from '@/app/components/tiles/ClubSummaryTile'
+import CurrentMatchupTile from '@/app/components/tiles/CurrentMatchupTile'
+import LatestLineupTile from '@/app/components/tiles/LatestLineupTile'
 
 export default async function FootballDashobard() {
     const { userId } = await auth()
@@ -66,6 +67,30 @@ export default async function FootballDashobard() {
         })
         : null
 
+    const closestGameweekSnapshot = closestGameweek
+        ? await prisma.gameweekLineup.findUnique({
+            where: {
+                fantasyTeamId_gameweekId: {
+                    fantasyTeamId: myTeam.id,
+                    gameweekId: closestGameweek.id
+                }
+            },
+            include: {
+                players: {
+                    include: { player: { include: { team: true } } }
+                }
+            }
+        })
+        : null
+
+    const lineupPlayers = (closestGameweekSnapshot?.players ?? []).map(p => ({
+        id: p.id,
+        playerId: p.playerId,
+        rosterSlot: p.rosterSlot,
+        slotOrder: p.slotOrder,
+        player: p.player
+    }))
+
     return (
         <div className="p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -73,6 +98,13 @@ export default async function FootballDashobard() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
                 <CurrentMatchupTile matchup={currentMatchup} currentTeamId={myTeam.id} />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                <LatestLineupTile 
+                    formation={closestGameweekSnapshot?.formation ?? myTeam.formation}
+                    players={lineupPlayers}
+                    gameweekNumber={closestGameweek?.gameweekNumber ?? null}
+                />
             </div>
         </div>
     )
