@@ -93,18 +93,51 @@ export default async function FootballDashobard() {
 
     return (
         <div className="p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <ClubSummaryTile team={myTeam} rank={myRank} totalTeams={leagueTeams.length} />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+            {/* Column 1 - Left Side */}
+            <div className="flex-1 flex flex-col gap-4">
+                {/* Row 1 - Club Summary + Waiver Claims + Sidelined */}
+                <div className="grid grid-cols-3 gap-4">
+                    <ClubSummaryTile team={myTeam} rank={myRank} totalTeams={leagueTeams.length} />
+                    <div className="bg-white border border-gray-100 rounded-xl p-4 flex items-center justify-center">
+                        <p className="text-xs text-gray-400">Waiver Claims - coming soon</p>
+                    </div>
+                    <div className="bg-white border border-gray-100 rounded-xl p-4 flex items-center justify-center">
+                        <p className="text-xs text-gray-400">Sidelined - coming soon</p>
+                    </div>
+                </div>
+
+                {/* Row 2 - Current Matchup */}
                 <CurrentMatchupTile matchup={currentMatchup} currentTeamId={myTeam.id} />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+
+                {/* Row 3 - Latest Lineup */}
                 <LatestLineupTile 
                     formation={closestGameweekSnapshot?.formation ?? myTeam.formation}
                     players={lineupPlayers}
-                    gameweekNumber={closestGameweek?.gameweekNumber ?? null}
+                    gameweekNumber={closestGameweek?.gameweekNumber ?? null }
                 />
+            </div>
+
+            {/* Column 2 - Right */}
+            <div className="flex-1 flex flex-col gap-4">
+                {/* Row 1 - Next Fixtures + League Activity */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white border border-gray-100 rounded-xl p-4 h-64 flex items-center justify-center">
+                        <p className="text-xs text-gray-400">Next Fixtures - Coming Soon</p>
+                    </div>
+                    <div className="bg-white border border-gray-100 rounded-xl p-4 h-64 flex items-center justify-center">
+                        <p className="text-xs text-gray-400">League Activity - Coming Soon</p>
+                    </div>
+                </div>
+
+                {/* Row 2 - Competitions + News */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white border border-gray-100 rounded-xl p-4 h-64 flex items-center justify-center">
+                        <p className="text-xs text-gray-400">Competitions - Coming Soon</p>
+                    </div>
+                    <div className="bg-white border border-gray-100 rounded-xl p-4 h-64 flex items-center justify-center">
+                        <p className="text-xs text-gray-400">News - Coming Soon</p>
+                    </div>
+                </div>
             </div>
         </div>
     )
