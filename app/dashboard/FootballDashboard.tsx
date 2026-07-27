@@ -2,6 +2,7 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import { getLeagueStandings } from '@/lib/leagueStandings'
+import { selectClosestGameweek } from '@/lib/gameweekSelection'
 import ClubSummaryTile from '../components/tiles/ClubSummaryTile'
 import CurrentMatchupTile from '../components/tiles/CurrentMatchupTile'
 
@@ -33,15 +34,19 @@ export default async function FootballDashobard() {
     const standings = getLeagueStandings(leagueTeams)
     const myRank = standings.find(s => s.team.id === myTeam.id)?.rank ?? null
 
-    // Current gameweek matchup for this team
-    const currentGameweek = await prisma.fantasyGameweek.findFirst({
-        where: { fantasyLeagueId: myTeam.fantasyLeagueId, isCurrent: true }
+    // Determine which gameweek's matchup to show, based on date proximity
+    const allGameweeks = await prisma.fantasyGameweek.findMany({
+        where: { fantasyLeagueId: myTeam.fantasyLeagueId },
+        select: { id: true, gameweekNumber: true, startDate: true, endDate: true },
+        orderBy: { gameweekNumber: 'asc' }
     })
 
-    const currentMatchup = currentGameweek
+    const closestGameweek = selectClosestGameweek(allGameweeks, new Date())
+
+    const currentMatchup = closestGameweek
         ? await prisma.fantasyMatchup.findFirst({
             where: {
-                gameweekId: currentGameweek.id,
+                gameweekId: closestGameweek.id,
                 OR: [
                     { homeTeamId: myTeam.id },
                     { awayTeamId: myTeam.id }
