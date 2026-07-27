@@ -22,7 +22,7 @@ export default function ClubSummaryTile({ team, rank, totalTeams }: Props) {
     return (
         <button
             onClick={() => router.push('/dashboard/league')}
-            className="text-left bg-yellow-400 hover:bg-yellow-300 transition-colors rounded-2xl p-5 flex flex-col justify-between h-40 overflow-hidden relative"
+            className="w-full text-left bg-yellow-400 hover:bg-yellow-300 transition-colors rounded-2xl p-5 flex flex-col justify-between h-40 overflow-hidden relative"
         >
             {/* Logo Placeholder */}
             <div className="flex items-start justify-between">
