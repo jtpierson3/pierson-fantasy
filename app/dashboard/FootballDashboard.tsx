@@ -97,8 +97,10 @@ export default async function FootballDashobard() {
                 {/* Column 1 - Left Side */}
                 <div className="flex-1 flex flex-col gap-4">
                     {/* Row 1 - Club Summary + Waiver Claims + Sidelined */}
-                    <div className="grid grid-cols-3 gap-4">
-                        <ClubSummaryTile team={myTeam} rank={myRank} totalTeams={leagueTeams.length} />
+                    <div className="grid grid-cols-4 gap-4">
+                        <div className="col-span-2">
+                            <ClubSummaryTile team={myTeam} rank={myRank} totalTeams={leagueTeams.length} />
+                        </div>
                         <div className="bg-white border border-gray-100 rounded-xl p-4 flex items-center justify-center">
                             <p className="text-xs text-gray-400">Waiver Claims - coming soon</p>
                         </div>
