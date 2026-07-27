@@ -123,7 +123,7 @@ export default function MatchupPitch({ homeTeam, awayTeam }: Props) {
           <div className="flex items-center gap-2 mt-1">
             {homeTeam.rank !== null && (
                 <span className="text-xs bg-white/10 text-white px-2 py-0.5 rounded-full">
-                    {ordinal(homeTeam.rank)} of {homeTeam.totalTeams}
+                    {ordinal(homeTeam.rank)}
                 </span>
             )}
             <span className="text-xs text-gray-400">
@@ -139,10 +139,10 @@ export default function MatchupPitch({ homeTeam, awayTeam }: Props) {
         <div className="flex-1 text-right">
           <p className="text-sm font-medium text-blue-400">{awayTeam.name}</p>
           <p className="text-xs text-gray-400">{awayTeam.formation}</p>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center justify-end gap-2 mt-1">
             {awayTeam.rank !== null && (
                 <span className="text-xs bg-white/10 text-white px-2 py-0.5 rounded-full">
-                    {ordinal(awayTeam.rank)} of {awayTeam.totalTeams}
+                    {ordinal(awayTeam.rank)}
                 </span>
             )}
             <span className="text-xs text-gray-400">
