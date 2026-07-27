@@ -90,7 +90,7 @@ async function MatchupContent({ matchupId }: { matchupId: string }) {
     ])
 
     return (
-        <div className="p-6 max-w-5xl mx-auto">
+        <div className="p-6">
             <p className="text-sm text-gray-400 mb-4">
                 Gameweek {matchup.gameweek.gameweekNumber}
             </p>
