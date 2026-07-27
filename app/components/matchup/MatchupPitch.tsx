@@ -70,51 +70,37 @@ function TeamStartersRows({
   )
 }
 
-function BenchColumn({ team }: { team: MatchupTeamData }) {
-  const subs = team.players
-    .filter(p => p.rosterSlot === 'SUB')
-    .sort((a, b) => a.slotOrder - b.slotOrder)
-  const reserves = team.players
-    .filter(p => p.rosterSlot === 'RESERVE')
-    .sort((a, b) => a.slotOrder - b.slotOrder)
+function BenchSection({
+    team,
+    slot,
+    label
+}: {
+    team: MatchupTeamData
+    slot: 'SUB' | 'RESERVE'
+    label: string
+}) {
+    const players = team.players
+        .filter(p => p.rosterSlot === slot)
+        .sort((a, b) => a.slotOrder - b.slotOrder)
 
-  return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">
-          Subs
-        </p>
-        <div className="flex flex-col gap-1.5">
-          {subs.map(fp => (
-            <div
-              key={fp.id}
-              className="bg-white border border-gray-100 rounded-lg px-2 py-1.5 flex items-center gap-2"
-            >
-              <span className="text-xs font-medium text-gray-400 w-4">{fp.slotOrder}</span>
-              <PlayerCard player={fp.player} points={fp.points ?? 0} size="sm" />
+    return (
+        <div>
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">
+                {label}
+            </p>
+            <div className="flex flex-col gap-1.5">
+                {players.map(fp => (
+                    <div
+                        key={fp.id}
+                        className="bg-white border border-gray-100 rounded-lg px-2 py-1.5 flex items-center gap-2"
+                    >
+                        <span className="text-xs font-medium text-gray-400 w-4">{fp.slotOrder}</span>
+                        <PlayerCard player={fp.player} points={fp.points ?? 0} size="sm" />
+                    </div>
+                ))}
             </div>
-          ))}
         </div>
-      </div>
-
-      <div>
-        <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">
-          Reserves
-        </p>
-        <div className="flex flex-col gap-1.5">
-          {reserves.map(fp => (
-            <div
-              key={fp.id}
-              className="bg-white border border-gray-100 rounded-lg px-2 py-1.5 flex items-center gap-2"
-            >
-              <span className="text-xs font-medium text-gray-400 w-4">{fp.slotOrder}</span>
-              <PlayerCard player={fp.player} points={fp.points ?? 0} size="sm" />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
+    )
 }
 
 export default function MatchupPitch({ homeTeam, awayTeam }: Props) {
@@ -137,8 +123,15 @@ export default function MatchupPitch({ homeTeam, awayTeam }: Props) {
         </div>
       </div>
 
-      {/* Shared pitch */}
-      <div className="flex gap-4">
+      {/* Reserves | Subs | Pitch | Subs | Reserves */}
+      <div className="flex gap-3">
+        <div className="w-40 flex-shrink-0">
+            <BenchSection team={homeTeam} slot="RESERVE" label="Reserves" />
+        </div>
+        <div className="w-40 flex-shrink-0">
+            <BenchSection team={homeTeam} slot="SUB" label="Subs" />
+        </div>
+
         <div className="flex-1">
           <div
             className="relative rounded-xl overflow-hidden"
@@ -166,10 +159,11 @@ export default function MatchupPitch({ homeTeam, awayTeam }: Props) {
         </div>
       </div>
 
-      {/* Bench — subs & reserves, home | away */}
-      <div className="grid grid-cols-2 gap-6">
-        <BenchColumn team={homeTeam} />
-        <BenchColumn team={awayTeam} />
+      <div className="w-40 flex-shrink-0">
+        <BenchSection team={awayTeam} slot="SUB" label="Subs" />
+      </div>
+      <div className="w-40 flex-shrink-0">
+        <BenchSection team={awayTeam} slot="RESERVE" label="Reserves" />
       </div>
     </div>
   )
