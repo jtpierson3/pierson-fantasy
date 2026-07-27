@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { redirect, notFound } from 'next/navigation'
 import MatchupPitch from '@/app/components/matchup/MatchupPitch'
 import type { MatchupTeamData, MatchupPlayer } from '@/app/components/matchup/MatchupPitch'
+import { getLeagueStandings } from '@/lib/leagueStandings'
 
 function MatchupSkeleton() {
     return (
@@ -14,10 +15,18 @@ function MatchupSkeleton() {
     )
 }
 
-async function buildTeamData(fantasyTeamId: string, gameweekId: string): Promise<MatchupTeamData> {
+async function buildTeamData(fantasyTeamId: string, gameweekId: string, fantasyLeagueId: string): Promise<MatchupTeamData> {
     const team = await prisma.fantasyTeam.findUnique({
         where: { id: fantasyTeamId }
     })
+
+    const leagueTeams = await prisma.fantasyTeam.findMany({
+        where: { fantasyLeagueId },
+        select: { id: true, totalLeaguePoints: true, totalFantasyPoints: true }
+    })
+
+    const standings = getLeagueStandings(leagueTeams)
+    const rank = standings.find(s => s.team.id === fantasyTeamId)?.rank ?? null
 
     const snapshot = await prisma.gameweekLineup.findUnique({
         where: {
@@ -57,7 +66,15 @@ async function buildTeamData(fantasyTeamId: string, gameweekId: string): Promise
         name: team?.name ?? 'Unknown Team',
         formation: snapshot?.formation ?? team?.formation ?? 'Not set',
         totalPoints: 0, // Placeholder until scoring exists
-        players
+        players,
+        rank,
+        totalTeams: leagueTeams.length,
+        leagueRecord: {
+            wins: team?.wins ?? 0,
+            losses: team?.losses ?? 0,
+            draws: team?.draws ?? 0,
+            leaguePoints: team?.totalLeaguePoints ?? 0
+        }
     }
 }
 
@@ -85,8 +102,8 @@ async function MatchupContent({ matchupId }: { matchupId: string }) {
     if (!isMember) notFound()
 
     const [homeTeam, awayTeam] = await Promise.all([
-        buildTeamData(matchup.homeTeamId, matchup.gameweekId),
-        buildTeamData(matchup.awayTeamId, matchup.gameweekId)
+        buildTeamData(matchup.homeTeamId, matchup.gameweekId, matchup.gameweek.fantasyLeagueId),
+        buildTeamData(matchup.awayTeamId, matchup.gameweekId, matchup.gameweek.fantasyLeagueId)
     ])
 
     return (

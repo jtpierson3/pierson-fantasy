@@ -25,6 +25,9 @@ export type MatchupTeamData = {
   formation: string
   totalPoints: number
   players: MatchupPlayer[]
+  rank: number | null
+  totalTeams: number
+  leagueRecord: { wins: number; losses: number; draws: number; leaguePoints: number }
 }
 
 type Props = {
@@ -103,6 +106,12 @@ function BenchSection({
     )
 }
 
+function ordinal(n: number): string {
+    const s = ['th', 'st', 'nd', 'rd']
+    const v = n % 100
+    return n + (s[(v -20) % 10] ?? s[v] ?? s[0])
+}
+
 export default function MatchupPitch({ homeTeam, awayTeam }: Props) {
   return (
     <div className="flex flex-col gap-4">
@@ -111,6 +120,16 @@ export default function MatchupPitch({ homeTeam, awayTeam }: Props) {
         <div className="flex-1">
           <p className="text-sm font-medium text-orange-400">{homeTeam.name}</p>
           <p className="text-xs text-gray-400">{homeTeam.formation}</p>
+          <div className="flex items-center gap-2 mt-1">
+            {homeTeam.rank !== null && (
+                <span className="text-xs bg-white/10 text-white px-2 py-0.5 rounded-full">
+                    {ordinal(homeTeam.rank)} of {homeTeam.totalTeams}
+                </span>
+            )}
+            <span className="text-xs text-gray-400">
+                {homeTeam.leagueRecord.wins}W {homeTeam.leagueRecord.losses}L {homeTeam.leagueRecord.draws}D - {homeTeam.leagueRecord.leaguePoints} pts
+            </span>
+          </div>
         </div>
         <div className="text-center px-6">
           <p className="text-2xl font-bold text-white">
@@ -120,6 +139,16 @@ export default function MatchupPitch({ homeTeam, awayTeam }: Props) {
         <div className="flex-1 text-right">
           <p className="text-sm font-medium text-blue-400">{awayTeam.name}</p>
           <p className="text-xs text-gray-400">{awayTeam.formation}</p>
+          <div className="flex items-center gap-2 mt-1">
+            {awayTeam.rank !== null && (
+                <span className="text-xs bg-white/10 text-white px-2 py-0.5 rounded-full">
+                    {ordinal(awayTeam.rank)} of {awayTeam.totalTeams}
+                </span>
+            )}
+            <span className="text-xs text-gray-400">
+                {awayTeam.leagueRecord.wins}W {awayTeam.leagueRecord.losses}L {awayTeam.leagueRecord.draws}D - {awayTeam.leagueRecord.leaguePoints} pts
+            </span>
+          </div>
         </div>
       </div>
 
