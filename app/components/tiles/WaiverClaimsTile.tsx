@@ -27,12 +27,10 @@ export default function WaiverClaimsTile({ claimCount, closesAt }: Props) {
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
                 Waiver Claims
             </p>
-            <div>
-                <p className="text-5xl font-bold text-gray-900">{claimCount}</p>
-                <p className="text-xs text-gray-400 mt-1">
-                    {closesAt ? `Processes ${formatDeadline(closesAt)}` : 'No upcoming deadline'}
-                </p>
-            </div>
+            <p className="text-5xl font-bold text-gray-900">{claimCount}</p>
+            <p className="text-xs text-gray-400 mt-1">
+                {closesAt ? `Processes ${formatDeadline(closesAt)}` : 'No upcoming deadline'}
+            </p>
         </button>
     )
 }
