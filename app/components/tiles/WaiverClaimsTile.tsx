@@ -16,7 +16,7 @@ function formatDeadline(iso: string): string {
     })
 }
 
-export default function WaiverCliamsTile({ claimCount, closesAt }: Props) {
+export default function WaiverClaimsTile({ claimCount, closesAt }: Props) {
     const router = useRouter()
 
     return (

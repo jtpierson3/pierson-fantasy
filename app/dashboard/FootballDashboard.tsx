@@ -7,7 +7,7 @@ import ClubSummaryTile from '@/app/components/tiles/ClubSummaryTile'
 import CurrentMatchupTile from '@/app/components/tiles/CurrentMatchupTile'
 import LatestLineupTile from '@/app/components/tiles/LatestLineupTile'
 import { getCurrentWaiverWindow } from '@/lib/fixtureTiming'
-import WaiverCliamsTile from '@/app/components/tiles/WaiverClaimsTile'
+import WaiverClaimsTile from '@/app/components/tiles/WaiverClaimsTile'
 
 export default async function FootballDashobard() {
     const { userId } = await auth()
@@ -109,8 +109,8 @@ export default async function FootballDashobard() {
                         <div className="col-span-2">
                             <ClubSummaryTile team={myTeam} rank={myRank} totalTeams={leagueTeams.length} />
                         </div>
-                        <div className="bg-white border border-gray-100 rounded-xl p-4 flex items-center justify-center">
-                            <WaiverCliamsTile 
+                        <div className="bg-white border border-gray-100 rounded-xl flex items-center justify-center">
+                            <WaiverClaimsTile 
                                 claimCount={pendingClaimsCount}
                                 closesAt={waiverWindow?.closesAt.toISOString() ?? null}
                             />
