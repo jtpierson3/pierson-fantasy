@@ -22,7 +22,7 @@ export default function WaiverCliamsTile({ claimCount, closesAt }: Props) {
     return (
         <button
             onClick={() => router.push('/dashboard/my-team?tab=waivers')}
-            className="text-left bg-white border border-gray-100 rounded-xl p-4 hover:border-gray-200 hover:shadow-sm transition-all flex flex-col justify-between h-full"
+            className="w-full h-full text-left bg-white border border-gray-100 rounded-xl p-4 hover:border-gray-200 hover:shadow-sm transition-all flex flex-col justify-between"
         >
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
                 Waiver Claims
