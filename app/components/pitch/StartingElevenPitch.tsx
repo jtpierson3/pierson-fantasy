@@ -18,9 +18,8 @@ export default function StartingElevenPitch({ formation, starters, compact }: Pr
 
     return (
         <div
-            className="relative rounded-xl overflow-hidden"
+            className="relative rounded-xl overflow-hidden bg-gradient-to-b from-[#2d7a3a] to-[#1e5c29]"
             style={{
-                background: 'linear-gradient(180deg, #2d7a3a 0%, #1e5c29 100%',
                 minHeight: compact ? '280px' : '500px'
             }}
         >
