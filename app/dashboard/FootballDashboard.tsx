@@ -6,6 +6,8 @@ import { selectClosestGameweek } from '@/lib/gameweekSelection'
 import ClubSummaryTile from '@/app/components/tiles/ClubSummaryTile'
 import CurrentMatchupTile from '@/app/components/tiles/CurrentMatchupTile'
 import LatestLineupTile from '@/app/components/tiles/LatestLineupTile'
+import { getCurrentWaiverWindow } from '@/lib/fixtureTiming'
+import WaiverCliamsTile from '@/app/components/tiles/WaiverClaimsTile'
 
 export default async function FootballDashobard() {
     const { userId } = await auth()
@@ -91,6 +93,12 @@ export default async function FootballDashobard() {
         player: p.player
     }))
 
+    const pendingClaimsCount = await prisma.waiverClaim.count({
+        where: { fantasyTeamId: myTeam.id, status: 'pending' }
+    })
+
+    const waiverWindow = await getCurrentWaiverWindow()
+
     return (
         <div className="p-6">
             <div className="flex flex-col lg:flex-row gap-4">
@@ -102,7 +110,10 @@ export default async function FootballDashobard() {
                             <ClubSummaryTile team={myTeam} rank={myRank} totalTeams={leagueTeams.length} />
                         </div>
                         <div className="bg-white border border-gray-100 rounded-xl p-4 flex items-center justify-center">
-                            <p className="text-xs text-gray-400">Waiver Claims - coming soon</p>
+                            <WaiverCliamsTile 
+                                claimCount={pendingClaimsCount}
+                                closesAt={waiverWindow?.closesAt.toISOString() ?? null}
+                            />
                         </div>
                         <div className="bg-white border border-gray-100 rounded-xl p-4 flex items-center justify-center">
                             <p className="text-xs text-gray-400">Sidelined - coming soon</p>
