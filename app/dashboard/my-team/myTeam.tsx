@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import type { FantasyTeamWithPlayers, TargetGameweek } from './types'
 import LatestLineup from './latestLineup'
 import TeamStats from './teamStats'
@@ -28,7 +28,10 @@ type Props = {
 
 export default function MyTeam({ fantasyTeam, myClaims, targetGameweek, targetGameweekLockTime }: Props) {
     const router = useRouter()
-    const [activeTab, setActiveTab] = useState<Tab>('lineup')
+    const searchParams = useSearchParams()
+
+    const initialTab = (searchParams.get('tab') as Tab) ?? 'lineup'
+    const [activeTab, setActiveTab] = useState<Tab>(initialTab)
     const [team, setTeam] = useState(fantasyTeam)
 
     const [isEditingName, setIsEditingName] = useState(false)
