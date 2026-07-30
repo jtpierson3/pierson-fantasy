@@ -9,6 +9,7 @@ import LatestLineupTile from '@/app/components/tiles/LatestLineupTile'
 import { getCurrentWaiverWindow } from '@/lib/fixtureTiming'
 import WaiverClaimsTile from '@/app/components/tiles/WaiverClaimsTile'
 import LeagueActivityTile from '@/app/components/tiles/LeagueActivityTile'
+import NextFixturesTile from '@/app/components/tiles/NextFixturesTile'
 
 export default async function FootballDashobard() {
     const { userId } = await auth()
@@ -122,6 +123,24 @@ export default async function FootballDashobard() {
         processedAt: claim.processedAt?.toISOString() ?? claim.submittedAt.toISOString()
     }))
 
+    const upcomingFixturesRaw = await prisma.fixture.findMany({
+        where: {
+            kickoff: { gt: new Date() }
+        },
+        orderBy: { kickoff: 'asc' },
+        take: 10
+    })
+
+    const upcomingFixtures = upcomingFixturesRaw.map(fx => ({
+        id: fx.id,
+        homeTeamName: fx.homeTeamName,
+        awayTeamName: fx.awayTeamName,
+        homeTeamImage: fx.homeTeamImage,
+        awayTeamImage: fx.awayTeamImage,
+        kickoff: fx.kickoff.toISOString(),
+        competition: fx.competition,
+    }))
+
     return (
         <div className="p-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -155,10 +174,8 @@ export default async function FootballDashobard() {
 
                 {/* Column 2 - Row 1 : Matches row 1 and 2 of the other side */}
                 <div className="grid grid-cols-2 gap-4" style={{ gridColumn: 2, gridRow: '1 / 3' }}>
-                    <div className="bg-white border border-gray-100 rounded-xl p-4 h-64 flex items-center justify-center">
-                        <p className="text-xs text-gray-400">Next Fixtures - Coming Soon</p>
-                    </div>
-                    <LeagueActivityTile activity={recentActivity}/>
+                    <NextFixturesTile fixtures={upcomingFixtures} />
+                    <LeagueActivityTile activity={recentActivity} />
                 </div>
 
                 {/* Column 2, Row 2 (Row 3) - Competitions + News */}
