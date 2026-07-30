@@ -128,7 +128,7 @@ export default async function FootballDashobard() {
             kickoff: { gt: new Date() }
         },
         orderBy: { kickoff: 'asc' },
-        take: 8
+        take: 6
     })
 
     const upcomingFixtures = upcomingFixturesRaw.map(fx => ({
