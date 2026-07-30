@@ -8,6 +8,7 @@ import CurrentMatchupTile from '@/app/components/tiles/CurrentMatchupTile'
 import LatestLineupTile from '@/app/components/tiles/LatestLineupTile'
 import { getCurrentWaiverWindow } from '@/lib/fixtureTiming'
 import WaiverClaimsTile from '@/app/components/tiles/WaiverClaimsTile'
+import LeagueActivityTile from '@/app/components/tiles/LeagueActivityTile'
 
 export default async function FootballDashobard() {
     const { userId } = await auth()
@@ -99,6 +100,28 @@ export default async function FootballDashobard() {
 
     const waiverWindow = await getCurrentWaiverWindow()
 
+    const recentActivityRaw = await prisma.waiverClaim.findMany({
+        where: {
+            status: 'won',
+            fantasyTeam: { fantasyLeagueId: myTeam.fantasyLeagueId }
+        },
+        include: {
+            fantasyTeam: true,
+            playerToAdd: true,
+            playerToDrop: true
+        },
+        orderBy: { processedAt: 'desc' },
+        take: 20, //fetch a generous batch, the tile will only render what fits.
+    })
+
+    const recentActivity = recentActivityRaw.map(claim => ({
+        id: claim.id,
+        teamName: claim.fantasyTeam.name,
+        playerAddedName: claim.playerToAdd.display_name,
+        playerDroppedName: claim.playerToDrop?.display_name ?? null,
+        processedAt: claim.processedAt?.toISOString() ?? claim.submittedAt.toISOString()
+    }))
+
     return (
         <div className="p-6">
             <div className="flex flex-col lg:flex-row gap-4">
@@ -139,7 +162,7 @@ export default async function FootballDashobard() {
                             <p className="text-xs text-gray-400">Next Fixtures - Coming Soon</p>
                         </div>
                         <div className="bg-white border border-gray-100 rounded-xl p-4 h-64 flex items-center justify-center">
-                            <p className="text-xs text-gray-400">League Activity - Coming Soon</p>
+                            <LeagueActivityTile activity={recentActivity}/>
                         </div>
                     </div>
 
