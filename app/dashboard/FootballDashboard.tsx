@@ -124,29 +124,28 @@ export default async function FootballDashobard() {
 
     return (
         <div className="p-6">
-            <div className="flex flex-col lg:flex-row gap-4">
-                {/* Column 1 - Left Side */}
-                <div className="flex-1 flex flex-col gap-4">
-                    {/* Row 1 - Club Summary + Waiver Claims + Sidelined */}
-                    <div className="grid grid-cols-4 gap-4">
-                        <div className="col-span-2">
-                            <ClubSummaryTile team={myTeam} rank={myRank} totalTeams={leagueTeams.length} />
-                        </div>
-                        <div className="bg-white border border-gray-100 rounded-xl flex items-center justify-center">
-                            <WaiverClaimsTile 
-                                claimCount={pendingClaimsCount}
-                                closesAt={waiverWindow?.closesAt.toISOString() ?? null}
-                            />
-                        </div>
-                        <div className="bg-white border border-gray-100 rounded-xl p-4 flex items-center justify-center">
-                            <p className="text-xs text-gray-400">Sidelined - coming soon</p>
-                        </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Column 1 - Row 1, Hero Tile + Waivers + Sidelined */}
+                <div className="grid grid-cols-4 gap-4" style={{ gridColumn: 1, gridRow: 1 }}>
+                    <div className="col-span-2">
+                        <ClubSummaryTile team={myTeam} rank={myRank} totalTeams={leagueTeams.length} />
                     </div>
+                    <WaiverClaimsTile 
+                        claimCount={pendingClaimsCount}
+                        closesAt={waiverWindow?.closesAt.toISOString() ?? null}
+                    />
+                    <div className="bg-white border border-gray-100 rounded-xl p-4 flex items-center justify-center">
+                        <p className="text-xs text-gray-400">Sidelined - coming soon</p>
+                    </div>
+                </div>
 
-                    {/* Row 2 - Current Matchup */}
+                {/* Column 1 Row 2 - Current Matchup */}
+                <div style={{ gridColumn: 1, gridRow: 2 }}>
                     <CurrentMatchupTile matchup={currentMatchup} currentTeamId={myTeam.id} />
+                </div>
 
-                    {/* Row 3 - Latest Lineup */}
+                {/* Column 1 Row 3 - Latest Lineup */}
+                <div style={{ gridColumn: 1, gridRow: 3 }}>
                     <LatestLineupTile 
                         formation={closestGameweekSnapshot?.formation ?? myTeam.formation}
                         players={lineupPlayers}
@@ -154,26 +153,21 @@ export default async function FootballDashobard() {
                     />
                 </div>
 
-                {/* Column 2 - Right */}
-                <div className="flex-1 flex flex-col gap-4">
-                    {/* Row 1 - Next Fixtures + League Activity */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white border border-gray-100 rounded-xl p-4 h-64 flex items-center justify-center">
-                            <p className="text-xs text-gray-400">Next Fixtures - Coming Soon</p>
-                        </div>
-                        <div className="bg-white border border-gray-100 rounded-xl p-4 h-64 flex items-center justify-center">
-                            <LeagueActivityTile activity={recentActivity}/>
-                        </div>
+                {/* Column 2 - Row 1 : Matches row 1 and 2 of the other side */}
+                <div className="grid grid-cols-2 gap-4" style={{ gridColumn: 2, gridRow: '1 / 3' }}>
+                    <div className="bg-white border border-gray-100 rounded-xl p-4 h-64 flex items-center justify-center">
+                        <p className="text-xs text-gray-400">Next Fixtures - Coming Soon</p>
                     </div>
+                    <LeagueActivityTile activity={recentActivity}/>
+                </div>
 
-                    {/* Row 2 - Competitions + News */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white border border-gray-100 rounded-xl p-4 h-64 flex items-center justify-center">
-                            <p className="text-xs text-gray-400">Competitions - Coming Soon</p>
-                        </div>
-                        <div className="bg-white border border-gray-100 rounded-xl p-4 h-64 flex items-center justify-center">
-                            <p className="text-xs text-gray-400">News - Coming Soon</p>
-                        </div>
+                {/* Column 2, Row 2 (Row 3) - Competitions + News */}
+                <div className="grid grid-cols-2 gap-4" style={{ gridColumn: 2, gridRow: 3 }}>
+                    <div className="bg-white border border-gray-100 rounded-xl p-4 h-64 flex items-center justify-center">
+                        <p className="text-xs text-gray-400">Competitions - Coming Soon</p>
+                    </div>
+                    <div className="bg-white border border-gray-100 rounded-xl h-64 flex items-center justify-center">
+                        <p className="text-xs text-gray-400">News - Coming Soon</p>
                     </div>
                 </div>
             </div>

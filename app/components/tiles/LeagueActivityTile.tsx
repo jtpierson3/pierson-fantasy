@@ -30,7 +30,7 @@ export default function LeagueActivityTile({ activity }: Props) {
     return (
         <button
             onClick={() => router.push('/dashboard/league/transactions')}
-            className='w-full h-full text-left bg-white border border-gray-100 rounded-xl p-4 hover:border-gray-200 hover:shadow-sm transition-all flex flex-col overflow-hidden'
+            className='w-full h-full text-left bg-white border border-gray-100 p-4 rounded-xl hover:border-gray-200 hover:shadow-sm transition-all flex flex-col overflow-hidden'
         >
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3 flex-shrink-0">
                 League Activity
