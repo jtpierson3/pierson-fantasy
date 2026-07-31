@@ -69,7 +69,7 @@ export default function ExternalPlayerSearch({ onSelect }: Props) {
                 />
                 <button
                     onClick={handleSearch}
-                    disabled={searching || query.trim.length < 4}
+                    disabled={searching || query.trim().length < 4}
                     className="px-4 py-2 text-sm rounded-lg bg-blue-700 text-white hover:bg-blue-600 transition-colors disabled:opacity-50 font-medium"
                 >
                     {searching ? 'Searching...' : 'Search'}
