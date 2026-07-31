@@ -1,5 +1,6 @@
 import Image from "next/image"
 import { getPositionColor, getPositionShort } from "@/lib/helpers"
+import { isPremierLeagueEligible } from "@/lib/playerEligibility"
 
 type Player = {
     id: number
@@ -9,6 +10,7 @@ type Player = {
     jersey_number?: number | null
     date_of_birth?: string | null
     teamId?: number | null
+    team?: { leagueId: number } | null
 }
 
 type Props = {
@@ -23,6 +25,7 @@ type Props = {
 export default function PlayerCard({ player, size = 'md', showName = true, points, positionLabel, outOfPosition }: Props) {
     const imageSize = size === 'sm' ? 'w-8 h-8' : 'w-10 h-10'
     const borderColor = size === 'sm' ? 'border' : 'border-2'
+    const eligible = isPremierLeagueEligible(player.team?.leagueId)
 
     return (
         <div className="flex flex-col items-center gap-1">
@@ -40,8 +43,8 @@ export default function PlayerCard({ player, size = 'md', showName = true, point
                     <p className="text-xs font-medium text-gray-900 truncate leading-tight">
                         {player.display_name.split(' ').pop()}
                     </p>
-                    <span className={`text-xs px-1 rounded font-medium border ${getPositionColor(player.position_id)}`}>
-                        {positionLabel ?? getPositionShort(player.position_id)}
+                    <span className={`text-xs px-1 rounded font-medium border ${eligible ? getPositionColor(player.position_id) : 'bg-amber-100 text-amber-700 border-amber-300'}`}>
+                        {eligible ? (positionLabel ?? getPositionShort(player.position_id)) : 'NA'}
                     </span>
                     {points !== undefined && (
                         <span className="text-xs font-medium bg-gray-800 text-white px-1.5 py0.5 rounded-md">

@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { getPositionShort, getPositionColor } from '@/lib/helpers'
+import { isPremierLeagueEligible } from '@/lib/playerEligibility'
 
 type Player = {
     id: number
@@ -12,6 +13,7 @@ type Player = {
 type Team = {
     name: string
     image_path: string
+    leagueId?: number 
 }
 
 type Props = {
@@ -36,10 +38,13 @@ export default function PlayerListRow({
     points,
 }: Props) {
     const isCompact = size == 'sm'
+    const eligible = isPremierLeagueEligible(team?.leagueId)
 
     return (
         <div className={`flex items-center gap-3 px-4 py-3 border-b border-gray-50 last:border-0 transition-colors ${
-            isIR ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-gray-50' 
+            isIR ? 'bg-red-50 hover:bg-red-100'
+            : !eligible ? 'bg-red-50 hover:bg-red-100'
+            : 'hover:bg-gray-50' 
         }`}>
             {/* Jersey Number */}
             <div className="w-6 text-xs text-gray-400 text-center flex-shrink-0">
@@ -83,9 +88,11 @@ export default function PlayerListRow({
                             </>
                         )}
                         <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium border ${
-                            isIR ? 'bg-red-100 text-red-600 border-red-200' : getPositionColor(player.position_id)
+                            isIR ? 'bg-red-100 text-red-600 border-red-200' 
+                            : !eligible ? 'bg-amber-100 text-amber-700 border-amber-300'
+                            : getPositionColor(player.position_id)
                         }`}>
-                            {isIR ? 'IR' : getPositionShort(player.position_id)}
+                            {isIR ? 'IR' : !eligible ? 'NA' :  getPositionShort(player.position_id)}
                         </span>
                     </div>
                 ) : (
@@ -110,9 +117,11 @@ export default function PlayerListRow({
             {/* POSITION BADGE */}
             {!isCompact ? (
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium border flex-shrink-0 ${
-                    isIR ? 'bg-red-100 text-red-600 border-red-200' : getPositionColor(player.position_id)
+                    isIR ? 'bg-red-100 text-red-600 border-red-200' 
+                    : !eligible ? 'bg-amber-100 text-amber-700 border-amber-300'
+                    : getPositionColor(player.position_id)
                 }`}>
-                    { isIR? 'IR' : getPositionShort(player.position_id)}
+                    { isIR? 'IR' : !eligible ? 'NA' : getPositionShort(player.position_id)}
                 </span>
             ) : (
                 <></>
@@ -131,11 +140,12 @@ export default function PlayerListRow({
             {onIRToggle && (
                 <button
                     onClick={onIRToggle}
-                    disabled={!isIR && !irSpotsAvailable}
+                    disabled={!isIR && (!irSpotsAvailable || !eligible)}
+                    title={!eligible ? 'This player is not yet eligible for IR' : undefined}
                     className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors flex-shrink-0 ${
                         isIR
                             ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            : irSpotsAvailable
+                            : irSpotsAvailable && eligible
                             ? 'bg-red-50 text-red-600 hover:bg-red-100'
                             : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     }`}
