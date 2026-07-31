@@ -8,7 +8,7 @@ type Player = {
     position_id: number
     jersey_number?: number | null
     date_of_birth?: string | null
-    teamId?: number
+    teamId?: number | null
 }
 
 type Props = {

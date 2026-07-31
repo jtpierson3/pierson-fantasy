@@ -1,7 +1,7 @@
 import type { FantasyTeam, FantasyTeamPlayer, Player, Team, FantasyLeague } from '@prisma/client'
 
 export type PlayerWithDetails = FantasyTeamPlayer & {
-    player: Player & { team: Team }
+    player: Player & { team: Team | null }
 }
 
 export type FantasyTeamWithPlayers = FantasyTeam & {

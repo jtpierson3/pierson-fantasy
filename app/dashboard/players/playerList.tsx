@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation'
 import { Prisma } from '@prisma/client'
 import ClaimModal from '@/app/components/ClaimModal'
 
-type PlayerWithTeam = Player & { team: Team }
+type PlayerWithTeam = Player & { team: Team | null }
 
 type FantasyTeamWithPlayers = Prisma.FantasyTeamGetPayload<{
     include: {
@@ -267,7 +267,7 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
 
                                 {/* Team */}
                                 <p className="text-xs text-gray-400 truncate mb-2">
-                                    {player.team.name}
+                                    {player.team?.name ?? '-'}
                                 </p>
 
                                 {/* Position badge */}
@@ -362,14 +362,16 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
                                 {/* Team */}
                                 <div className="col-span-3 flex items-center gap-2">
                                     <div className="relative w-5 h-5 flex-shrink-0">
-                                        <Image 
-                                            src={player.team.image_path}
-                                            alt={player.team.name}
-                                            fill
-                                            className="object-contain"
-                                        />
+                                        {player.team && (
+                                            <Image 
+                                                src={player.team.image_path}
+                                                alt={player.team.name}
+                                                fill
+                                                className="object-contain"
+                                            />
+                                        )}    
                                     </div>
-                                    <span className="text-sm text-gray-500 truncate">{player.team.name}</span>
+                                    <span className="text-sm text-gray-500 truncate">{player.team?.name ?? '-'}</span>
                                 </div>
 
                                 {/* POSITION */}

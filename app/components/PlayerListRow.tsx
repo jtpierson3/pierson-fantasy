@@ -16,7 +16,7 @@ type Team = {
 
 type Props = {
     player: Player
-    team?: Team
+    team?: Team | null
     size?: 'sm' | 'md'
     isIR?: boolean
     onIRToggle?: () => void

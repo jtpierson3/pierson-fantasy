@@ -3,9 +3,47 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { env } from '@/lib/env'
 import { canMakeApiCall, logApiCall } from '@/lib/apiCallBudget'
+import type { Prisma } from '@prisma/client'
 
 const BASE_URL = 'https://api.sportmonks.com/v3/football'
 const ENDPOINT_KEY = 'players/search'
+
+type SportmonksPlayer = {
+    id: number,
+    display_name: string
+    image_path: string | null
+    position_id: number | null
+    detailed_position_id: number | null
+    date_of_birth: string | null
+    team: { id: number; name: string; image_path: string | null } | null
+}
+
+async function upsertPlayerFromSearch(p: SportmonksPlayer) {
+    if (p.team) {
+        await prisma.team.upsert({
+            where: { id: p.team.id },
+            update: { name: p.team.name, image_path: p.team.image_path ?? '' },
+            create: { id: p.team.id, name: p.team.name, image_path: p.team.image_path ?? '', leagueId: 0}
+        })
+    }
+
+    const data: Prisma.PlayerUncheckedCreateInput = {
+        id: p.id,
+        display_name: p.display_name,
+        image_path: p.image_path ?? '',
+        position_id: p.position_id ?? 0,
+        detailed_position_id: p.detailed_position_id,
+        date_of_birth: p.date_of_birth,
+        teamId: p.team?.id ?? null
+    }
+
+    await prisma.player.upsert({
+        where: { id: p.id },
+        update: data,
+        create: data
+    })
+
+}
 
 export async function GET(req: Request) {
     try {
@@ -19,6 +57,28 @@ export async function GET(req: Request) {
         const q = searchParams.get('q')?.trim()
         if (!q || q.length < 2) return NextResponse.json({ players: [] })
 
+        // Step 1 - search our own db first
+        const localMatches = await prisma.player.findMany({
+            where: {
+                display_name: { contains: q, mode: 'insensitive' }
+            },
+            include: { team: true },
+            take: 10  
+        })
+
+        if (localMatches.length > 0) {
+            return NextResponse.json({
+                players: localMatches.map(p => ({
+                    id: p.id,
+                    display_name: p.display_name,
+                    image_path: p.image_path,
+                    team: p.team ? { id: p.team.id, name: p.team.name, image_path: p.team.image_path } : null,
+                })),
+                source: 'cache'
+            })
+        }
+
+        // Step 2 - nothing local, check budget and fall through to Sportmonks
         if (!(await canMakeApiCall(ENDPOINT_KEY))) {
             return NextResponse.json({ error: 'Player search unavailable this month - please try again next month' }, { status: 429 })
         }
@@ -36,21 +96,20 @@ export async function GET(req: Request) {
         }
 
         const data = await res.json()
-        const players = (data.data ?? []).slice(0, 10).map((p: {
-            id: number
-            display_name: string
-            image_path: string | null
-            team: { id: number; name: string; image_path: string | null } | null
-        }) => ({
-            id: p.id,
-            display_name: p.display_name,
-            image_path: p.image_path,
-            team: p.team
-                ? { id: p.team.id, name: p.team.name, image_path: p.team.image_path }
-                : null
-        }))
+        const sportmonksPlayers: SportmonksPlayer[] = data.data ?? []
 
-        return NextResponse.json({ players })
+        // Step 3 - upsert everything we got back, so next search finds it locally
+        await Promise.all(sportmonksPlayers.slice(0, 10).map(upsertPlayerFromSearch))
+
+        return NextResponse.json({ 
+            players: sportmonksPlayers.slice(0, 10).map(p => ({
+                id: p.id,
+                display_name: p.display_name,
+                image_path: p.image_path,
+                team: p.team
+            })), 
+            source: 'sportmonks'
+        })
     } catch (err) {
         console.error('[search-any-player] error:', err)
         return NextResponse.json({ error: 'Failed to search players' }, { status: 500 })

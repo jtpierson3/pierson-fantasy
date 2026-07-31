@@ -211,8 +211,8 @@ model Player {
   detailed_position_id      Int?
   jersey_number             Int?
   date_of_birth             String?
-  team                      Team                   @relation(fields: [teamId], references: [id])
-  teamId                    Int
+  team                      Team?                  @relation(fields: [teamId], references: [id])
+  teamId                    Int?
   fantasyPlayers            FantasyTeamPlayer[]
   updatedAt                 DateTime               @updatedAt
   waiverAddClaims           WaiverClaim[]          @relation("ClaimAddPlayer")
