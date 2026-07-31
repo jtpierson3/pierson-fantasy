@@ -521,3 +521,13 @@ model EliminationPick {
 
   @@unique([userId, survivorLeagueId, episodeId])
 }
+
+//------------------------------ TOOLS ----------------------------------
+
+model ApiCallLog {
+  id       String   @id @default(cuid())
+  endpoint String
+  calledAt DateTime @default(now())
+
+  @@index([endpoint, calledAt])
+}
