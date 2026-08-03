@@ -2,6 +2,18 @@ import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 
+async function generateNextSyntheticId(): Promise<number> {
+    const lowest = await prisma.player.findFirst({
+        where: { id: { lt: 0 } },
+        orderBy: { id: 'asc' },
+        select: { id: true }
+    })
+
+    // First ever synthetic player starts at -1, otherwise go one lower
+    // than whatever the current lowest synthetic id is.
+    return lowest ? lowest.id - 1 : -1
+}
+
 export async function POST(req: Request) {
     try {
         const { userId: clerkId } = await auth()
@@ -26,7 +38,7 @@ export async function POST(req: Request) {
         // so this guarantees zero collision riks with any real player
         // now or once they eventually sync for real.
         // Use a timestamp-based negative number for uniqueness
-        const syntheticId = -Date.now()
+        const syntheticId = await generateNextSyntheticId()
         
         const player = await prisma.player.create({
             data: {
@@ -46,7 +58,7 @@ export async function POST(req: Request) {
             team: null
         }})
     } catch (err) {
-        console.error('[reserve-futuer-player] error: ', err)
+        console.error('[reserve-future-player] error: ', err)
         return NextResponse.json({ error: 'Failed to reserve player' }, { status: 500 })
     }
 }
