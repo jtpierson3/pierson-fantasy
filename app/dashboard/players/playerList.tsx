@@ -275,7 +275,7 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
 
                                 {/* Team */}
                                 <p className="text-xs text-gray-400 truncate mb-2">
-                                    {player.team?.name ?? '-'}
+                                    {player.team?.name ?? player.currentClubName ??  '-'}
                                 </p>
 
                                 {/* Position badge */}
