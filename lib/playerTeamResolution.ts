@@ -7,7 +7,7 @@ export type SportmonksTeamStint = {
         name: string
         image_path: string | null
         type: 'domestic' | 'national'
-    }
+    } | null
 }
 
 export type ResolvedTeam = SportmonksTeamStint['team']
@@ -22,10 +22,8 @@ export type ResolvedTeam = SportmonksTeamStint['team']
  * 4. If there are no teams at all the player has no current club
  */
 export function getCurrentClub(teams: SportmonksTeamStint[], now: Date = new Date()): ResolvedTeam | null {
-    const domesticStints = teams.filter(t => t.team.type === 'domestic')
-
+    const domesticStints = teams.filter(t => t.team && t.team.type === 'domestic')
     if (domesticStints.length === 0) return null
-    if (domesticStints.length === 1) return domesticStints[0].team
 
     const sorted = [...domesticStints].sort((a, b) => {
         const aStart = a.start ? new Date(a.start).getTime() : 0

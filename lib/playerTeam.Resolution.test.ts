@@ -51,4 +51,12 @@ describe('getCurrentClub', () => {
         ]
         expect(getCurrentClub(teams, NOW)).toBeNull()
     })
+
+    it('skips stints where the team data itself is missing', () => {
+        const teams: SportmonksTeamStint[] = [
+            { team_id: 1, start: '2024-07-01', end: '2029-06-30', team: null },
+            stint(2, 'Real Madrid', 'domestic', '2024-07-01', '2029-06-30')
+        ]
+        expect(getCurrentClub(teams, NOW)?.name).toBe('Real Madrid')
+    })
 })
