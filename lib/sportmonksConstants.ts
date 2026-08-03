@@ -13,6 +13,15 @@ export type FixtureState = {
     name: string
 }
 
+export const TRANSFER_TYPES = {
+    LOAN_TRANSFER: 218,
+    TRANSFER: 219,
+    FREE_TRANSFER: 220,
+    END_OF_LOAN: 9688
+} as const
+
+export type TransferTypeId = typeof TRANSFER_TYPES[keyof typeof TRANSFER_TYPES]
+
 export const FIXTURE_STATE_MAP: FixtureState[] = [
     { id: 1, stateCode: 'NS', name: 'Not Started' },
     { id: 2, stateCode: 'H1', name: '1st Half' },

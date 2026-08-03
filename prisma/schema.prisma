@@ -46,6 +46,7 @@ model FantasyLeague {
   members           FantasyLeagueMember[]
   teams             FantasyTeam[]
   gameweeks         FantasyGameweek[]
+  startingFunds     Float                 @default(0)
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
 }
@@ -85,6 +86,9 @@ model FantasyTeam {
   waiverPriority     Int                 @default(0)
   waiverClaims       WaiverClaim[]
   gameweekLineups    GameweekLineup[]
+  fundsBalance       Float               @default(0)
+  transferBids       TransferBid[]
+  playerTransfers    PlayerTransfer[]
 
   @@unique([userId, fantasyLeagueId])
 }
@@ -116,6 +120,7 @@ model FantasyGameweek {
   waiverLock      DateTime?
   waiverClaims    WaiverClaim[]
   gameweekLineups GameweekLineup[]
+  transferBids    TransferBid[]
 
   @@unique([fantasyLeagueId, gameweekNumber])
 }
@@ -176,6 +181,24 @@ model GameweekLineupPlayer {
   slotOrder        Int
 }
 
+model TransferBid {
+  id             String          @id @default(cuid())
+  fantasyTeam    FantasyTeam     @relation(fields: [fantasyTeamId], references: [id])
+  fantasyTeamId  String
+  player         Player          @relation(fields: [playerId], references: [id])
+  playerId       Int
+  gameweek       FantasyGameweek @relation(fields: [gameweekId], references: [id])
+  gameweekId     String
+  amount         Float
+  playerToDropId Int?
+  status         String          @default("pending")
+  submittedAt    DateTime        @default(now())
+  processedAt    DateTime?
+
+  @@unique([fantasyTeamId, playerId, gameweekId])
+  @@index([playerId, gameweekId, status])
+}
+
 // ===========================================
 //          Football Data Models
 // ===========================================
@@ -219,6 +242,24 @@ model Player {
   waiverAddClaims           WaiverClaim[]          @relation("ClaimAddPlayer")
   waiverDropClaims          WaiverClaim[]          @relation("ClaimDropPlayer")
   gameweekLineupAppearances GameweekLineupPlayer[]
+  transferBids              TransferBid[]
+  playerTransfers           PlayerTransfer[]
+}
+
+model PlayerTransfer {
+  id                  String       @id @default(cuid())
+  player              Player       @relation(fields: [playerId], references: [id])
+  playerId            Int
+  formerTeamId        Int?
+  formerFantasyTeam   FantasyTeam? @relation(fields: [formerFantasyTeamId], references: [id])
+  formerFantasyTeamId String?
+  transferTypeId      Int?
+  suggestedAmount     Float?
+  confirmedAmount     Float?
+  status              String       @default("pending_review")
+  detectedAt          DateTime     @default(now())
+  reviewedAt          DateTime?
+  reviewedByUserId    String?
 }
 
 model Fixture {
