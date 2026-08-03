@@ -175,8 +175,6 @@ type SelectedPlayer = {
 } | null
 
 export default function SetLineup({ team, onUpdate, targetGameweek, targetGameweekLockTime }: Props) {
-  console.log('Set Lineup', { targetGameweek, targetGameweekLockTime })
-
   const [formation, setFormation] = useState<Formation>(team.formation as Formation)
   const [players, setPlayers] = useState(() => normalizeSlotOrder(team.players, team.formation as Formation))
   const [activeId, setActiveId] = useState<string | null>(null)

@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { env } from '@/lib/env'
 import { canMakeApiCall, logApiCall } from '@/lib/apiCallBudget'
+import { getCurrentClub, type SportmonksTeamStint} from '@/lib/playerTeamResolution'
 import type { Prisma } from '@prisma/client'
 
 const BASE_URL = 'https://api.sportmonks.com/v3/football'
@@ -15,15 +16,17 @@ type SportmonksPlayer = {
     position_id: number | null
     detailed_position_id: number | null
     date_of_birth: string | null
-    team: { id: number; name: string; image_path: string | null } | null
+    teams: SportmonksTeamStint[] | null
 }
 
 async function upsertPlayerFromSearch(p: SportmonksPlayer) {
-    if (p.team) {
+    const currentClub = getCurrentClub(p.teams ?? [])
+
+    if (currentClub) {
         await prisma.team.upsert({
-            where: { id: p.team.id },
-            update: { name: p.team.name, image_path: p.team.image_path ?? '' },
-            create: { id: p.team.id, name: p.team.name, image_path: p.team.image_path ?? '', leagueId: 0}
+            where: { id: currentClub.id },
+            update: { name: currentClub.name, image_path: currentClub.image_path ?? '' },
+            create: { id: currentClub.id, name: currentClub.name, image_path: currentClub.image_path ?? '', leagueId: 0}
         })
     }
 
@@ -34,7 +37,7 @@ async function upsertPlayerFromSearch(p: SportmonksPlayer) {
         position_id: p.position_id ?? 0,
         detailed_position_id: p.detailed_position_id,
         date_of_birth: p.date_of_birth,
-        teamId: p.team?.id ?? null
+        teamId: currentClub?.id ?? null
     }
 
     await prisma.player.upsert({
@@ -43,6 +46,7 @@ async function upsertPlayerFromSearch(p: SportmonksPlayer) {
         create: data
     })
 
+    return { id: p.id, dispay_name: p.display_name, image_path: p.image_path, team: currentClub}
 }
 
 export async function GET(req: Request) {
@@ -99,15 +103,10 @@ export async function GET(req: Request) {
         const sportmonksPlayers: SportmonksPlayer[] = data.data ?? []
 
         // Step 3 - upsert everything we got back, so next search finds it locally
-        await Promise.all(sportmonksPlayers.slice(0, 10).map(upsertPlayerFromSearch))
+        const upserted = await Promise.all(sportmonksPlayers.slice(0, 10).map(upsertPlayerFromSearch))
 
         return NextResponse.json({ 
-            players: sportmonksPlayers.slice(0, 10).map(p => ({
-                id: p.id,
-                display_name: p.display_name,
-                image_path: p.image_path,
-                team: p.team
-            })), 
+            players: upserted, 
             source: 'sportmonks'
         })
     } catch (err) {
