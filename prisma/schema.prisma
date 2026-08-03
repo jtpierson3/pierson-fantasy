@@ -211,6 +211,7 @@ model Player {
   detailed_position_id      Int?
   jersey_number             Int?
   date_of_birth             String?
+  currentClubName           String? // Used for any player whose real club isn't a team we track (teamId is null)
   team                      Team?                  @relation(fields: [teamId], references: [id])
   teamId                    Int?
   fantasyPlayers            FantasyTeamPlayer[]

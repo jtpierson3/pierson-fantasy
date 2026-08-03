@@ -9,7 +9,7 @@ import type { Player, Team } from '@prisma/client'
 import { useRouter } from 'next/navigation'
 import { Prisma } from '@prisma/client'
 import ClaimModal from '@/app/components/ClaimModal'
-import ExternalPlayerSearch from '@/app/components/ExternalPlayerSearch'
+import FuturePlayerSearch from "@/app/components/FuturePlayerSearch"
 
 type PlayerWithTeam = Player & { team: Team | null }
 
@@ -227,7 +227,7 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
                     <p className="text-sm text-gray-400 mb-3">
                         No players found matching your filters.
                     </p>
-                    <ExternalPlayerSearch 
+                    <FuturePlayerSearch 
                         onSelect={() => {
                             router.refresh()
                         }}

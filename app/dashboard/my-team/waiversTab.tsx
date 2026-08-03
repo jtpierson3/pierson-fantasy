@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import type { FantasyTeamWithPlayers } from './types'
 import ClaimModal from '@/app/components/ClaimModal'
+import FuturePlayerSearch from '@/app/components/FuturePlayerSearch'
 
 type Props = {
   team: FantasyTeamWithPlayers
@@ -164,6 +165,16 @@ function WaiversTabInner({ team, initialClaims }: Props) {
                 </button>
               </div>
             ))}
+          </div>
+        )}
+
+        {search.length >= 2 && !searching && results.length === 0 && (
+          <div className="mt-3">
+            <FuturePlayerSearch 
+              onSelect={(player) => {
+                setClaimingPlayer(player)
+              }}
+            />
           </div>
         )}
       </div>
