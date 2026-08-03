@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, act } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -25,12 +25,17 @@ import { FantasyTeamWithPlayers, PlayerWithDetails, TargetGameweek } from './typ
 import DraggableWrapper from '@/app/components/DraggableWrapper'
 import PlayerCard from '@/app/components/playerCard'
 import PlayerListRow from '@/app/components/PlayerListRow'
+import { isPremierLeagueEligible } from '@/lib/playerEligibility'
 
 type Props = {
   team: FantasyTeamWithPlayers
   onUpdate: (team: FantasyTeamWithPlayers) => void
   targetGameweek: TargetGameweek
   targetGameweekLockTime: string | null
+}
+
+function isEligible(fp: PlayerWithDetails): boolean {
+  return isPremierLeagueEligible(fp.player.team?.leagueId)
 }
 
 // Slot ID format:
@@ -217,9 +222,24 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
       const activeIndex = updated.findIndex(p => p.id === activePlayerId)
       if (activeIndex === -1) return prev
 
+      const activePlayerData = updated[activeIndex]
+      const activeIsEligible = isPremierLeagueEligible(activePlayerData.player.team?.leagueId)
+
+      // Block non-eligible players from being dropped onto Starter/Sub/IR Targets
+      const targetsRestrictedZone = overId.startsWith('pitch-') || overId.startsWith('sub-') || overId.startsWith('ir-')
+
+      if (!activeIsEligible && targetsRestrictedZone) {
+        return prev
+      }
+
       // Dropped onto another player — swap slots
       const overPlayerIndex = updated.findIndex(p => p.id === overId)
       if (overPlayerIndex !== -1) {
+        const overSlotType = updated[overPlayerIndex].rosterSlot
+        if (!activeIsEligible && ['STARTER', 'SUB', 'IR'].includes(overSlotType)) {
+          return prev
+        }
+
         const activeSlot = updated[activeIndex].rosterSlot
         const overSlot = updated[overPlayerIndex].rosterSlot
         const activeOrder = updated[activeIndex].slotOrder
@@ -528,6 +548,16 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
           </div>
         )}
 
+        {players.some(fp => !isEligible(fp)) && (
+          <div className="px-4 py-3 rounded-xl border bg-amber-50 border-amber-200">
+            <p className="text-sm text-amber-700">
+              One or more reserved future transfer targets are on your roster.
+              They must remain in Reserve and cannot be moved to Starter, Sub, or IR
+              until they join a premier league club.
+            </p>
+          </div>
+        )}
+
         <div className="flex gap-4">
           {/* Pitch */}
           <div className="flex-1">
@@ -672,10 +702,10 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
                             className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600"
                         >
                             <option value="">Select slot...</option>
-                            {selectedPlayer.fp.rosterSlot !== 'STARTER' && <option value="STARTER">Starter</option>}
-                            {selectedPlayer.fp.rosterSlot !== 'SUB' && <option value="SUB">Sub</option>}
+                            {isEligible(selectedPlayer.fp) && selectedPlayer.fp.rosterSlot !== 'STARTER' && <option value="STARTER">Starter</option>}
+                            {isEligible(selectedPlayer.fp) && selectedPlayer.fp.rosterSlot !== 'SUB' && <option value="SUB">Sub</option>}
                             {selectedPlayer.fp.rosterSlot !== 'RESERVE' && <option value="RESERVE">Reserve</option>}
-                            {selectedPlayer.fp.rosterSlot !== 'IR' && <option value="IR">IR</option>}
+                            {isEligible(selectedPlayer.fp) && selectedPlayer.fp.rosterSlot !== 'IR' && <option value="IR">IR</option>}
                         </select>
                     </div>
 
