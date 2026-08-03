@@ -88,7 +88,7 @@ export async function GET(req: Request) {
         }
 
         const res = await fetch(
-            `${BASE_URL}/players/search/${encodeURIComponent(q)}?api_token=${env.SPORTMONKS_API_KEY}&include=teams.team`
+            `${BASE_URL}/players/search/${encodeURIComponent(q)}?api_token=${env.SPORTMONKS_API_KEY}&include=teams`
         )
 
         await logApiCall(ENDPOINT_KEY)
