@@ -50,6 +50,7 @@ export async function POST(req: Request) {
             })
         })
         
+        return NextResponse.json({ success: true })
     } catch (err) {
         console.error('[admin/transfers/dismiss] error:', err)
         return NextResponse.json({ error: 'Failed to confirm transfer' }, { status: 500})
