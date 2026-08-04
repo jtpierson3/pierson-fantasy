@@ -187,7 +187,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: errors.length === 0,
-      message: `${totalCreated} player(s) created, ${totalUpdated} updated across ${teams.length} team(s)`,
+      message: `${totalCreated} player(s) created, ${totalUpdated} updated, ${totalDeparted} departure(s) flagged for review across ${teams.length} team(s)`,
       teamsProcessed: teams.length,
       created: totalCreated,
       updated: totalUpdated,
