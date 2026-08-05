@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import type { LeagueWithData } from './types'
 import { getTeamMatchups } from './types'
 import Standings from './standings'
-import CurrentMatchup from './currentMatchup'
+import CurrentMatchupTile from '@/app/components/tiles/CurrentMatchupTile'
 import RecentResults from './recentResults'
 import GameweekMatchups from './gameweekMatchups'
 
@@ -57,10 +57,9 @@ export default function LeagueDashboard({ league, currentTeamId}: Props) {
 
                 {/* Right - matchups/schedules 2/3*/}
                 <div className="flex-1 flex flex-col gap-4">
-                    <CurrentMatchup 
+                    <CurrentMatchupTile
                         matchup={currentMatchup}
                         currentTeamId={currentTeamId}
-                        onClick={() => currentMatchup && router.push(`/dashboard/league/matchup/${currentMatchup.id}`)}
                     />
                     <RecentResults 
                         matchups={scheduleMatchups}
