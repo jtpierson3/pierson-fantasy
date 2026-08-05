@@ -60,7 +60,7 @@ export default function LeagueDashboard({ league, currentTeamId}: Props) {
                     <CurrentMatchupTile
                         matchup={currentMatchup}
                         currentTeamId={currentTeamId}
-                        compact={true}
+                        compact
                     />
                     <RecentResults 
                         matchups={scheduleMatchups}

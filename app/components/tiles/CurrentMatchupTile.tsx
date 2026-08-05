@@ -32,7 +32,7 @@ export default function CurrentMatchupTile({ matchup, currentTeamId, compact = f
 
   if (!matchup) {
     return (
-      <div className="lg:col-span-2 bg-white border border-gray-100 rounded-xl p-4">
+      <div className={`${compact ? '': 'lg:col-span-2'} bg-white border border-gray-100 rounded-xl p-4`}>
         <h2 className="text-sm font-medium text-gray-900 mb-2">Current Matchup</h2>
         <p className="text-sm text-gray-400">No matchup scheduled for this gameweek</p>
       </div>
