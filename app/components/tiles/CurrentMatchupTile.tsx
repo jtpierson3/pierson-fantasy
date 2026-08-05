@@ -49,7 +49,7 @@ export default function CurrentMatchupTile({ matchup, currentTeamId, compact = f
   return (
     <button
       onClick={() => router.push(`/dashboard/league/matchup/${matchup.id}`)}
-      className={`${compact ? '' : 'lg:col-span-2'} w-full h-full lg:col-span-2 w-full bg-white border border-gray-100 rounded-xl p-4 hover:border-gray-200 hover:shadow-sm transition-all text-left`}
+      className={`${compact ? '' : 'lg:col-span-2'} w-full lg:col-span-2 w-full bg-white border border-gray-100 rounded-xl p-4 hover:border-gray-200 hover:shadow-sm transition-all text-left`}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
