@@ -24,9 +24,10 @@ type MatchupSummary = {
 type Props = {
   matchup: MatchupSummary | null
   currentTeamId: string
+  compact?: boolean
 }
 
-export default function CurrentMatchupTile({ matchup, currentTeamId }: Props) {
+export default function CurrentMatchupTile({ matchup, currentTeamId, compact = false }: Props) {
   const router = useRouter()
 
   if (!matchup) {
@@ -48,7 +49,7 @@ export default function CurrentMatchupTile({ matchup, currentTeamId }: Props) {
   return (
     <button
       onClick={() => router.push(`/dashboard/league/matchup/${matchup.id}`)}
-      className="w-full h-full lg:col-span-2 w-full bg-white border border-gray-100 rounded-xl p-4 hover:border-gray-200 hover:shadow-sm transition-all text-left"
+      className={`${compact ? '' : 'lg:col-span-2'} w-full h-full lg:col-span-2 w-full bg-white border border-gray-100 rounded-xl p-4 hover:border-gray-200 hover:shadow-sm transition-all text-left`}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
