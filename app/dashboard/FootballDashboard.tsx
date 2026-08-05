@@ -10,6 +10,7 @@ import { getCurrentWaiverWindow } from '@/lib/fixtureTiming'
 import WaiverClaimsTile from '@/app/components/tiles/WaiverClaimsTile'
 import LeagueActivityTile from '@/app/components/tiles/LeagueActivityTile'
 import NextFixturesTile from '@/app/components/tiles/NextFixturesTile'
+import { COMPETITIONS } from '@/lib/sportmonksConstants'
 
 export default async function FootballDashobard() {
     const { userId } = await auth()
@@ -125,7 +126,11 @@ export default async function FootballDashobard() {
 
     const upcomingFixturesRaw = await prisma.fixture.findMany({
         where: {
-            kickoff: { gt: new Date() }
+            kickoff: { gt: new Date() },
+            OR: [
+                { homeTeam: { leagueId: COMPETITIONS.premier_league.leagueId } },
+                { awayTeam: { leagueId: COMPETITIONS.premier_league.leagueId } },
+            ]
         },
         orderBy: { kickoff: 'asc' },
         take: 6
