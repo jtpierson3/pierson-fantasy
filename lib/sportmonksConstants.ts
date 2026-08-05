@@ -2,7 +2,9 @@
 export const COMPETITIONS = {
     premier_league: { leagueId: 8, seasonId: 28083 },
     fa_cup: { leagueId: 24, seasonId: 28020 },
-    carabao_cup: { leagueId: 27, seasonId: 27917 }
+    carabao_cup: { leagueId: 27, seasonId: 27917 },
+    championship: { leagueId: 9, seasonId: 0},
+    la_liga: { leagueId: 564, seasonId: 0 }
 } as const
 
 export type CompetitionKey = keyof typeof COMPETITIONS

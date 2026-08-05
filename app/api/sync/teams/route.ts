@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { env } from '@/lib/env'
+import { COMPETITIONS } from '@/lib/sportmonksConstants'
 
 const BASE_URL = 'https://api.sportmonks.com/v3/football'
 const LEAGUE_ID = 8
@@ -25,6 +26,7 @@ export async function POST(req: Request) {
   const errors: { teamId: number | string; name?: string; message: string }[] = []
   let created = 0
   let updated = 0
+  let relegated = 0
 
   try {
     const teamsData = await sportmonksFetch(`/teams/seasons/${SEASON_ID}`)
@@ -36,6 +38,8 @@ export async function POST(req: Request) {
         { status: 404 }
       )
     }
+
+    const freshTeamIds = teams.map((t: { id: number }) => t.id)
 
     for (const team of teams) {
       try {
@@ -69,12 +73,25 @@ export async function POST(req: Request) {
       }
     }
 
+    // Reconciliation - any team still marked Premier League but NOT in this
+    // fresh 20-team list has been relegated. Reclassify them to Championship
+    // so departure detection and eligibility checks stay accurate.
+    const relegatedTeams = await prisma.team.updateMany({
+      where: {
+        leagueId: LEAGUE_ID,
+        id: { notIn: freshTeamIds }
+      },
+      data: { leagueId: COMPETITIONS.championship.leagueId }
+    })
+    relegated = relegatedTeams.count
+
     return NextResponse.json({
       success: errors.length === 0,
-      message: `${created} team(s) created, ${updated} team(s) updated`,
+      message: `${created} team(s) created, ${updated} team(s) updated, ${relegated} team(s) relegated`,
       totalFetched: teams.length,
       created,
       updated,
+      relegated,
       errors,
     })
   } catch (err) {
