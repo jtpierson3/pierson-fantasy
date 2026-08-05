@@ -38,7 +38,7 @@ export async function POST(req: Request) {
 
         // PlayerTransfer depends on a nullable FK
         await prisma.playerTransfer.updateMany({
-            where: { formerFantasyTeam : { fantasyLeague: leagueId } },
+            where: { formerFantasyTeam : { fantasyLeagueId: leagueId } },
             data: { formerFantasyTeamId: null}
         })
 
