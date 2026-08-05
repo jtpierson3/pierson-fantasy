@@ -49,18 +49,3 @@ export function getTeamMatchups(
         .filter(m => m.homeTeamId === team.id || m.awayTeamId === team.id)
         .sort((a,b) => a.gameweek.gameweekNumber - b.gameweek.gameweekNumber)
 }
-
-export function getOpponent(
-    matchup: MatchupWithTeams,
-    teamId: string
-): TeamWithRecord {
-    return matchup.homeTeamId === teamId ? matchup.awayTeam : matchup.homeTeam
-}
-
-export function getMyPoints(matchup: FantasyMatchup, teamId: string): number {
-    return matchup.homeTeamId === teamId ? matchup.homePoints : matchup.awayPoints
-}
-
-export function getTheirPoints(matchup: FantasyMatchup, teamId: string): number {
-    return matchup.homeTeamId === teamId ? matchup.awayPoints : matchup.homePoints
-}

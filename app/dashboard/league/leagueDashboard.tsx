@@ -1,14 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import type { LeagueWithData, MatchupWithTeams } from './types'
-import {
-    getMatchResult,
-    getTeamMatchups,
-    getOpponent,
-    getMyPoints,
-    getTheirPoints,
-} from './types'
+import type { LeagueWithData } from './types'
+import { getTeamMatchups } from './types'
 import Standings from './standings'
 import CurrentMatchup from './currentMatchup'
 import RecentResults from './recentResults'

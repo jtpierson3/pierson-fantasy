@@ -1,7 +1,7 @@
 'use client'
 
 import type { MatchupWithTeams } from "./types"
-import { getMyPoints, getTheirPoints, getOpponent } from "./types"
+import { getMyPoints, getTheirPoints, getOpponent } from '@/lib/matchupHelpers'
 
 type Props = {
     matchup: MatchupWithTeams | null
