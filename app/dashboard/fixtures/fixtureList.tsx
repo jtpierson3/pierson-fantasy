@@ -17,6 +17,8 @@ const COMPETITION_LABELS: Record<CompetitionKey, string> = {
   premier_league: 'Premier League',
   fa_cup: 'FA Cup',
   carabao_cup: 'Carabao Cup',
+  championship: 'Championship',
+  la_liga: 'La Liga'
 }
 
 const FINISHED_STATUSES = new Set(['FT', 'AET', 'FTP'])
