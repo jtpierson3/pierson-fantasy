@@ -155,9 +155,48 @@ async function MyTeamContent() {
     formation: lastSnapshot?.formation ?? fantasyTeam.formation,
   }
 
+  // Fetch this team's active transfer bids, plus league wide context for each
+  const myBidsRaw = await prisma.transferBid.findMany({
+    where: { fantasyTeamId: fantasyTeam.id, status: 'pending' },
+    include: {
+      player: { include: { team: true } }
+    },
+    orderBy: { submittedAt: 'desc' }
+  })
+
+  const myBids = await Promise.all(
+    myBidsRaw.map(async bid => {
+      const highestBid = await prisma.transferBid.findFirst({
+        where: {
+          playerId: bid.playerId,
+          status: 'pending',
+          fantasyTeam: { fantasyLeagueId: fantasyTeam.fantasyLeagueId }
+        },
+        include: { fantasyTeam: { include: { user: true } } },
+        orderBy: { amount: 'desc' }
+      })
+
+      return {
+        id: bid.id,
+        playerId: bid.playerId,
+        playerName: bid.player.display_name,
+        playerImage: bid.player.image_path,
+        myAmount: bid.amount,
+        currentHighAmount: highestBid?.amount ?? bid.amount,
+        currentHighBidderName: highestBid?.fantasyTeam.name ?? fantasyTeam.name,
+        isWinning: highestBid?.fantasyTeamId === fantasyTeam.id
+      }
+    })
+  )
+
+  const lockedFunds = myBidsRaw.reduce((sum, b) => sum + b.amount, 0)
+  const availableFunds = fantasyTeam.fundsBalance - lockedFunds
+
   return <MyTeam 
     fantasyTeam={teamForLineup} 
     myClaims={myClaims} 
+    myBids={myBids}
+    availableFunds={availableFunds}
     targetGameweek={targetGameweek}
     targetGameweekLockTime={targetGameweekLockTime?.toISOString() ?? null}
   />

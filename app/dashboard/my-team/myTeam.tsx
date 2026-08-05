@@ -7,7 +7,7 @@ import LatestLineup from './latestLineup'
 import TeamStats from './teamStats'
 import SetLineup from './setLineup'
 import WaiversTab from './waiversTab'
-import { ClaimStatus } from './waiversTab'
+import { ClaimStatus, BidStatus } from './waiversTab'
 
 
 type Tab = 'lineup' | 'performance' | 'set-lineup' | 'waivers'
@@ -22,11 +22,13 @@ const TABS: { id: Tab; label: string } [] = [
 type Props = {
     fantasyTeam: FantasyTeamWithPlayers
     myClaims: ClaimStatus[]
+    myBids: BidStatus[]
+    availableFunds: number
     targetGameweek: TargetGameweek
     targetGameweekLockTime: string | null
 }
 
-export default function MyTeam({ fantasyTeam, myClaims, targetGameweek, targetGameweekLockTime }: Props) {
+export default function MyTeam({ fantasyTeam, myClaims, myBids, availableFunds, targetGameweek, targetGameweekLockTime }: Props) {
     const router = useRouter()
     const searchParams = useSearchParams()
 
@@ -144,7 +146,15 @@ export default function MyTeam({ fantasyTeam, myClaims, targetGameweek, targetGa
                     targetGameweekLockTime={targetGameweekLockTime}
                 />
             )}
-            {activeTab === 'waivers' && <WaiversTab team={team} initialClaims={myClaims} />}
+            {activeTab === 'waivers' && (
+                <WaiversTab 
+                    team={team} 
+                    initialClaims={myClaims} 
+                    initialBids={myBids}
+                    availableFunds={availableFunds}
+                />
+                
+            )}
         </div>
     )
 }

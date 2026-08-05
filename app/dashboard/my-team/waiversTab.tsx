@@ -6,17 +6,24 @@ import Image from 'next/image'
 import type { FantasyTeamWithPlayers } from './types'
 import ClaimModal from '@/app/components/ClaimModal'
 import FuturePlayerSearch from '@/app/components/FuturePlayerSearch'
-
-type Props = {
-  team: FantasyTeamWithPlayers
-  initialClaims: ClaimStatus[]
-}
+import TransferBidModal from '@/app/components/TransferBidModal'
 
 type SearchPlayer = {
   id: number
   display_name: string
   image_path: string | null
   team: { name: string } | null
+}
+
+export type BidStatus = {
+  id: string
+  playerId: number
+  playerName: string
+  playerImage: string | null
+  myAmount: number
+  currentHighAmount: number
+  currentHighBidderName: string
+  isWinning: boolean
 }
 
 export type ClaimStatus = {
@@ -30,17 +37,26 @@ export type ClaimStatus = {
   competingClaimsCount: number
 }
 
-export default function WaiversTab({ team, initialClaims }: Props) {
+type Props = {
+  team: FantasyTeamWithPlayers
+  initialClaims: ClaimStatus[]
+  initialBids: BidStatus[]
+  availableFunds: number
+}
+
+export default function WaiversTab({ team, initialClaims, initialBids, availableFunds }: Props) {
   return (
     <WaiversTabInner 
       key={initialClaims.map(c => c.id).join(',')}
       team={team}
       initialClaims={initialClaims}
+      initialBids = {initialBids}
+      availableFunds={availableFunds}
     />
   )
 }
 
-function WaiversTabInner({ team, initialClaims }: Props) {
+function WaiversTabInner({ team, initialClaims, initialBids, availableFunds }: Props) {
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [results, setResults] = useState<SearchPlayer[]>([])
@@ -50,6 +66,8 @@ function WaiversTabInner({ team, initialClaims }: Props) {
   const [orderedClaims, setOrderedClaims] = useState(initialClaims)
   const [savingOrder, setSavingOrder] = useState(false)
   const [orderDirty, setOrderDirty] = useState(false)
+
+  const [raisingBid, setRaisingBid] = useState<BidStatus | null>(null)
 
   useEffect(() => {
       const timeout = setTimeout(async () => {
@@ -268,7 +286,79 @@ function WaiversTabInner({ team, initialClaims }: Props) {
               ))}
           </div>
       )}
+
+      {/* Transfer Fund Bids */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm font-medium text-gray-900">Transfer Funds Bids</h2>
+          <span className="text-xs text-gray-500">
+            ${availableFunds} available
+          </span>
+        </div>
+
+        {initialBids.length === 0 ? (
+          <p className="text-sm text-gray-400">You have no active bids.</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {initialBids.map(bid => (
+              <div
+                key={bid.id}
+                className={`border rounded-xl p-3 flex items-center justify-between ${
+                  bid.isWinning
+                    ? 'bg-white border-gray-100'
+                    : 'bg-red-50 border-red-200'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-gray-100">
+                    {bid.playerImage && (
+                      <Image src={bid.playerImage} alt={bid.playerName} fill className="object-contain" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{bid.playerName}</p>
+                    <p className="text-xs text-gray-400">
+                      Your bid: ${bid.myAmount}
+                      {!bid.isWinning && (
+                        <> - {bid.currentHighBidderName} leads at ${bid.currentHighAmount}</>
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {bid.isWinning ? (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
+                      Winning
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => setRaisingBid(bid)}
+                      className="text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-medium hover:bg-blue-200 transition-colors"
+                    >
+                      Raise
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+      </div>
     </div>
+
+    {raisingBid && (
+      <TransferBidModal 
+        playerId={raisingBid.playerId}
+        playerName={raisingBid.playerName}
+        fantasyTeamId={team.id}
+        rosterPlayers={team.players}
+        availableFunds={availableFunds + raisingBid.myAmount}
+        currentHighBid={raisingBid.currentHighAmount}
+        existingBidAmount={raisingBid.myAmount}
+        onClose={() => setRaisingBid(null)}
+      />
+    )}
 
     {claimingPlayer && (
       <ClaimModal
