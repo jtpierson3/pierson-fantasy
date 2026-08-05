@@ -17,6 +17,32 @@ export async function POST(req: Request) {
         const { leagueId } = await req.json()
 
         // Delete in order to respect foreign keys
+
+        // GameweekLineupPlayer depends on Gameweek Lineup
+        await prisma.gameweekLineupPlayer.deleteMany({
+            where: { GameweekLineup: { fantasyTeam: { fantasyLeagueId: leagueId } } }
+        })
+        await prisma.gameweekLineup.deleteMany({
+            where: { fantasyTeam: { fantasyLeagueId: leagueId } }
+        })
+
+        // Waiver Claim depends on FantasyTeam + Fantasy Gameweek
+        await prisma.waiverClaim.deleteMany({
+            where: { fantasyTeam: { fantasyLeagueId: leagueId } }
+        })
+
+        // Transfer Bid depends on FantasyTeam + Fantasy Gameweek
+        await prisma.transferBid.deleteMany( {
+            where: { fantasyTeam: { fantasyLeagueId: leagueId } }
+        })
+
+        // PlayerTransfer depends on a nullable FK
+        await prisma.playerTransfer.updateMany({
+            where: { formerFantasyTeam : { fantasyLeague: leagueId } },
+            data: { formerFantasyTeamId: null}
+        })
+
+
         await prisma.fantasyTeamPlayer.deleteMany({
             where: { fantasyTeam: { fantasyLeagueId: leagueId }}
         })
