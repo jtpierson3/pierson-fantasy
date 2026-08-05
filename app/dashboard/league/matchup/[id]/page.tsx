@@ -57,7 +57,7 @@ async function buildTeamData(fantasyTeamId: string, gameweekId: string, fantasyL
             position_id: p.player.position_id,
             detailed_position_id: p.player.detailed_position_id,
             team: p.player.team
-                ? { name: p.player.team.name, image_path: p.player.team.image_path }
+                ? { name: p.player.team.name, image_path: p.player.team.image_path, leagueId: p.player.team.leagueId }
                 : null,
         }
     }))
