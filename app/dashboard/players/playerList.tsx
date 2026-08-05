@@ -10,6 +10,8 @@ import { useRouter } from 'next/navigation'
 import { Prisma } from '@prisma/client'
 import ClaimModal from '@/app/components/ClaimModal'
 import FuturePlayerSearch from "@/app/components/FuturePlayerSearch"
+import { isPremierLeagueEligible } from "@/lib/playerEligibility"
+import { match } from "assert"
 
 type PlayerWithTeam = Player & { team: Team | null }
 
@@ -54,15 +56,23 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
     const [search, setSearch] = useState('')
     const [positionFilter, setPositionFilter] = useState<PositionFilter>('ALL')
     const [teamFilter, setTeamFilter] = useState<string>('ALL')
+    const [showAllLeagues, setShowAllLeagues] = useState(false)
 
     const filtered = useMemo(() => {
         return players.filter(p => {
             const matchesSearch = p.display_name.toLowerCase().includes(search.toLowerCase())
             const matchesPosition = positionFilter === 'ALL' || p.position_id === POSITION_IDS[positionFilter]
             const matchesTeam = teamFilter === 'ALL' || p.teamId === parseInt(teamFilter)
-            return matchesSearch && matchesPosition && matchesTeam
+            const matchesEligibility = showAllLeagues || isPremierLeagueEligible(p.team?.leagueId)
+            return matchesSearch && matchesPosition && matchesTeam && matchesEligibility
         })
-    }, [players, search, positionFilter, teamFilter])
+    }, [players, search, positionFilter, teamFilter, showAllLeagues])
+
+    const teamOptions = useMemo(() => {
+        return showAllLeagues
+            ? teams
+            : teams.filter(t => isPremierLeagueEligible(t.leagueId))
+    }, [teams, showAllLeagues])
 
     const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         setSearch(e.target.value)
@@ -213,13 +223,25 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
                     className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600 text-gray-900"
                 >
                     <option value="ALL">All Teams</option>
-                    {teams.map(team => (
+                    {teamOptions.map(team => (
                         <option key={team.id} value={team.id}>
                             {team.name}
                         </option>
                     ))}
                 </select>
             </div>
+
+            {/* Show all players */}
+            <button 
+                onClick={() => setShowAllLeagues(prev => !prev)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                    showAllLeagues
+                        ? 'bg-green-800 text-white'
+                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}
+            >
+                {showAllLeagues ? 'Showing All Players' : 'Premier League Only'}
+            </button>
 
             {/* No results */}
             {filtered.length === 0 && (
