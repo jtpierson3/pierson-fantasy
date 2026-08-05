@@ -229,19 +229,19 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
                         </option>
                     ))}
                 </select>
-            </div>
 
-            {/* Show all players */}
-            <button 
-                onClick={() => setShowAllLeagues(prev => !prev)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                    showAllLeagues
-                        ? 'bg-green-800 text-white'
-                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                }`}
-            >
-                {showAllLeagues ? 'Showing All Players' : 'Premier League Only'}
-            </button>
+                {/* Show all players */}
+                <button 
+                    onClick={() => setShowAllLeagues(prev => !prev)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                        showAllLeagues
+                            ? 'bg-green-800 text-white'
+                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                    }`}
+                >
+                    {showAllLeagues ? 'Showing All Players' : 'Premier League Only'}
+                </button>
+            </div>  
 
             {/* No results */}
             {filtered.length === 0 && (
