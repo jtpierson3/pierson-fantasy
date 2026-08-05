@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { env } from '@/lib/env'
+import { COMPETITIONS, type CompetitionKey } from '@/lib/sportmonksConstants'
 
 const BASE_URL = 'https://api.sportmonks.com/v3/football'
-const LEAGUE_ID = 8
-const SEASON_ID = 28083
 
 async function sportmonksFetch(endpoint: string) {
   const separator = endpoint.includes('?') ? '&' : '?'
@@ -22,53 +21,52 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  try {
-    const leagueData = await sportmonksFetch(`/leagues/${LEAGUE_ID}?include=currentSeason`)
-    const league = leagueData.data
+  const results: { key: string; success: boolean; name?: string; error?: string }[] = []
 
-    if (!league) {
-      return NextResponse.json(
-        { error: 'No league data returned from Sportmonks', leagueId: LEAGUE_ID },
-        { status: 404 }
-      )
-    }
+  for (const key of Object.keys(COMPETITIONS) as CompetitionKey[]) {
+    const { leagueId, seasonId } = COMPETITIONS[key]
 
-    await prisma.league.upsert({
-      where: { id: LEAGUE_ID },
-      update: {
-        name: league.name,
-        short_code: league.short_code ?? null,
-        image_path: league.image_path,
-        season_id: SEASON_ID
-      },
-      create: {
-        id: LEAGUE_ID,
-        name: league.name,
-        short_code: league.short_code ?? null,
-        image_path: league.image_path,
-        season_id: SEASON_ID
+    try {
+      const leagueData = await sportmonksFetch(`/leagues/${leagueId}?include=currentSeason`)
+      const league = leagueData.data
+
+      if (!league) {
+        results.push({ key, success: false, error: 'No league data returned from Sportmonks'})
+        continue
       }
-    })
 
-    return NextResponse.json({
-      success: true,
-      message: `League "${league.name}" synced successfully`,
-      league: {
-        id: league.id,
-        name: league.name,
-        seasonId: SEASON_ID,
-      }
-    })
-  } catch (err) {
-    console.error('[sync/league] error:', err)
-    return NextResponse.json(
-      {
+      await prisma.league.upsert({
+        where: { id: leagueId },
+        update: {
+          name: league.name,
+          short_code: league.short_code ?? null,
+          image_path: league.image_path,
+          season_id: seasonId
+        },
+        create: {
+          id: leagueId,
+          name: league.name,
+          short_code: league.short_code ?? null,
+          image_path: league.image_path,
+          season_id: seasonId
+        }
+      })
+
+      results.push({ key, success: true, name: league.name })
+    } catch (err) {
+      results.push({
+        key,
         success: false,
-        error: err instanceof Error ? err.message : 'League sync failed',
-        leagueId: LEAGUE_ID,
-        seasonId: SEASON_ID,
-      },
-      { status: 500 }
-    )
+        error: err instanceof Error ? err.message: 'League Sync failed'
+      })
+    }
   }
+
+  const anyFailed = results.some(r => !r.success)
+
+  return NextResponse.json({
+    success: !anyFailed,
+    message: `Synced ${results.filter(r => r.success).length} of ${results.length} leagues`,
+    results
+  })
 }
