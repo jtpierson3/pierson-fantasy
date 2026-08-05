@@ -125,6 +125,7 @@ export default function TeamStats({ team }: Props) {
                             <PlayerListRow 
                                 key={fp.id}
                                 player={fp.player}
+                                team={fp.player.team}
                                 isIR={fp.rosterSlot === 'IR'}
                             />
                         ))}

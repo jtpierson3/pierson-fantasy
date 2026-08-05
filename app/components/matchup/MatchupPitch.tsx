@@ -12,6 +12,7 @@ type CardPlayer = {
   jersey_number?: number | null
   date_of_birth?: string | null
   teamId?: number
+  team?: { leagueId: number } | null
 }
 
 export type MatchupPlayer = SlotAssignable & {
