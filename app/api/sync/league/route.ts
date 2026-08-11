@@ -2,18 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { env } from '@/lib/env'
 import { COMPETITIONS, type CompetitionKey } from '@/lib/sportmonksConstants'
-
-const BASE_URL = 'https://api.sportmonks.com/v3/football'
-
-async function sportmonksFetch(endpoint: string) {
-  const separator = endpoint.includes('?') ? '&' : '?'
-  const res = await fetch(`${BASE_URL}${endpoint}${separator}api_token=${env.SPORTMONKS_API_KEY}`)
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`Sportmonks error: ${res.status} - ${text}`)
-  }
-  return res.json()
-}
+import { getLeagueById } from '@/lib/sportmonks'
 
 export async function POST(req: Request) {
   const authHeader = req.headers.get('authorization')
@@ -27,8 +16,7 @@ export async function POST(req: Request) {
     const { leagueId, seasonId } = COMPETITIONS[key]
 
     try {
-      const leagueData = await sportmonksFetch(`/leagues/${leagueId}?include=currentSeason`)
-      const league = leagueData.data
+      const league = await getLeagueById(leagueId)
 
       if (!league) {
         results.push({ key, success: false, error: 'No league data returned from Sportmonks'})

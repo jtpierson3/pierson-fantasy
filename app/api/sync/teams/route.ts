@@ -2,20 +2,10 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { env } from '@/lib/env'
 import { COMPETITIONS } from '@/lib/sportmonksConstants'
+import { getTeamsBySeason } from '@/lib/sportmonks'
 
-const BASE_URL = 'https://api.sportmonks.com/v3/football'
-const LEAGUE_ID = 8
-const SEASON_ID = 28083
-
-async function sportmonksFetch(endpoint: string) {
-  const separator = endpoint.includes('?') ? '&' : '?'
-  const res = await fetch(`${BASE_URL}${endpoint}${separator}api_token=${env.SPORTMONKS_API_KEY}`)
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`Sportmonks error: ${res.status} - ${text}`)
-  }
-  return res.json()
-}
+const LEAGUE_ID = COMPETITIONS.premier_league.leagueId
+const SEASON_ID = COMPETITIONS.premier_league.seasonId
 
 export async function POST(req: Request) {
   const authHeader = req.headers.get('authorization')
@@ -29,8 +19,7 @@ export async function POST(req: Request) {
   let relegated = 0
 
   try {
-    const teamsData = await sportmonksFetch(`/teams/seasons/${SEASON_ID}`)
-    const teams = teamsData.data ?? []
+    const teams = await getTeamsBySeason(SEASON_ID)
 
     if (teams.length === 0) {
       return NextResponse.json(

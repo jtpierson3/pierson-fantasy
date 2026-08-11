@@ -78,6 +78,20 @@ export type League = {
     currentseason: Season
 }
 
+export type TeamSummary = {
+    id: number
+    name: string
+    short_code: string | null
+    image_path: string
+}
+
+export type LeagueSummary = {
+    id: number
+    name: string
+    short_code: string | null
+    image_path: string
+}
+
 type SportmonksPaginatedResponse<T> = {
     data: T[]
     pagination?: {
@@ -181,4 +195,18 @@ export async function getPlayerTransfers(playerId: number): Promise<Transfer[]> 
         `/transfers/players/${playerId}`
     ) as SportmonksListResponse<Transfer>
     return data.data ?? []
+}
+
+export async function getTeamsBySeason(seasonId: number): Promise<TeamSummary[]> {
+    const data = await sportmonksFetch(
+        `/teams/seasons/${seasonId}`
+    ) as SportmonksListResponse<TeamSummary>
+    return data.data ?? []
+}
+
+export async function getLeagueById(leagueId: number): Promise<LeagueSummary | null> {
+    const data = await sportmonksFetch(
+        `/leagues/${leagueId}?include=currentSeason`
+    ) as SportmonksResponse<LeagueSummary>
+    return data.data ?? null
 }
