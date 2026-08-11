@@ -3,9 +3,9 @@
 import { useState, useMemo, useCallback } from "react"
 import Image from 'next/image'
 import Link from 'next/link'
-import { getTeamColor, getTintBackground, getContrastTextColor } from '@/lib/colors'
+import { getTeamColor, getTintBackground } from '@/lib/colors'
 import { getPositionShort, getPositionColor } from '@/lib/helpers'
-import type { Player, Team } from '@prisma/client'
+import type { Team } from '@prisma/client'
 import { useRouter } from 'next/navigation'
 import { Prisma } from '@prisma/client'
 import ClaimModal from '@/app/components/ClaimModal'

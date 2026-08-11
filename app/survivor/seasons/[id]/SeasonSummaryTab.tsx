@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import type { Prisma } from '@prisma/client'
 import { getContestantTribe } from '@/app/lib/survivorHelpers'
 
@@ -83,13 +82,6 @@ function getOrdinal(n: number): string {
   return n + (s[(v - 20) % 10] || s[v] || s[0])
 }
 
-function hexToRgba(hex: string, alpha: number): string {
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  return `rgba(${r},${g},${b},${alpha})`
-}
-
 function getVoteTally(votes: { votedForId: string }[]): Map<string, number> {
   const tally = new Map<string, number>()
   votes.forEach(v => {
@@ -125,7 +117,6 @@ export default function SeasonSummaryTab({ episodes, contestants, seasonId }: Pr
     .sort((a, b) => (b.placement ?? 0) - (a.placement ?? 0))
 
   const elimOrderMap = new Map<string, number>()
-  const juryCount = 0
   eliminated.forEach((c, i) => {
     elimOrderMap.set(c.id, i + 1)
   })
@@ -171,11 +162,6 @@ export default function SeasonSummaryTab({ episodes, contestants, seasonId }: Pr
             {episodes.map(episode => {
               const isAired = episode.isAired
               const rowClass = isAired ? '' : 'opacity-40'
-
-              // Challenges
-              const rewardChallenges = episode.challenges.filter(c => c.type === 'reward')
-              const immunityChallenges = episode.challenges.filter(c => c.type === 'immunity')
-              const combinedChallenges = episode.challenges.filter(c => c.type === 'combined')
 
               // Exiled contestants from stats
               const exiledStats = episode.stats.filter(s =>

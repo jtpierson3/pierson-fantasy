@@ -55,12 +55,6 @@ type TribalColumn = {
   isFinalTribal: boolean
 }
 
-function getOrdinal(n: number): string {
-  const s = ['th', 'st', 'nd', 'rd']
-  const v = n % 100
-  return n + (s[(v - 20) % 10] || s[v] || s[0])
-}
-
 function formatVoteCount(
   eliminatedId: string,
   votes: { votedForId: string; isRevoked: boolean }[]
@@ -225,7 +219,6 @@ export default function VotingHistoryTab({ episodes, contestants }: Props) {
               <th className="px-3 py-2 bg-gray-50 sticky left-0 z-10" />
               {columns.map(col => {
                 const tribe = col.eliminated?.tribeMemberships[col.eliminated?.tribeMemberships.length - 1]?.tribe
-                const isNoVote = ['medevac', 'quit'].includes(col.eliminated?.status ?? '')
                 return (
                   <th
                     key={col.tribalCouncilId}

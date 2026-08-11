@@ -3,7 +3,6 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import SurvivorDashboard from './survivorDashboard'
-import type { Prisma } from '@prisma/client'
 
 function SurvivorSkeleton() {
     return (

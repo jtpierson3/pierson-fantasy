@@ -41,8 +41,6 @@ export default function TeamStats({ team }: Props) {
         })
     }, [team.players, search, positionFilter])
 
-    const totalPoints = 0 // wired up when scoring is implemented
-
     return (
         <div className="max-w-2xl">
             {/* Header */}

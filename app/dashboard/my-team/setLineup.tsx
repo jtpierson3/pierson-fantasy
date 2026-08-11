@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect, act } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -254,7 +254,6 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
       if (overId.startsWith('pitch-')) {
         // slotId format: "pitch-DEF-0" - need to find the global index
         const allRows = getFormationRows(formation)
-        const allSlots = allRows.flatMap(r => r.slots)
         let globalIdx = 0
         let found = false
         allRows.forEach(row => {

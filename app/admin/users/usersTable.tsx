@@ -119,8 +119,10 @@ export default function UsersTable({
                             leagueId
                         })
                     })
+                    if (!res.ok) throw new Error('Failed to remove user from league')
+                    router.refresh()
                 } catch (err) {
-                    setError('Failed to remove user from league')
+                    setError(err instanceof Error ? err.message : 'Failed to remove user from league')
                 } finally {
                     setLoading(false)
                     setConfirm(null)
@@ -145,7 +147,7 @@ export default function UsersTable({
                     if (!res.ok) throw new Error('Failed to remove user')
                     router.refresh()
                 } catch (err) {
-                    setError('Failed to remove user from site')
+                    setError(err instanceof Error ? err.message : 'Failed to remove user from site')
                 } finally {
                     setLoading(false)
                     setConfirm(null)
@@ -177,7 +179,7 @@ export default function UsersTable({
                     if (!res.ok) throw new Error('Failed to update user')
                     router.refresh()
                 } catch (err) {
-                    setError('Failed to update user')
+                    setError(err instanceof Error ? err.message : 'Failed to update user')
                 } finally {
                     setLoading(false)
                     setConfirm(null)

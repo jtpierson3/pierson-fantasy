@@ -26,7 +26,6 @@ function player(
 // Detailed position ids used in lib/formations.ts DETAILED_POSITION_MAP:
 // 148 = CB, 154/155 = FB, 149/150/153 = CM, 152/156/157/158 = W, 151 = ST
 const CB = 148
-const FB = 154
 const CM = 153
 const W = 156
 const ST = 151

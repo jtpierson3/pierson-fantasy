@@ -132,13 +132,14 @@ export default function ScoringTab({ episode, contestants, scoringEvents }: Prop
       setSelectedEventId(null)
       setSelectedContestantIds(new Set())
       setDescription('')
+      setOrder('')
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save')
     } finally {
       setSaving(false)
     }
-  }, [selectedEventId, selectedContestantIds, description, episode.id, router])
+  }, [selectedEventId, selectedContestantIds, description, episode.id, router, order])
 
   const handleDeleteStat = useCallback(async (statId: string) => {
     setDeletingId(statId)

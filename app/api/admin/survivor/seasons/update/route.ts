@@ -44,7 +44,7 @@ export async function POST(req: Request) {
             }
         })
 
-        return NextResponse.json({ success: true })
+        return NextResponse.json({ success: true, season })
         
     } catch (err) {
         console.error('[update-season] error:', err)

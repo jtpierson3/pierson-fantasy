@@ -228,7 +228,7 @@ export default function EpisodeDetail({ episode, contestants, scoringEvents, cha
   )
 }
 
-function EpisodeOverview({ episode, contestants, scoringEvents }: {
+function EpisodeOverview({ episode }: {
   episode: Episode
   contestants: Contestant[]
   scoringEvents: ScoringEvent[]

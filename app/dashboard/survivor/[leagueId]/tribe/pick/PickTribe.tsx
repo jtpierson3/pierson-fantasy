@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { Prisma } from '@prisma/client'
 import PlayerBioCard from '@/app/components/PlayerBioCard'
+import Image from 'next/image'
 
 type ContestantWithDetails = Prisma.ContestantGetPayload<{
   include: {
@@ -196,7 +197,7 @@ export default function PickTribe({
                   {/* Image */}
                   <div className="relative w-10 h-10 flex-shrink-0">
                     {contestant.imageUrl ? (
-                      <img
+                      <Image
                         src={contestant.imageUrl}
                         alt={contestant.survivorPlayer.name}
                         className="w-10 h-10 object-cover object-[center_top] rounded-full"

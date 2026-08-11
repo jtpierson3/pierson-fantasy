@@ -7,10 +7,10 @@ describe('isPremierLeagueEligible', () => {
         expect(isPremierLeagueEligible(COMPETITIONS.premier_league.leagueId)).toBe(true)
     })
 
-    it('returns false for a player with no team at all'), () => {
+    it('returns false for a player with no team at all', () => {
         expect(isPremierLeagueEligible(null)).toBe(false)
         expect(isPremierLeagueEligible(undefined)).toBe(false)
-    }
+    })
 
     it('returns false for a Championship or foreign club, even if invloved in a tracked competition', () => {
         expect(isPremierLeagueEligible(COMPETITIONS.fa_cup.leagueId)).toBe(false)

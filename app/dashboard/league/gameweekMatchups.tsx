@@ -8,17 +8,6 @@ type Props = {
     currentTeamId: string
 }
 
-const RESULT_STYLES = {
-    home: {
-        win: 'font-bold text-green-700',
-        lose: 'font-normal text-gray-400'
-    },
-    away: {
-        win: 'font-bold text-green-700',
-        lose: 'font-normal text-gray-400'
-    }
-}
-
 export default function GameweekMatchups({ gameweeks, currentTeamId }: Props) {
     const currentIndex = gameweeks.findIndex(gw => gw.isCurrent)
     const [selectedIndex, setSelectedIndex] = useState(

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { EpisodeWithDetails } from './types'
-import { getContestantTribe, EpisodeRef } from '@/app/lib/survivorHelpers'
+import { getContestantTribe } from '@/app/lib/survivorHelpers'
 
 type Props = {
   episode: EpisodeWithDetails

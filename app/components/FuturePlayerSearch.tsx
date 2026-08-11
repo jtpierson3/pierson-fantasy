@@ -3,7 +3,6 @@
 import { useState, useCallback } from 'react'
 import Image from 'next/image'
 import { isPremierLeagueEligible } from '@/lib/playerEligibility'
-import { getCurrentClub } from '@/lib/playerTeamResolution'
 
 type SearchResult = {
     id: number

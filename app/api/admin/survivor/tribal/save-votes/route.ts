@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     const currentUser = await prisma.user.findUnique({ where: { clerkId } })
     if (!currentUser?.isSiteAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { tribalCouncilId, votes, eliminatedId, advantages } = await req.json()
+    const { tribalCouncilId, votes, eliminatedId } = await req.json()
 
     // Clear existing votes
     await prisma.votingRecord.deleteMany({ where: { tribalCouncilId } })

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -36,37 +36,6 @@ type Contestant = {
   imageUrl: string | null
   survivorPlayer: SurvivorPlayer
   episodeStats: EpisodeStat[]
-}
-
-type SurvivorPick = {
-  id: string
-  constestantId: string
-  isSwap: boolean
-  swappedFromId: string | null
-  contestant: Contestant
-  swappedFrom: Contestant | null
-}
-
-type User = {
-  id: string
-  username: string
-}
-
-type Tribe = {
-  id: string
-  name: string
-  userId: string
-  user: User
-  players: SurvivorPick[]
-}
-
-type Season = {
-  id: string
-  number: number
-  title: string
-  imageUrl: string | null
-  isActive: boolean
-  episodes: Episode[]
 }
 
 type ActiveContestant = Prisma.ContestantGetPayload<{

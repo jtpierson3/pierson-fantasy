@@ -68,7 +68,6 @@ export default function StoryTab({ episode }: Props) {
                     const expandKey = `${day}-${eventLabel}`
                     const isExpanded = expandedKeys.has(expandKey)
                     const isGroup = stats.length > 1
-                    const tribe = stats[0]?.contestant.tribeMemberships[0]?.tribe
 
                     if (isGroup) {
                       // Multiple contestants — show as accordion

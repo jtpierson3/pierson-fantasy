@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import type { Player, Team } from '@prisma/client'
 import { getPositionLabel } from '@/lib/positions'
-import { getTeamColor, getTintBackground, getContrastTextColor } from '@/lib/colors'
+import { getTeamColor, getContrastTextColor } from '@/lib/colors'
 
 type PlayerWithTeam = Player & {
   team: Team | null
