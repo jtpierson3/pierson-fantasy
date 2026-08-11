@@ -4,7 +4,6 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Noto_Sans_Tamil_Supplement } from 'next/font/google'
 import ImageUpload from '@/app/components/ImageUpload'
 
 type Season = {

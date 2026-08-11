@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { calculateWaiverCloseTime } from './waiverWindowCalculation'
-import { resumePluginState } from 'next/dist/build/build-context'
 
 describe('calculateWaiverCloseTime', () => {
     it('closes 2 hours before a normal afternoon kickoff', () => {

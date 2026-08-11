@@ -3,21 +3,11 @@
 import { getFormationRows, type Formation } from '@/lib/formations'
 import { assignAllRows, type SlotAssignable } from '@/lib/lineupAssignment'
 import PlayerCard from '@/app/components/playerCard'
-
-type CardPlayer = {
-  id: number
-  display_name: string
-  image_path: string
-  position_id: number
-  jersey_number?: number | null
-  date_of_birth?: string | null
-  teamId?: number
-  team?: { leagueId: number } | null
-}
+import type { DisplayPlayer } from '@/lib/playerTypes'
 
 export type MatchupPlayer = SlotAssignable & {
   rosterSlot: string
-  player: CardPlayer & { detailed_position_id: number | null }
+  player: DisplayPlayer & { detailed_position_id: number | null }
   points?: number
 }
 

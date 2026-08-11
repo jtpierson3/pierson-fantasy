@@ -4,7 +4,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { Prisma } from '@prisma/client'
 import { getContestantTribe } from '@/app/lib/survivorHelpers'
-import { fchmod } from 'fs'
 
 type ContestantWithDetails = Prisma.ContestantGetPayload<{
   include: {

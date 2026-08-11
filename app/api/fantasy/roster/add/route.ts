@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-import { error } from 'console'
-import { sendStatusCode } from 'next/dist/server/api-utils'
 
 export async function POST(req: Request) {
     try {

@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { StringDecoder } from 'string_decoder'
 
 type FantasyTeam = {
     id: string

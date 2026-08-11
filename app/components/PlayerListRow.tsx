@@ -1,24 +1,11 @@
 import Image from 'next/image'
 import { getPositionShort, getPositionColor } from '@/lib/helpers'
 import { isPremierLeagueEligible } from '@/lib/playerEligibility'
-
-type Player = {
-    id: number
-    display_name: string
-    image_path: string
-    position_id: number
-    jersey_number?: number | null
-}
-
-type Team = {
-    name: string
-    image_path: string
-    leagueId?: number 
-}
+import type { DisplayPlayer, DisplayTeam } from '@/lib/playerTypes'
 
 type Props = {
-    player: Player
-    team?: Team | null
+    player: DisplayPlayer
+    team?: DisplayTeam | null
     size?: 'sm' | 'md'
     isIR?: boolean
     onIRToggle?: () => void

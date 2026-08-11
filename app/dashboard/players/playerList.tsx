@@ -11,9 +11,7 @@ import { Prisma } from '@prisma/client'
 import ClaimModal from '@/app/components/ClaimModal'
 import FuturePlayerSearch from "@/app/components/FuturePlayerSearch"
 import { isPremierLeagueEligible } from "@/lib/playerEligibility"
-import { match } from "assert"
-
-type PlayerWithTeam = Player & { team: Team | null }
+import type { PlayerWithTeam } from '@/lib/playerTypes'
 
 type FantasyTeamWithPlayers = Prisma.FantasyTeamGetPayload<{
     include: {

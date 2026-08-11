@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { Prisma } from '@prisma/client'
-import { Wire_One } from 'next/font/google'
 
 type TribeWithPlayers = Prisma.SurvivorFantasyLeagueTribeGetPayload<{
   include: {
