@@ -2,21 +2,10 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { env } from '@/lib/env'
 import { COMPETITIONS } from '@/lib/sportmonksConstants'
+import { getPlayerTransfers, getSquad } from '@/lib/sportmonks'
 import { detectDepartures, getTeamsEligibleForDepartureCheck } from '@/lib/playerDeparture'
-import { usePrevious } from '@dnd-kit/utilities'
 
-const BASE_URL = 'https://api.sportmonks.com/v3/football'
-const SEASON_ID = 28083
-
-async function sportmonksFetch(endpoint: string) {
-  const separator = endpoint.includes('?') ? '&' : '?'
-  const res = await fetch(`${BASE_URL}${endpoint}${separator}api_token=${env.SPORTMONKS_API_KEY}`)
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`Sportmonks error: ${res.status} - ${text}`)
-  }
-  return res.json()
-}
+const SEASON_ID = COMPETITIONS.premier_league.seasonId
 
 async function recordDeparture(playerId: number, formerTeamId: number, formerFantasyTeamId: string | null) {
   // Avoid creating a duplicate pending transfer record for the same player
@@ -29,15 +18,14 @@ async function recordDeparture(playerId: number, formerTeamId: number, formerFan
   let suggestedAmount: number | null = null
 
   try {
-    const transferData = await sportmonksFetch(`/transfers/players/${playerId}`)
-    const transfers = transferData.data ?? []
+    const transfers = await getPlayerTransfers(playerId)
     // Most recent transfer by date
     const sorted = [...transfers].sort((a, b) =>
       new Date(b.date).getTime() - new Date(a.date).getTime()
     )
     const latest = sorted[0]
     if (latest) {
-      transferTypeId = latest.typd_id ?? null
+      transferTypeId = latest.type_id ?? null
       suggestedAmount = latest.amount ?? null
     }
   } catch (err) {
@@ -110,10 +98,7 @@ export async function POST(req: Request) {
           })
           : []
 
-        const squadData = await sportmonksFetch(
-          `/squads/seasons/${SEASON_ID}/teams/${team.id}?include=player`
-        )
-        const squad = squadData.data ?? []
+        const squad = await getSquad(SEASON_ID, team.id)
         const currentSquadPlayerIds: number[] = []
 
         for (const member of squad) {
@@ -132,8 +117,8 @@ export async function POST(req: Request) {
             update: {
               display_name: player.display_name,
               image_path: player.image_path,
-              position_id: member.position_id ?? player.position_id ?? 0,
-              detailed_position_id: member.detailed_position_id ?? player.detailed_position_id ?? null,
+              position_id: member.position_id ?? 0,
+              detailed_position_id: member.detailed_position_id ?? null,
               jersey_number: member.jersey_number ?? null,
               date_of_birth: player.date_of_birth ?? null,
               teamId: team.id,

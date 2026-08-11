@@ -25,6 +25,28 @@ export type Round = {
   season_id: number
 }
 
+export type SquadMember = {
+    position_id: number | null
+    detailed_position_id: number | null
+    jersey_number: number | null
+    player: {
+        id: number
+        display_name: string
+        image_path: string
+        date_of_birth: string | null
+    } | null
+}
+
+export type Transfer = {
+    id: number
+    player_id: number
+    type_id: number
+    from_team_id: number | null
+    to_team_id: number | null
+    date: string
+    amount: number | null
+}
+
 export type Participant = {
   id: number
   name: string
@@ -69,7 +91,7 @@ type SportmonksPaginatedResponse<T> = {
 type SportmonksResponse<T> = { data: T }
 type SportmonksListResponse<T> = { data: T[] }
 
-async function sportmonksFetch(endpoint: string, revalidate = 60, retries = 3): Promise<unknown> {
+export async function sportmonksFetch(endpoint: string, revalidate = 60, retries = 3): Promise<unknown> {
     const separator = endpoint.includes('?') ? '&' : '?'
     const fullUrl = `${BASE_URL}${endpoint}${separator}api_token=${env.SPORTMONKS_API_KEY}`
 
@@ -145,4 +167,18 @@ export async function getFixturesBySeason(seasonId: number): Promise<Fixture[]> 
         `/fixtures?filters=fixtureSeasons:${seasonId}&include=participants;scores;venue;state;round;stage&per_page=50`,
         DAILY_RESET
     )
+}
+
+export async function getSquad(seasonId: number, teamId: number): Promise<SquadMember[]> {
+    const data = await sportmonksFetch(
+        `/squads/seasons/${seasonId}/teams/${teamId}?include=player`
+    ) as SportmonksListResponse<SquadMember>
+    return data.data ?? []
+}
+
+export async function getPlayerTransfers(playerId: number): Promise<Transfer[]> {
+    const data = await sportmonksFetch(
+        `/transfers/players/${playerId}`
+    ) as SportmonksListResponse<Transfer>
+    return data.data ?? []
 }
