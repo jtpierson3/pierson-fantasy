@@ -2,9 +2,9 @@
 Waiver processing trigger.
 
 This script is intentionally thin - all the waiver resolution logic
-lives in the Next.js app (lib/waiverProcessing.ts), since that's where
-the business logic is already implemented, tested, and kept in sync with
-the rest of the app's data model.
+lives in the Next.js app (lib/transferBidResolution.ts, lib/waiverProcessing.ts), 
+since that's wherethe business logic is already implemented, tested, and kept in 
+sync with the rest of the app's data model.
 
 This script's only job: ping the processing endpoint on a schedule.
 The endpoint itstelf checks whether the waiver window is actually closed
@@ -26,11 +26,11 @@ def process_waivers() -> dict:
         raise RuntimeError("VERCEL_BYPASS_SECRET environment variable is not set")
     
     response = requests.post(
-        f"{APP_URL}/api/waivers/process",
+        f"{APP_URL}/api/transfer-and-waiver-processing",
         headers={
             "Authorization": f"Bearer {SYNC_SECRET}",
             "x-vercel-protection-bypass": VERCEL_BYPASS_SECRET,
-            "User-Agent": "Mozilla/5.0 (compatible; PiersonFantasyWaiverBot/1.0)"
+            "User-Agent": "Mozilla/5.0 (compatible; PiersonFantasyProcessor/1.0)"
         },
         timeout=30,
     )

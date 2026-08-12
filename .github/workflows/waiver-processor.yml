@@ -1,8 +1,8 @@
-name: Process Waivers
+name: Process Transfers and Waivers
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '*/30 * * * *'
   workflow_dispatch: {}
 
 jobs:
@@ -20,9 +20,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r python/requirements.txt
 
-      - name: Run waiver processor
+      - name: Run transfer and waiver processor
         env: 
           APP_URL: https://pierson-fantasy.vercel.app
           SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
           VERCEL_BYPASS_SECRET: ${{ secrets.VERCEL_BYPASS_SECRET}}
-        run: python python/waiver_processor.py
+        run: python python/transfer_and_waiver_processor.py
