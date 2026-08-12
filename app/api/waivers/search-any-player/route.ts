@@ -1,13 +1,10 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-import { env } from '@/lib/env'
 import { canMakeApiCall, logApiCall } from '@/lib/apiCallBudget'
 import { getCurrentClub, type SportmonksTeamStint} from '@/lib/playerTeamResolution'
 import type { Prisma } from '@prisma/client'
-
-const BASE_URL = 'https://api.sportmonks.com/v3/football'
-const ENDPOINT_KEY = 'players/search'
+import { sportmonksFetchWithMeta } from '@/lib/sportmonks'
+import { requireUser } from '@/lib/apiAuth'
 
 type SportmonksPlayer = {
     id: number,
@@ -46,16 +43,14 @@ async function upsertPlayerFromSearch(p: SportmonksPlayer) {
         create: data
     })
 
-    return { id: p.id, dispay_name: p.display_name, image_path: p.image_path, team: currentClub}
+    return { id: p.id, display_name: p.display_name, image_path: p.image_path, team: currentClub}
 }
 
 export async function GET(req: Request) {
     try {
-        const { userId: clerkId } = await auth()
-        if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-        const user = await prisma.user.findUnique({ where: { clerkId } })
-        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        const authResult = await requireUser()
+        if (!authResult.ok) return NextResponse.json({ error: authResult.error }, { status: authResult.status})
+        const { user } = authResult
 
         const { searchParams } = new URL(req.url)
         const q = searchParams.get('q')?.trim()
@@ -83,24 +78,20 @@ export async function GET(req: Request) {
         }
 
         // Step 2 - nothing local, check budget and fall through to Sportmonks
-        if (!(await canMakeApiCall(ENDPOINT_KEY))) {
+        if (!(await canMakeApiCall('PLAYER_SEARCH'))) {
             return NextResponse.json({ error: 'Player search unavailable this month - please try again next month' }, { status: 429 })
         }
 
-        const res = await fetch(
-            `${BASE_URL}/players/search/${encodeURIComponent(q)}?api_token=${env.SPORTMONKS_API_KEY}&include=teams.team`
+        const { data, remaining } = await sportmonksFetchWithMeta(
+            `/players/search/${encodeURIComponent(q)}?include=teams.team`
         )
 
-        await logApiCall(ENDPOINT_KEY)
+        await logApiCall('players/search/[query]', 'PLAYER_SEARCH', {
+            triggeredBy: user.id,
+            remainingAfterCall: remaining
+        })
 
-        if (!res.ok) {
-            const text = await res.text()
-            console.error('[search-any-player] Sportmonks error:', res.status, text)
-            return NextResponse.json({ error: 'Search failed' }, { status: 502 })
-        }
-
-        const data = await res.json()
-        const sportmonksPlayers: SportmonksPlayer[] = data.data ?? []
+        const sportmonksPlayers: SportmonksPlayer[] = (data as { data: SportmonksPlayer[] }).data ?? []
 
         // Step 3 - upsert everything we got back, so next search finds it locally
         const upserted = await Promise.all(sportmonksPlayers.slice(0, 10).map(upsertPlayerFromSearch))

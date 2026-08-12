@@ -105,7 +105,16 @@ type SportmonksPaginatedResponse<T> = {
 type SportmonksResponse<T> = { data: T }
 type SportmonksListResponse<T> = { data: T[] }
 
-export async function sportmonksFetch(endpoint: string, revalidate = 60, retries = 3): Promise<unknown> {
+type SportmonksFetchResult<T> = {
+    data: T
+    remaining: number | null
+}
+
+export async function sportmonksFetchWithMeta(
+    endpoint: string,
+    revalidate = 60,
+    retries = 3
+): Promise<SportmonksFetchResult<unknown>> {
     const separator = endpoint.includes('?') ? '&' : '?'
     const fullUrl = `${BASE_URL}${endpoint}${separator}api_token=${env.SPORTMONKS_API_KEY}`
 
@@ -116,7 +125,7 @@ export async function sportmonksFetch(endpoint: string, revalidate = 60, retries
     if (res.status === 429 && retries > 0) {
         console.warn(`Sportmonks rate limited, retrying in 1s ... (${retries} retries left)`)
         await new Promise(r => setTimeout(r, 1000))
-        return sportmonksFetch(endpoint, revalidate, retries - 1)
+        return sportmonksFetchWithMeta(endpoint, revalidate, retries - 1)
     }
 
     if (!res.ok) {
@@ -124,7 +133,15 @@ export async function sportmonksFetch(endpoint: string, revalidate = 60, retries
         throw new Error(`Sportmonks error: ${res.status} - ${errorText}`)
     }
 
-    return res.json()
+    const json = await res.json()
+    const remaining = json?.rate_limit?.remaining ?? null
+
+    return { data: json, remaining}
+}
+
+export async function sportmonksFetch(endpoint: string, revalidate = 60, retries = 3): Promise<unknown> {
+    const result = await sportmonksFetchWithMeta(endpoint, revalidate, retries)
+    return result.data
 }
 
 const DAILY_RESET = 60*60*24

@@ -18,6 +18,15 @@ enum RosterSlot {
   IR
 }
 
+enum ApiCallSource {
+  SYNC_LEAGUE
+  SYNC_TEAMS
+  SYNC_PLAYERS
+  SYNC_FIXTURES
+  PLAYER_TRANSFER_LOOKUP
+  PLAYER_SEARCH
+}
+
 // ===================================================
 //      Fantasy Football
 // ===================================================
@@ -197,6 +206,33 @@ model TransferBid {
 
   @@unique([fantasyTeamId, playerId, gameweekId])
   @@index([playerId, gameweekId, status])
+}
+
+// ===========================================
+//          API Data Tracking
+// ===========================================
+
+model ApiCallLog {
+  id                 String        @id @default(cuid())
+  endpoint           String
+  source             ApiCallSource
+  triggeredBy        String?
+  remainingAfterCall Int?
+  calledAt           DateTime      @default(now())
+
+  @@index([source, calledAt])
+  @@index([calledAt])
+}
+
+model ApiUsageMonthlySummary {
+  id         String        @id @default(cuid())
+  year       Int
+  month      Int
+  source     ApiCallSource
+  totalCalls Int
+  createdAt  DateTime      @default(now())
+
+  @@unique([year, month, source])
 }
 
 // ===========================================
@@ -562,14 +598,4 @@ model EliminationPick {
   contestant       Contestant     @relation(fields: [contestantId], references: [id])
 
   @@unique([userId, survivorLeagueId, episodeId])
-}
-
-//------------------------------ TOOLS ----------------------------------
-
-model ApiCallLog {
-  id       String   @id @default(cuid())
-  endpoint String
-  calledAt DateTime @default(now())
-
-  @@index([endpoint, calledAt])
 }
