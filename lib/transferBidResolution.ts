@@ -58,9 +58,6 @@ export function resolveTransferBids(
 
         for (const bid of sorted) {
             if (bid.id === winner.id) {
-
-                console.log('winner bid:', bid.id, 'amount:', bid.amount, typeof bid.amount)
-                
                 bidResults.push({ bidId: bid.id, status: 'won' })
                 fundsSpent[bid.fantasyTeamId] = (fundsSpent[bid.fantasyTeamId] ?? 0) + bid.amount
                 playersWon.push({ fantasyTeamId: bid.fantasyTeamId, playerId, playerToDropId: bid.playerToDropId })

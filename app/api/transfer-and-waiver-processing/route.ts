@@ -59,7 +59,7 @@ async function processLeague(leagueId: string) {
             if (a.totalLeaguePoints !== b.totalLeaguePoints) return a.totalLeaguePoints - b.totalLeaguePoints
             return a.totalFantasyPoints - b.totalFantasyPoints
         })
-        const rankMap = new Map(standingsSorted.map((t, i) => [t.id, 1 + 1]))
+        const rankMap = new Map(standingsSorted.map((t, i) => [t.id, i + 1]))
 
         const bidInputs: TransferBidInput[] = pendingBids.map(b => ({
             id: b.id,
