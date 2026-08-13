@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { env } from '@/lib/env'
 import { COMPETITIONS } from '@/lib/sportmonksConstants'
 import { getPlayerTransfers, getSquad } from '@/lib/sportmonks'
 import { detectDepartures, getTeamsEligibleForDepartureCheck } from '@/lib/playerDeparture'
+import { requireAutomationSecret } from '@/lib/automationAuth'
 
 const SEASON_ID = COMPETITIONS.premier_league.seasonId
 
@@ -45,10 +45,8 @@ async function recordDeparture(playerId: number, formerTeamId: number, formerFan
 }
 
 export async function POST(req: Request) {
-  const authHeader = req.headers.get('authorization')
-  if (authHeader !== `Bearer ${env.SYNC_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authResult = requireAutomationSecret(req)
+  if (!authResult.ok) return NextResponse.json({ error: authResult.error }, { status: authResult.status })
 
   const errors: { team: string; message: string }[] = []
   const teamResults: { team: string; created: number; updated: number; skipped: number }[] = []

@@ -221,9 +221,10 @@ export async function getTeamsBySeason(seasonId: number): Promise<TeamSummary[]>
     return data.data ?? []
 }
 
-export async function getLeagueById(leagueId: number): Promise<LeagueSummary | null> {
-    const data = await sportmonksFetch(
+export async function getLeagueById(leagueId: number): Promise<{league: LeagueSummary | null; remaining: number | null}> {
+    const { data, remaining } = await sportmonksFetchWithMeta(
         `/leagues/${leagueId}?include=currentSeason`
-    ) as SportmonksResponse<LeagueSummary>
-    return data.data ?? null
+    )
+    const league = (data as SportmonksResponse<LeagueSummary>).data ?? null
+    return { league, remaining }
 }

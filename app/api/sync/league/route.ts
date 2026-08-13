@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { env } from '@/lib/env'
 import { COMPETITIONS, type CompetitionKey } from '@/lib/sportmonksConstants'
 import { getLeagueById } from '@/lib/sportmonks'
+import { logApiCall } from '@/lib/apiCallBudget'
+import { requireAutomationSecret } from '@/lib/automationAuth'
 
 export async function POST(req: Request) {
-  const authHeader = req.headers.get('authorization')
-  if (authHeader !== `Bearer ${env.SYNC_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authResult = requireAutomationSecret(req)
+  if (!authResult.ok) return NextResponse.json({ error: authResult.error }, { status: authResult.status })
 
   const results: { key: string; success: boolean; name?: string; error?: string }[] = []
 
@@ -16,7 +15,12 @@ export async function POST(req: Request) {
     const { leagueId, seasonId } = COMPETITIONS[key]
 
     try {
-      const league = await getLeagueById(leagueId)
+      const { league, remaining } = await getLeagueById(leagueId)
+
+      await logApiCall(`leagues/${leagueId}`, 'SYNC_LEAGUE', {
+        triggeredBy: 'sync-admin-panel',
+        remainingAfterCall: remaining
+      })
 
       if (!league) {
         results.push({ key, success: false, error: 'No league data returned from Sportmonks'})
