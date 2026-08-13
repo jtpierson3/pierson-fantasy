@@ -214,11 +214,12 @@ export async function getPlayerTransfers(playerId: number): Promise<Transfer[]> 
     return data.data ?? []
 }
 
-export async function getTeamsBySeason(seasonId: number): Promise<TeamSummary[]> {
-    const data = await sportmonksFetch(
+export async function getTeamsBySeason(seasonId: number): Promise<{ teams: TeamSummary[]; remaining: number| null }> {
+    const { data, remaining } = await sportmonksFetchWithMeta(
         `/teams/seasons/${seasonId}`
-    ) as SportmonksListResponse<TeamSummary>
-    return data.data ?? []
+    )
+    const teams = (data as SportmonksListResponse<TeamSummary>).data ?? []
+    return { teams, remaining }
 }
 
 export async function getLeagueById(leagueId: number): Promise<{league: LeagueSummary | null; remaining: number | null}> {

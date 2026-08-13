@@ -1,17 +1,16 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { env } from '@/lib/env'
 import { COMPETITIONS } from '@/lib/sportmonksConstants'
 import { getTeamsBySeason } from '@/lib/sportmonks'
+import { logApiCall } from '@/lib/apiCallBudget'
+import { requireAutomationSecret } from '@/lib/automationAuth'
 
 const LEAGUE_ID = COMPETITIONS.premier_league.leagueId
 const SEASON_ID = COMPETITIONS.premier_league.seasonId
 
 export async function POST(req: Request) {
-  const authHeader = req.headers.get('authorization')
-  if (authHeader !== `Bearer ${env.SYNC_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authResult = requireAutomationSecret(req)
+  if (!authResult.ok) return NextResponse.json({ error: authResult.error }, { status: authResult.status })
 
   const errors: { teamId: number | string; name?: string; message: string }[] = []
   let created = 0
@@ -19,7 +18,12 @@ export async function POST(req: Request) {
   let relegated = 0
 
   try {
-    const teams = await getTeamsBySeason(SEASON_ID)
+    const { teams, remaining } = await getTeamsBySeason(SEASON_ID)
+
+    await logApiCall(`teams/seasons/${SEASON_ID}`, 'SYNC_TEAMS', {
+      triggeredBy: 'sync-admin-panel',
+      remainingAfterCall: remaining
+    })
 
     if (teams.length === 0) {
       return NextResponse.json(
