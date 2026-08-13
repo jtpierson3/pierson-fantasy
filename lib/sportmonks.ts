@@ -200,18 +200,20 @@ export async function getFixturesBySeason(seasonId: number): Promise<Fixture[]> 
     )
 }
 
-export async function getSquad(seasonId: number, teamId: number): Promise<SquadMember[]> {
-    const data = await sportmonksFetch(
+export async function getSquad(seasonId: number, teamId: number): Promise<{ squad: SquadMember[]; remaining: number | null}> {
+    const { data, remaining } = await sportmonksFetchWithMeta(
         `/squads/seasons/${seasonId}/teams/${teamId}?include=player`
-    ) as SportmonksListResponse<SquadMember>
-    return data.data ?? []
+    )
+    const squad = (data as SportmonksListResponse<SquadMember>).data ?? []
+    return { squad, remaining }
 }
 
-export async function getPlayerTransfers(playerId: number): Promise<Transfer[]> {
-    const data = await sportmonksFetch(
+export async function getPlayerTransfers(playerId: number): Promise<{ transfers: Transfer[]; remaining: number | null}> {
+    const { data, remaining } = await sportmonksFetchWithMeta(
         `/transfers/players/${playerId}`
-    ) as SportmonksListResponse<Transfer>
-    return data.data ?? []
+    )
+    const transfers = (data as SportmonksListResponse<Transfer>).data ?? []
+    return { transfers, remaining }
 }
 
 export async function getTeamsBySeason(seasonId: number): Promise<{ teams: TeamSummary[]; remaining: number| null }> {

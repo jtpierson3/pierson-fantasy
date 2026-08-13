@@ -4,6 +4,7 @@ import { COMPETITIONS } from '@/lib/sportmonksConstants'
 import { getPlayerTransfers, getSquad } from '@/lib/sportmonks'
 import { detectDepartures, getTeamsEligibleForDepartureCheck } from '@/lib/playerDeparture'
 import { requireAutomationSecret } from '@/lib/automationAuth'
+import { logApiCall } from '@/lib/apiCallBudget'
 
 const SEASON_ID = COMPETITIONS.premier_league.seasonId
 
@@ -18,7 +19,13 @@ async function recordDeparture(playerId: number, formerTeamId: number, formerFan
   let suggestedAmount: number | null = null
 
   try {
-    const transfers = await getPlayerTransfers(playerId)
+    const { transfers, remaining } = await getPlayerTransfers(playerId)
+
+    await logApiCall(`transfers/players/${playerId}`, 'PLAYER_TRANSFER_LOOKUP', {
+      triggeredBy: 'sync-admin-panel',
+      remainingAfterCall: remaining
+    })
+
     // Most recent transfer by date
     const sorted = [...transfers].sort((a, b) =>
       new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -96,7 +103,13 @@ export async function POST(req: Request) {
           })
           : []
 
-        const squad = await getSquad(SEASON_ID, team.id)
+        const { squad, remaining } = await getSquad(SEASON_ID, team.id)
+
+        await logApiCall(`squads/seasons/${SEASON_ID}/teams/${team.id}`, 'SYNC_PLAYERS', {
+          triggeredBy: 'sync-admin-panel',
+          remainingAfterCall: remaining
+        })
+
         const currentSquadPlayerIds: number[] = []
 
         for (const member of squad) {
