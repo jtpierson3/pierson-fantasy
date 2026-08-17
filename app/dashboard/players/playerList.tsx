@@ -56,6 +56,7 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
     const [positionFilter, setPositionFilter] = useState<PositionFilter>('ALL')
     const [teamFilter, setTeamFilter] = useState<string>('ALL')
     const [showAllLeagues, setShowAllLeagues] = useState(false)
+    const [showFreeAgentsOnly, setShowFreeAgentsOnly] = useState(true)
 
     const filtered = useMemo(() => {
         return players.filter(p => {
@@ -63,9 +64,11 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
             const matchesPosition = positionFilter === 'ALL' || p.position_id === POSITION_IDS[positionFilter]
             const matchesTeam = teamFilter === 'ALL' || p.teamId === parseInt(teamFilter)
             const matchesEligibility = showAllLeagues || isPremierLeagueEligible(p.team?.leagueId)
-            return matchesSearch && matchesPosition && matchesTeam && matchesEligibility
+            const isOwned = allRosteredPlayers.some(rp => rp.playerId === p.id)
+            const matchesOwnership = !showFreeAgentsOnly || !isOwned
+            return matchesSearch && matchesPosition && matchesTeam && matchesEligibility && matchesOwnership
         })
-    }, [players, search, positionFilter, teamFilter, showAllLeagues])
+    }, [players, search, positionFilter, teamFilter, showAllLeagues, showFreeAgentsOnly, allRosteredPlayers])
 
     const teamOptions = useMemo(() => {
         return showAllLeagues
@@ -229,7 +232,7 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
                     ))}
                 </select>
 
-                {/* Show all players */}
+                {/* Show only Premier League Players */}
                 <button 
                     onClick={() => setShowAllLeagues(prev => !prev)}
                     className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
@@ -239,6 +242,18 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
                     }`}
                 >
                     {showAllLeagues ? 'Showing All Players' : 'Premier League Only'}
+                </button>
+
+                {/* Show only free agents */}
+                <button
+                    onClick={() => setShowFreeAgentsOnly(prev => !prev)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                        showFreeAgentsOnly
+                            ? 'bg-green-800 text-white'
+                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                    }`}
+                >
+                    {showFreeAgentsOnly ? 'Free Agents Only' : 'All Players'}
                 </button>
             </div>  
 
