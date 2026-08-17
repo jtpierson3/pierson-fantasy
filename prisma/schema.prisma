@@ -208,6 +208,50 @@ model TransferBid {
   @@index([playerId, gameweekId, status])
 }
 
+model PlayerMatchStats {
+  id            String   @id @default(cuid())
+  player        Player   @relation(fields: [playerId], references: [id])
+  playerId      Int
+  fixture       Fixture  @relation(fields: [fixtureId], references: [id])
+  fixtureId     Int
+  minutesPlayed Int      @default(0)
+  wasStarter    Boolean  @default(false)
+  rating        Float?
+  stats         Json // raw typeId -> value map.
+  syncedAt      DateTime @default(now())
+
+  @@unique([playerId, fixtureId])
+}
+
+model PlayerFixturePoints {
+  id           String   @id @default(cuid())
+  player       Player   @relation(fields: [playerId], references: [id])
+  playerId     Int
+  fixture      Fixture  @relation(fields: [fixtureId], references: [id])
+  fixtureId    Int
+  points       Float
+  breakdown    Json // human readable line-item breakdown
+  calculatedAt DateTime @default(now())
+
+  @@unique([playerId, fixtureId])
+}
+
+model ScoringRule {
+  id            String   @id @default(cuid())
+  statTypeId    Int?
+  statKey       String
+  displayName   String
+  position      String
+  pointsPerUnit Float?
+  isGraduated   Boolean  @default(false)
+  tiers         Json?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([statKey, position])
+}
+
 // ===========================================
 //          API Data Tracking
 // ===========================================
@@ -280,6 +324,8 @@ model Player {
   gameweekLineupAppearances GameweekLineupPlayer[]
   transferBids              TransferBid[]
   playerTransfers           PlayerTransfer[]
+  playerMatchStats          PlayerMatchStats[]
+  playerFixturePoints       PlayerFixturePoints[]
 }
 
 model PlayerTransfer {
@@ -300,27 +346,29 @@ model PlayerTransfer {
 }
 
 model Fixture {
-  id             Int      @id
-  leagueId       Int
-  seasonId       Int
-  round          String?
-  gameweekNumber Int?
-  homeTeamId     Int?
-  awayTeamId     Int?
-  homeTeam       Team?    @relation("HomeFixtures", fields: [homeTeamId], references: [id])
-  awayTeam       Team?    @relation("AwayFixtures", fields: [awayTeamId], references: [id])
-  homeTeamName   String
-  awayTeamName   String
-  homeTeamImage  String?
-  awayTeamImage  String?
-  homeScore      Int?
-  awayScore      Int?
-  status         String
-  kickoff        DateTime
-  venue          String?
-  competition    String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @default(now())
+  id                  Int                   @id
+  leagueId            Int
+  seasonId            Int
+  round               String?
+  gameweekNumber      Int?
+  homeTeamId          Int?
+  awayTeamId          Int?
+  homeTeam            Team?                 @relation("HomeFixtures", fields: [homeTeamId], references: [id])
+  awayTeam            Team?                 @relation("AwayFixtures", fields: [awayTeamId], references: [id])
+  homeTeamName        String
+  awayTeamName        String
+  homeTeamImage       String?
+  awayTeamImage       String?
+  homeScore           Int?
+  awayScore           Int?
+  status              String
+  kickoff             DateTime
+  venue               String?
+  competition         String
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @default(now())
+  playerMatchStats    PlayerMatchStats[]
+  playerFixturePoints PlayerFixturePoints[]
 
   @@index([kickoff])
   @@index([gameweekNumber])
