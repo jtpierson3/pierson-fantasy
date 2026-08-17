@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { redirect, notFound } from 'next/navigation'
 import MatchupPitch from '@/app/components/matchup/MatchupPitch'
+import MatchupTicker from '@/app/components/matchup/MatchupTicker'
 import type { MatchupTeamData, MatchupPlayer } from '@/app/components/matchup/MatchupPitch'
 import { getLeagueStandings } from '@/lib/leagueStandings'
 
@@ -106,11 +107,41 @@ async function MatchupContent({ matchupId }: { matchupId: string }) {
         buildTeamData(matchup.awayTeamId, matchup.gameweekId, matchup.gameweek.fantasyLeagueId)
     ])
 
+    // All matchups in this same gameweek, for the ticker
+    const sameGameweekMatchups = await prisma.fantasyMatchup.findMany({
+        where: { gameweekId: matchup.gameweekId },
+        include: {
+            homeTeam: { select: { id: true, name: true } },
+            awayTeam: { select: { id: true, name: true } }
+        },
+        orderBy: { id: 'asc' }
+    })
+
+    // All gameweeks in this league, for the gameweek switcher dropdown
+    const allGameweeks = await prisma.fantasyGameweek.findMany({
+        where: { fantasyLeagueId: matchup.gameweek.fantasyLeagueId },
+        select: { id: true, gameweekNumber: true },
+        orderBy: { gameweekNumber: 'asc' }
+    })
+
     return (
         <div className="p-6">
-            <p className="text-sm text-gray-400 mb-4">
-                Gameweek {matchup.gameweek.gameweekNumber}
-            </p>
+            <MatchupTicker 
+                currentMatchupId={matchup.id}
+                currentGameweekNumber={matchup.gameweek.gameweekNumber}
+                sameGameweekMatchups={sameGameweekMatchups.map(m => ({
+                    id: m.id,
+                    homeTeamId: m.homeTeamId,
+                    homeTeamName: m.homeTeam.name,
+                    awayTeamId: m.awayTeamId,
+                    awayTeamName: m.awayTeam.name,
+                    homePoints: m.homePoints,
+                    awayPoints: m.awayPoints,
+                    isComplete: m.isComplete
+                }))}
+                allGameweeks={allGameweeks}
+                fantasyLeagueId={matchup.gameweek.fantasyLeagueId}
+            />
             <MatchupPitch homeTeam={homeTeam} awayTeam={awayTeam} />
         </div>
     )
