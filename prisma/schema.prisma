@@ -283,19 +283,20 @@ model Player {
 }
 
 model PlayerTransfer {
-  id                  String       @id @default(cuid())
-  player              Player       @relation(fields: [playerId], references: [id])
-  playerId            Int
-  formerTeamId        Int?
-  formerFantasyTeam   FantasyTeam? @relation(fields: [formerFantasyTeamId], references: [id])
-  formerFantasyTeamId String?
-  transferTypeId      Int?
-  suggestedAmount     Float?
-  confirmedAmount     Float?
-  status              String       @default("pending_review")
-  detectedAt          DateTime     @default(now())
-  reviewedAt          DateTime?
-  reviewedByUserId    String?
+  id                   String       @id @default(cuid())
+  sportmonksTransferId Int?         @unique // the real sportmonks tranfer record id, used to prevent accidental duplications
+  player               Player       @relation(fields: [playerId], references: [id])
+  playerId             Int
+  formerTeamId         Int?
+  formerFantasyTeam    FantasyTeam? @relation(fields: [formerFantasyTeamId], references: [id])
+  formerFantasyTeamId  String?
+  transferTypeId       Int?
+  suggestedAmount      Float?
+  confirmedAmount      Float?
+  status               String       @default("pending_review")
+  detectedAt           DateTime     @default(now())
+  reviewedAt           DateTime?
+  reviewedByUserId     String?
 }
 
 model Fixture {

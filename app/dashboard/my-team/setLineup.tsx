@@ -669,7 +669,7 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
           {selectedPlayer && (
             <div className="w-64 flex-shrink-0 bg-white border-gray-100 rounded-xl overlow-hidden">
                 <div className="px-3 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                    <p>
+                    <p className="text-gray-900">
                         {selectedPlayer.fp.player.display_name}
                     </p>
                     <button

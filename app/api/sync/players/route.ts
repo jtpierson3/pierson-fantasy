@@ -1,55 +1,13 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { COMPETITIONS } from '@/lib/sportmonksConstants'
-import { getPlayerTransfers, getSquad } from '@/lib/sportmonks'
+import { getSquad } from '@/lib/sportmonks'
 import { detectDepartures, getTeamsEligibleForDepartureCheck } from '@/lib/playerDeparture'
 import { requireAutomationSecret } from '@/lib/automationAuth'
 import { logApiCall } from '@/lib/apiCallBudget'
+import { recordDeparture } from '@/lib/playerTransferRecording'
 
 const SEASON_ID = COMPETITIONS.premier_league.seasonId
-
-async function recordDeparture(playerId: number, formerTeamId: number, formerFantasyTeamId: string | null) {
-  // Avoid creating a duplicate pending transfer record for the same player
-  const existingPending = await prisma.playerTransfer.findFirst({
-    where: { playerId, status: 'pending_review' }
-  })
-  if (existingPending) return
-
-  let transferTypeId: number | null = null
-  let suggestedAmount: number | null = null
-
-  try {
-    const { transfers, remaining } = await getPlayerTransfers(playerId)
-
-    await logApiCall(`transfers/players/${playerId}`, 'PLAYER_TRANSFER_LOOKUP', {
-      triggeredBy: 'sync-admin-panel',
-      remainingAfterCall: remaining
-    })
-
-    // Most recent transfer by date
-    const sorted = [...transfers].sort((a, b) =>
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    )
-    const latest = sorted[0]
-    if (latest) {
-      transferTypeId = latest.type_id ?? null
-      suggestedAmount = latest.amount ?? null
-    }
-  } catch (err) {
-    console.error(`[sync/players] failed to fetch transfer data for player ${playerId}:`, err)
-  }
-
-  await prisma.playerTransfer.create({
-    data: {
-      playerId,
-      formerTeamId,
-      formerFantasyTeamId,
-      transferTypeId,
-      suggestedAmount,
-      status: 'pending_review'
-    }
-  })
-}
 
 export async function POST(req: Request) {
   const authResult = requireAutomationSecret(req)
@@ -158,13 +116,7 @@ export async function POST(req: Request) {
           )
 
           for (const playerId of departedIds) {
-            // find if this player was on any fantasy roster to credit the right team
-            const fantasyOwner = await prisma.fantasyTeamPlayer.findFirst({
-              where: { playerId },
-              select: { fantasyTeamId: true }
-            })
-
-            await recordDeparture(playerId, team.id, fantasyOwner?.fantasyTeamId ?? null)
+            await recordDeparture(playerId)
             totalDeparted++
           }
         }
