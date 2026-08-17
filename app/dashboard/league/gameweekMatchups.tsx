@@ -81,7 +81,7 @@ export default function GameweekMatchups({ gameweeks, currentTeamId }: Props) {
                         <button
                             key={matchup.id}
                             onClick={() => router.push(`/dashboard/league/matchup/${matchup.id}`)}
-                            className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-gray-50 text-left ${
+                            className={`w-full flex items-center gap-3 px-4 py-3 transition-colors hover:bg-gray-50 text-left ${
                                 isMyMatchup ? 'bg-green-50 hover:bg-green-100' : ''
                             }`}
                         >
