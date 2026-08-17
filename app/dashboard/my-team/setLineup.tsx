@@ -456,9 +456,11 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
   const [notes, setNotes] = useState(team.lineupNotes ?? '')
   const [savingNotes, setSavingNotes] = useState(false)
   const [notesDirty, setNotesDirty] = useState(false)
+  const [notesError, setNotesError] = useState<string | null>()
 
   const saveNotes = async () => {
     setSavingNotes(true)
+    setNotesError(null)
     try {
       const res = await fetch('/api/my-team/notes', {
         method: 'POST',
@@ -467,8 +469,9 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
       })
       if (!res.ok) throw new Error('Failed to save notes')
       setNotesDirty(false)
-    } catch {
-      //handle error
+    } catch (err) {
+      setNotesError('Failed to save = try again')
+      console.error('Save Notes Error:', err)
     } finally {
       setSavingNotes(false)
     }
@@ -490,6 +493,11 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
         })
       })
       if (!res.ok) throw new Error('Failed to drop player')
+
+      // Remove immediately from local state so that the UI updates without
+      // waiting on a full server round-trip
+      setPlayers(prev => prev.filter(p => p.id !== selectedPlayer.fp.id))
+
       setSelectedPlayer(null)
       router.refresh()
     } catch (err) {
@@ -691,6 +699,9 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
                 rows={4}
                 className="w-full px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none resize-none"
               />
+              {notesError && (
+                <p className="text-xs text-red-500 px-3 pb-2">{notesError}</p>
+              )}
             </div>
           </div>
 
