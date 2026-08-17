@@ -38,4 +38,4 @@ if __name__ == "__main__":
         print(result)
     except Exception as err: 
         print(f"Rollup failed: {err}", file=sys.stderr)
-    sys.exit(1)
+        sys.exit(1)
