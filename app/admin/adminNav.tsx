@@ -18,6 +18,7 @@ const LEAGUE_ADMIN_LINKS = [
 const SITE_ADMIN_LINKS = [
     { href: '/admin/sync', label: 'Sync'},
     { href: '/admin/transfers', label: 'Transfers' },
+    { href: '/admin/api-usage', label: 'API Info' },
     { href: '/admin/survivor', label: 'Survivor' },
     { href: '/admin/survivor/leagues', label: 'Survivor Leagues' },
     { href: '/admin/survivor/challenges', label: 'Challenge Library' }
