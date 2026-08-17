@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   DndContext,
   DragOverlay,
@@ -180,6 +181,7 @@ type SelectedPlayer = {
 } | null
 
 export default function SetLineup({ team, onUpdate, targetGameweek, targetGameweekLockTime }: Props) {
+  const router = useRouter()
   const [formation, setFormation] = useState<Formation>(team.formation as Formation)
   const [players, setPlayers] = useState(() => normalizeSlotOrder(team.players, team.formation as Formation))
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -190,6 +192,8 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
   const [replaceId, setReplaceId] = useState<string>('')
 
   const [targetSlotIndex, setTargetSlotIndex] = useState<number>(0)
+
+  const [dropping, setDropping] = useState(false)
 
   const [now, setNow] = useState(() => new Date())
 
@@ -469,6 +473,31 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
       setSavingNotes(false)
     }
   }
+
+  const handleDrop = useCallback(async () => {
+    if (!selectedPlayer) return
+    const confirmed = window.confirm(`Drop ${selectedPlayer.fp.player.display_name} from your roster`)
+    if (!confirmed) return 
+    
+    setDropping(true)
+    try {
+      const res = await fetch('/api/fantasy/roster/drop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fantasyTeamId: team.id,
+          playerId: selectedPlayer.fp.player.id
+        })
+      })
+      if (!res.ok) throw new Error('Failed to drop player')
+      setSelectedPlayer(null)
+      router.refresh()
+    } catch (err) {
+      console.error('Drop player error:', err)
+    } finally {
+      setDropping(false)
+    }
+  }, [selectedPlayer, team.id, router])
   
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 1000)
@@ -774,6 +803,14 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
                         className="w-full py-2 text-sm rounded-lg bg-green-800 text-white hover:bg-green-700 transition-colors disabled:opacity-50 font-medium"
                     >
                         Confirm
+                    </button>
+
+                    <button
+                      onClick={handleDrop}
+                      disabled={dropping}
+                      className="w-full py-2 text-sm rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 font-medium"
+                    >
+                      {dropping ? 'Dropping...' : 'Drop Player'}
                     </button>
                 </div>
             </div>
