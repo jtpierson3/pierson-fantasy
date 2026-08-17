@@ -12,6 +12,7 @@ import ClaimModal from '@/app/components/ClaimModal'
 import FuturePlayerSearch from "@/app/components/FuturePlayerSearch"
 import { isPremierLeagueEligible } from "@/lib/playerEligibility"
 import type { PlayerWithTeam } from '@/lib/playerTypes'
+import { normalizeForSearch } from '@/lib/textNormalization'
 
 type FantasyTeamWithPlayers = Prisma.FantasyTeamGetPayload<{
     include: {
@@ -58,7 +59,7 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
 
     const filtered = useMemo(() => {
         return players.filter(p => {
-            const matchesSearch = p.display_name.toLowerCase().includes(search.toLowerCase())
+            const matchesSearch = normalizeForSearch(p.display_name).includes(normalizeForSearch(search))
             const matchesPosition = positionFilter === 'ALL' || p.position_id === POSITION_IDS[positionFilter]
             const matchesTeam = teamFilter === 'ALL' || p.teamId === parseInt(teamFilter)
             const matchesEligibility = showAllLeagues || isPremierLeagueEligible(p.team?.leagueId)

@@ -674,14 +674,14 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
                     </p>
                     <button
                         onClick={() => setSelectedPlayer(null)}
-                        className="text-gray-400 hover:text-gray-600"
+                        className="text-gray-900 hover:text-gray-600"
                     >
                         X
                     </button>
                 </div>
 
                 <div className="p-3 flex flex-col gap-2">
-                    <p className="text-xs text-gray-400 mb-1">Move to:</p>
+                    <p className="text-xs text-gray-900 mb-1">Move to:</p>
 
                     <div>
                         <select
@@ -711,7 +711,7 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
                     {/*Show replace dropdown if slot is full */}
                     {targetSlot === 'STARTER' && starterCount >= 11 && (
                         <div>
-                            <p className="text-xs text-gray-400 mb-1">Replace Starter:</p>
+                            <p className="text-xs text-gray-900 mb-1">Replace Starter:</p>
                             <select
                                 value={replaceId}
                                 onChange={e => setReplaceId(e.target.value)}
@@ -731,7 +731,7 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
 
                     {targetSlot === 'SUB' && subCount >= 5 && (
                         <div>
-                            <p className="text-xs text-gray-400 mb-1">Replace Sub:</p>
+                            <p className="text-xs text-gray-900 mb-1">Replace Sub:</p>
                             <select
                                 value={replaceId}
                                 onChange={e => setReplaceId(e.target.value)}
