@@ -698,7 +698,7 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
                                     setTargetSlotIndex(nextIdx === -1 ? 0 : nextIdx)
                                 }
                             }}
-                            className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600"
+                            className="w-full px-2 py-1.5 text-gray-900 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600"
                         >
                             <option value="">Select slot...</option>
                             {isEligible(selectedPlayer.fp) && selectedPlayer.fp.rosterSlot !== 'STARTER' && <option value="STARTER">Starter</option>}
@@ -715,7 +715,7 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
                             <select
                                 value={replaceId}
                                 onChange={e => setReplaceId(e.target.value)}
-                                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg foucs:outline-none focus:ring-1 focus:ring-green-600"
+                                className="w-full px-2 text-gray-900 py-1.5 text-sm border border-gray-200 rounded-lg foucs:outline-none focus:ring-1 focus:ring-green-600"
                             >
                                 <option value="">Select player...</option>
                                 {starters
@@ -735,7 +735,7 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
                             <select
                                 value={replaceId}
                                 onChange={e => setReplaceId(e.target.value)}
-                                className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg foucs:outline-none focus:ring-1 focus:ring-green-600"
+                                className="w-full px-2 text-gray-900 py-1.5 text-sm border border-gray-200 rounded-lg foucs:outline-none focus:ring-1 focus:ring-green-600"
                             >
                                 <option value="">Select player...</option>
                                 {subs
