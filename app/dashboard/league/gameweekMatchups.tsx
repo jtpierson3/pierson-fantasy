@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { GameweekWithMatchups } from './types'
 
 type Props = {
@@ -9,6 +10,7 @@ type Props = {
 }
 
 export default function GameweekMatchups({ gameweeks, currentTeamId }: Props) {
+    const router = useRouter()
     const currentIndex = gameweeks.findIndex(gw => gw.isCurrent)
     const [selectedIndex, setSelectedIndex] = useState(
         currentIndex >= 0 ? currentIndex : 0
@@ -76,9 +78,10 @@ export default function GameweekMatchups({ gameweeks, currentTeamId }: Props) {
                         matchup.awayTeamId === currentTeamId
 
                     return (
-                        <div
+                        <button
                             key={matchup.id}
-                            className={`flex items-ccenter gap-3 px-4 py-3 transition-colors hover:bg-gray-50 ${
+                            onClick={() => router.push(`/dashboard/league/matchup/${matchup.id}`)}
+                            className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-gray-50 text-left ${
                                 isMyMatchup ? 'bg-green-50 hover:bg-green-100' : ''
                             }`}
                         >
@@ -122,7 +125,7 @@ export default function GameweekMatchups({ gameweeks, currentTeamId }: Props) {
                                     {matchup.awayTeam.user.username}
                                 </p>
                             </div>    
-                        </div>
+                        </button>
                     )
                 })}
             </div>
