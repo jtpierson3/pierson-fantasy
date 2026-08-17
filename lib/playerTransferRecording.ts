@@ -3,6 +3,12 @@ import { getPlayerTransfers } from '@/lib/sportmonks'
 import { logApiCall } from '@/lib/apiCallBudget'
 
 export async function recordDeparture(playerId: number) {
+    const currentPlayer = await prisma.player.findUnique({
+        where: { id: playerId },
+        select: { teamId: true }
+    })
+    const formerTeamId = currentPlayer?.teamId ?? null
+
     let sportmonksTransferId: number | null = null
     let transferTypeId: number | null = null
     let suggestedAmount: number | null = null
@@ -31,6 +37,19 @@ export async function recordDeparture(playerId: number) {
         console.error(`[recordDeparture] failed to fetch transfer data for player ${playerId}:`, err)
     }
 
+    // Safety check - if the "most recent" transer we can see claims the player is joining
+    // the SAME team they've just been detected as absent from that is a contradiction:
+    // the real trasnfer (likely a loan to/from an untracked club) isn't visible in our data.
+    // Don't trust it - just clear their team rather than record misleading transfer data.
+    // If/when they return to a premier league club then PlayerTransfer will be updated accordingly.
+    if (toTeamId !== null && toTeamId === formerTeamId) {
+        await prisma.player.update({
+            where: { id: playerId },
+            data: { teamId: null }
+        })
+        return
+    }
+
     // Deduplication - if we already have a record for this exact real transfer, skip entirely
     if (sportmonksTransferId !== null) {
         const existing = await prisma.playerTransfer.findUnique({
@@ -38,14 +57,6 @@ export async function recordDeparture(playerId: number) {
         })
         if (existing) return
     }
-
-    // Capture the player's current team before we overwrite it, so the transfer record
-    // keeps some history of the team this player was on previously.
-    const currentPlayer = await prisma.player.findUnique({
-        where: { id: playerId },
-        select: { teamId: true }
-    })
-    const formerTeamId = currentPlayer?.teamId ?? null
 
     // Only set teamId to the destination if it's a club we actually track;
     // otherwise null, rather than claiming false precision about an untracked
