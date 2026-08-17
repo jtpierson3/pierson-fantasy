@@ -92,6 +92,33 @@ export type LeagueSummary = {
     image_path: string
 }
 
+export type FixtureLineupDetail = {
+    type_id: number
+    data: { value: number | boolean }
+}
+
+export type FixtureLineupEntry = {
+    player_id: number
+    team_id: number
+    type_id: number // 11 starter, 12 substitute
+    details: FixtureLineupDetail[]
+}
+
+export type FixtureEvent = {
+    type_id: number
+    participant_id: number
+    player_id: number | null
+    related_player_id: number | null
+    minute: number
+}
+
+export type FixtureDetail = {
+    id: number
+    participants?: { id: number; meta?: { location: 'home' | 'away' } }[]
+    lineups: FixtureLineupEntry[]
+    events: FixtureEvent[]
+}
+
 type SportmonksPaginatedResponse<T> = {
     data: T[]
     pagination?: {
@@ -230,4 +257,12 @@ export async function getLeagueById(leagueId: number): Promise<{league: LeagueSu
     )
     const league = (data as SportmonksResponse<LeagueSummary>).data ?? null
     return { league, remaining }
+}
+
+export async function getFixtureDetail(fixtureId: number): Promise<{ fixture: FixtureDetail | null; remaining: number | null }> {
+    const { data, remaining } = await sportmonksFetchWithMeta(
+        `/fixtures/${fixtureId}?include=lineups.details.type;events;participants`
+    )
+    const fixture = (data as { data: FixtureDetail }).data ?? null
+    return { fixture, remaining}
 }
