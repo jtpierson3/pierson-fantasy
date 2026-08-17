@@ -177,13 +177,13 @@ export default function MatchupPitch({ homeTeam, awayTeam }: Props) {
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="w-40 flex-shrink-0">
-        <BenchSection team={awayTeam} slot="SUB" label="Subs" />
-      </div>
-      <div className="w-40 flex-shrink-0">
-        <BenchSection team={awayTeam} slot="RESERVE" label="Reserves" />
+        
+        <div className="w-40 flex-shrink-0">
+          <BenchSection team={awayTeam} slot="SUB" label="Subs" />
+        </div>
+        <div className="w-40 flex-shrink-0">
+          <BenchSection team={awayTeam} slot="RESERVE" label="Reserves" />
+        </div>
       </div>
     </div>
   )
