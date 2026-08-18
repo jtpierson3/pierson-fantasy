@@ -6,6 +6,7 @@ import { detectDepartures, getTeamsEligibleForDepartureCheck } from '@/lib/playe
 import { requireAutomationSecret } from '@/lib/automationAuth'
 import { logApiCall } from '@/lib/apiCallBudget'
 import { recordDeparture } from '@/lib/playerTransferRecording'
+import { getTeamSidelined } from '@/lib/sportmonks'
 
 const SEASON_ID = COMPETITIONS.premier_league.seasonId
 
@@ -130,6 +131,58 @@ export async function POST(req: Request) {
           team: team.name,
           message: err instanceof Error ? err.message : 'Unknown error syncing squad',
         })
+      }
+
+      let teamSidelinedSynced = 0
+      try {
+        const {sidelined, remaining: sidelinedRemaining } = await getTeamSidelined(team.id)
+
+        await logApiCall(`teams/${team.id}/sidelined`, 'SYNC_PLAYERS', {
+          triggeredBy: 'sync-admin-panel',
+          remainingAfterCall: sidelinedRemaining,
+        })
+
+        for (const entry of sidelined) {
+          await prisma.sidelined.upsert({
+            where: { sportmonksId: entry.id },
+            update: {
+              category: entry.category,
+              typeId: entry.type_id,
+              typeName: entry.type.name,
+              startDate: new Date(entry.start_date),
+              endDate: entry.end_date ? new Date(entry.end_date) : null,
+              gamesMissed: entry.games_missed,
+              completed: entry.completed,
+            },
+            create: {
+              sportmonksId: entry.id,
+              playerId: entry.player_id,
+              category: entry.category,
+              typeId: entry.type_id,
+              typeName: entry.type.name,
+              startDate: new Date(entry.start_date),
+              endDate: entry.end_date ? new Date(entry.end_date) : null,
+              gamesMissed: entry.games_missed,
+              completed: entry.completed,
+            }
+          })
+          teamSidelinedSynced++ 
+        }
+
+        // Cleanup any Sidelined roow for this team's players that's still marked incomplete
+        // but ISN't in the fresh sidelined list anymore that has resolved
+        // (player recovered/suspension served) - mark it completed
+        const currentSidelinedIds = sidelined.map(s => s.id)
+        await prisma.sidelined.updateMany({
+          where: {
+            completed: false,
+            player: { teamId: team.id },
+            sportmonksId: { notIn: currentSidelinedIds }
+          },
+          data: { completed: true }
+        })
+      } catch (err) {
+        console.error(`[sync/players] failed to sync sidelined for ${team.id}:`, err)
       }
     }
 

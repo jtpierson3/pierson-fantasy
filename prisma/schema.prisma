@@ -326,6 +326,7 @@ model Player {
   playerTransfers           PlayerTransfer[]
   playerMatchStats          PlayerMatchStats[]
   playerFixturePoints       PlayerFixturePoints[]
+  sidelineds                Sidelined[]
 }
 
 model PlayerTransfer {
@@ -372,6 +373,23 @@ model Fixture {
 
   @@index([kickoff])
   @@index([gameweekNumber])
+}
+
+model Sidelined {
+  id           String    @id @default(cuid())
+  sportmonksId Int       @unique
+  player       Player    @relation(fields: [playerId], references: [id])
+  playerId     Int
+  category     String
+  typeId       Int
+  typeName     String
+  startDate    DateTime
+  endDate      DateTime?
+  gamesMissed  Int       @default(0)
+  completed    Boolean   @default(false)
+  syncedAt     DateTime  @default(now())
+
+  @@index([playerId, completed])
 }
 
 //------------------------------ SURVIVOR ----------------------------------

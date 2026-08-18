@@ -119,6 +119,20 @@ export type FixtureDetail = {
     events: FixtureEvent[]
 }
 
+export type SidelinedEntry = {
+    id: number
+    player_id: number
+    type_id: number
+    category: string
+    start_date: string
+    end_date: string | null
+    games_missed: number
+    completed: boolean
+    type: {
+        name: string
+    }
+}
+
 type SportmonksPaginatedResponse<T> = {
     data: T[]
     pagination?: {
@@ -265,4 +279,12 @@ export async function getFixtureDetail(fixtureId: number): Promise<{ fixture: Fi
     )
     const fixture = (data as { data: FixtureDetail }).data ?? null
     return { fixture, remaining}
+}
+
+export async function getTeamSidelined(teamId: number): Promise<{ sidelined: SidelinedEntry[]; remaining: number | null}> {
+    const { data, remaining } = await sportmonksFetchWithMeta(
+        `/teams/${teamId}?include=sidelined.type`
+    )
+    const sidelined = (data as { data: { sidelined: SidelinedEntry[] } }).data?.sidelined ?? []
+    return { sidelined, remaining }
 }

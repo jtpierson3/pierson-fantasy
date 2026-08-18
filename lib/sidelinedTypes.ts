@@ -1,0 +1,1 @@
+export type SidelinedCategory = 'injury' | 'suspended'
