@@ -70,11 +70,13 @@ function TeamStartersRows({
 function BenchSection({
     team,
     slot,
-    label
+    label,
+    isHomeTeam,
 }: {
     team: MatchupTeamData
     slot: 'SUB' | 'RESERVE'
     label: string
+    isHomeTeam: boolean
 }) {
     const players = team.players
         .filter(p => p.rosterSlot === slot)
@@ -92,7 +94,7 @@ function BenchSection({
                         className="bg-white border border-gray-100 rounded-lg px-2 py-1.5 flex items-center gap-2"
                     >
                         <span className="text-xs font-medium text-gray-400 w-4">{fp.slotOrder}</span>
-                        <PlayerCard player={fp.player} points={fp.points ?? 0} size="sm" />
+                        <PlayerCard player={fp.player} points={fp.points ?? 0} size="sm" isHomeTeam={isHomeTeam} />
                     </div>
                 ))}
             </div>
@@ -149,10 +151,10 @@ export default function MatchupPitch({ homeTeam, awayTeam }: Props) {
       {/* Reserves | Subs | Pitch | Subs | Reserves */}
       <div className="flex gap-3">
         <div className="w-40 flex-shrink-0">
-            <BenchSection team={homeTeam} slot="RESERVE" label="Reserves" />
+            <BenchSection team={homeTeam} slot="RESERVE" label="Reserves" isHomeTeam={true}/>
         </div>
         <div className="w-40 flex-shrink-0">
-            <BenchSection team={homeTeam} slot="SUB" label="Subs" />
+            <BenchSection team={homeTeam} slot="SUB" label="Subs" isHomeTeam={true}/>
         </div>
 
         <div className="flex-1">
@@ -182,10 +184,10 @@ export default function MatchupPitch({ homeTeam, awayTeam }: Props) {
         </div>
         
         <div className="w-40 flex-shrink-0">
-          <BenchSection team={awayTeam} slot="SUB" label="Subs" />
+          <BenchSection team={awayTeam} slot="SUB" label="Subs" isHomeTeam={false} />
         </div>
         <div className="w-40 flex-shrink-0">
-          <BenchSection team={awayTeam} slot="RESERVE" label="Reserves" />
+          <BenchSection team={awayTeam} slot="RESERVE" label="Reserves" isHomeTeam={false} />
         </div>
       </div>
     </div>
