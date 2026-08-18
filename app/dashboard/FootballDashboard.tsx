@@ -11,6 +11,7 @@ import WaiverClaimsTile from '@/app/components/tiles/WaiverClaimsTile'
 import LeagueActivityTile from '@/app/components/tiles/LeagueActivityTile'
 import NextFixturesTile from '@/app/components/tiles/NextFixturesTile'
 import { COMPETITIONS } from '@/lib/sportmonksConstants'
+import SidelinedTile from '@/app/components/tiles/SidelinedTile'
 
 export default async function FootballDashobard() {
     const { userId } = await auth()
@@ -146,6 +147,15 @@ export default async function FootballDashobard() {
         competition: fx.competition,
     }))
 
+    // AFter fetching myTeam, get roster player IDs and count active sidelined entries
+    const rosterPlayerIds = closestGameweekSnapshot?.players.map(p => p.playerId)
+    const sidelinedCount = await prisma.sidelined.count({
+        where: {
+            playerId: { in: rosterPlayerIds },
+            completed: false
+        }
+    })
+
     return (
         <div className="p-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -158,9 +168,7 @@ export default async function FootballDashobard() {
                         claimCount={pendingClaimsCount}
                         closesAt={waiverWindow?.closesAt.toISOString() ?? null}
                     />
-                    <div className="bg-white border border-gray-100 rounded-xl p-4 flex items-center justify-center">
-                        <p className="text-xs text-gray-400">Sidelined - coming soon</p>
-                    </div>
+                    <SidelinedTile sidelinedCount={sidelinedCount} />
                 </div>
 
                 {/* Column 1 Row 2 - Current Matchup */}
