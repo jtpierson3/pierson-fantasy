@@ -30,7 +30,7 @@ def run() -> dict:
         raise RuntimeError("SYNC_SECRET or VERCEL_BYPASS_SECRET is not set")
 
     check = requests.get(
-        f"{APP_URL}/api/sync/should-run-pregame-sync",
+        f"{APP_URL}/api/sync/should-run-pregameweek-sync",
         headers=headers(),
         timeout=30,
     )
