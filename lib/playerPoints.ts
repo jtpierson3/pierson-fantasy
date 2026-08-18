@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma'
  * points yet (fixture not played/scored) are simply absent from the map - callers
  * should default to 0
  */
-export async function getPlayerPointsForFixture(
+export async function getPlayerPointsForGameweek(
     playerIds: number[],
     gameweekNumber: number
 ): Promise<Map<number, number>> {

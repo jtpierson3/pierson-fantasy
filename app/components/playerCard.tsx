@@ -11,9 +11,10 @@ type Props = {
     points?: number
     positionLabel?: string
     outOfPosition?: boolean
+    ringColorClass?: string
 }
 
-export default function PlayerCard({ player, size = 'md', showName = true, points, positionLabel, outOfPosition }: Props) {
+export default function PlayerCard({ player, size = 'md', showName = true, points, positionLabel, outOfPosition, ringColorClass }: Props) {
     const imageSize = size === 'sm' ? 'w-8 h-8' : 'w-10 h-10'
     const borderColor = size === 'sm' ? 'border' : 'border-2'
     const eligible = isPremierLeagueEligible(player.team?.leagueId)
@@ -26,7 +27,7 @@ export default function PlayerCard({ player, size = 'md', showName = true, point
                     alt={player.display_name}
                     fill
                     sizes="32px"
-                    className={`object-contain rounded-full bg-white ${borderColor} border-white shadow-sm`}
+                    className={`object-contain rounded-full bg-white ${borderColor} ${ringColorClass ? ringColorClass.replace('ring-', 'border') : 'border-white'} shadow-sm`}
                 />
             </div>
             {showName && (

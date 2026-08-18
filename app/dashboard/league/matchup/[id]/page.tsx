@@ -6,6 +6,7 @@ import MatchupPitch from '@/app/components/matchup/MatchupPitch'
 import MatchupTicker from '@/app/components/matchup/MatchupTicker'
 import type { MatchupTeamData, MatchupPlayer } from '@/app/components/matchup/MatchupPitch'
 import { getLeagueStandings } from '@/lib/leagueStandings'
+import { getPlayerPointsForGameweek } from '@/lib/playerPoints'
 
 function MatchupSkeleton() {
     return (
@@ -29,6 +30,11 @@ async function buildTeamData(fantasyTeamId: string, gameweekId: string, fantasyL
     const standings = getLeagueStandings(leagueTeams)
     const rank = standings.find(s => s.team.id === fantasyTeamId)?.rank ?? null
 
+    const gameweek = await prisma.fantasyGameweek.findUnique({
+        where: { id: gameweekId },
+        select: { gameweekNumber: true }
+    })
+
     const snapshot = await prisma.gameweekLineup.findUnique({
         where: {
             fantasyTeamId_gameweekId: {
@@ -45,12 +51,17 @@ async function buildTeamData(fantasyTeamId: string, gameweekId: string, fantasyL
         }
     })
 
+    const playerIds = (snapshot?.players ?? []).map(p => p.playerId)
+    const pointsMap = gameweek
+        ? await getPlayerPointsForGameweek(playerIds, gameweek.gameweekNumber)
+        : new Map<number, number>() 
+
     const players: MatchupPlayer[] = (snapshot?.players ?? []).map(p => ({
         id: p.id,
         playerId: p.playerId,
         rosterSlot: p.rosterSlot,
         slotOrder: p.slotOrder,
-        points: 0, // Placeholder until scoring exists
+        points: pointsMap.get(p.playerId) ?? 0,
         player: {
             id: p.player.id,
             display_name: p.player.display_name,
