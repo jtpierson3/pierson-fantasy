@@ -13,6 +13,19 @@ export async function POST(req: Request) {
   const authResult = requireAutomationSecret(req)
   if (!authResult.ok) return NextResponse.json({ error: authResult.error }, { status: authResult.status })
 
+  // Optional - let's a scheduled trigger identify itself distinctly from a manual admin-panel click,
+  // so downstream checks (like the pre-gameweek sync dedup) can tell which run produced a given log entry
+  let triggeredBySource = 'sync-admin-panel'
+  try {
+    const body = await req.json()
+    if (body?.triggeredBySource) {
+      triggeredBySource = body.triggeredBySource
+    }
+  } catch {
+    // no body provided (e.g. a manual trigger), that's fine, use the default value.
+  }
+
+
   const errors: { team: string; message: string }[] = []
   const teamResults: { team: string; created: number; updated: number; skipped: number, sidelined: number }[] = []
   let totalCreated = 0
@@ -66,7 +79,7 @@ export async function POST(req: Request) {
         const { squad, remaining } = await getSquad(SEASON_ID, team.id)
 
         await logApiCall(`squads/seasons/${SEASON_ID}/teams/${team.id}`, 'SYNC_PLAYERS', {
-          triggeredBy: 'sync-admin-panel',
+          triggeredBy: triggeredBySource,
           remainingAfterCall: remaining
         })
 
@@ -137,7 +150,7 @@ export async function POST(req: Request) {
         const {sidelined, remaining: sidelinedRemaining } = await getTeamSidelined(team.id)
 
         await logApiCall(`teams/${team.id}/sidelined`, 'SYNC_PLAYERS', {
-          triggeredBy: 'sync-admin-panel',
+          triggeredBy: triggeredBySource,
           remainingAfterCall: sidelinedRemaining,
         })
 
