@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { getGameweekLockTime } from '@/lib/fixtureTiming'
 import { mergeLineupWithSnapshot } from '@/lib/lineupSnapshot'
 import { selectTargetGameweek } from '@/lib/gameweekSelection'
+import { getActiveSidelinedForPlayers } from '@/lib/playerSidelined'
 
 function MyTeamSkeleton() {
   return (
@@ -55,6 +56,18 @@ async function MyTeamContent() {
         </p>
       </div>
     )
+  }
+
+  const rosterPlayerIds = fantasyTeam.players.map(p => p.playerId)
+  const sidelinedMap = await getActiveSidelinedForPlayers(rosterPlayerIds)
+
+  const sidelinedByPlayerId: Record<number, { category: string; typeName: string; endDate: string | null }> = {}
+  for (const [playerId, info] of sidelinedMap.entries()) {
+    sidelinedByPlayerId[playerId] = {
+      category: info.category,
+      typeName: info.typeName,
+      endDate: info.endDate?.toISOString() ?? null
+    }
   }
 
   // Fetch pending claims for this team
@@ -199,6 +212,7 @@ async function MyTeamContent() {
     availableFunds={availableFunds}
     targetGameweek={targetGameweek}
     targetGameweekLockTime={targetGameweekLockTime?.toISOString() ?? null}
+    sidelinedByPlayerId={sidelinedByPlayerId}
   />
 }
 

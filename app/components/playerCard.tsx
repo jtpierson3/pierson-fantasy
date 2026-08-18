@@ -12,9 +12,10 @@ type Props = {
     positionLabel?: string
     outOfPosition?: boolean
     isHomeTeam?: boolean
+    sidelinedInfo?: { category: string; typeName: string; endDate: string | null } | null
 }
 
-export default function PlayerCard({ player, size = 'md', showName = true, points, positionLabel, outOfPosition, isHomeTeam }: Props) {
+export default function PlayerCard({ player, size = 'md', showName = true, points, positionLabel, outOfPosition, isHomeTeam, sidelinedInfo }: Props) {
     const imageSize = size === 'sm' ? 'w-8 h-8' : 'w-10 h-10'
     const borderWidth = size === 'sm' ? 'border' : 'border-2'
     const eligible = isPremierLeagueEligible(player.team?.leagueId)
@@ -36,6 +37,18 @@ export default function PlayerCard({ player, size = 'md', showName = true, point
                     className={`object-contain rounded-full bg-white ${borderWidth} shadow-sm`}
                     style={{ borderColor: borderColorHex}}
                 />
+                {sidelinedInfo && (
+                    <div
+                        className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-white flex items-center justify-center shadow-sm group cursor-help"
+                        title={`${sidelinedInfo.typeName}${sidelinedInfo.endDate ? ` (until ${new Date(sidelinedInfo.endDate).toLocaleDateString()})`: ''}`}
+                    >
+                        {sidelinedInfo.category === 'suspended' ? (
+                            <div className="w-2 h-2.5 bg-red-600 rounded-sm"/>
+                        ) : (
+                            <span className="text-red-600 text-[10px] font-bold leading-none"></span>
+                        )}
+                    </div>
+                )}
             </div>
             {showName && (
                 <div className="flex flex-col items-center gap-1 mt-0.5">

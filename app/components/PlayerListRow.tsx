@@ -3,6 +3,12 @@ import { getPositionShort, getPositionColor } from '@/lib/helpers'
 import { isPremierLeagueEligible } from '@/lib/playerEligibility'
 import type { DisplayPlayer, DisplayTeam } from '@/lib/playerTypes'
 
+type SidelinedInfo = {
+    category: string
+    typeName: string
+    endDate: string | null
+}
+
 type Props = {
     player: DisplayPlayer
     team?: DisplayTeam | null
@@ -12,6 +18,7 @@ type Props = {
     irSpotsAvailable?: boolean
     showPoints?: boolean
     points?: number
+    sidelinedInfo?: SidelinedInfo | null
 }
 
 export default function PlayerListRow({
@@ -23,6 +30,7 @@ export default function PlayerListRow({
     irSpotsAvailable = true,
     showPoints = true,
     points,
+    sidelinedInfo,
 }: Props) {
     const isCompact = size == 'sm'
     const eligible = isPremierLeagueEligible(team?.leagueId)
@@ -47,6 +55,18 @@ export default function PlayerListRow({
                     sizes="32px"
                     className="object-contain rounded-full"
                 />
+                {sidelinedInfo && (
+                    <div
+                        className="absolute -bottom-0.5 w-3 h-3 rounded-full bg-white flex items-center justify-center shadow-sm cursor-help"
+                        title={`${sidelinedInfo.typeName}${sidelinedInfo.endDate ? ` (until ${new Date(sidelinedInfo.endDate).toLocaleDateString()})` : ''}`}
+                    >
+                        {sidelinedInfo.category === 'suspended' ? (
+                            <div className="w-1.5 h-2 bg-red-600 rounded-sm" />
+                        ) : (
+                            <span className="text-red-600 text-[8px] font-bold leading-none"></span>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Name and Team */}
@@ -114,7 +134,6 @@ export default function PlayerListRow({
                 <></>
             )}
             
-
             {/* Points */}
             {showPoints && points !== undefined && (
                 <span className="text-sm font-medium text-gray-900 flex-shrink-0 w-12 text-right">

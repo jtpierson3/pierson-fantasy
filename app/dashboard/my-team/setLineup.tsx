@@ -33,6 +33,7 @@ type Props = {
   onUpdate: (team: FantasyTeamWithPlayers) => void
   targetGameweek: TargetGameweek
   targetGameweekLockTime: string | null
+  sidelinedByPlayerId: Record<number, { category: string; typeName: string; endDate: string | null }>
 }
 
 function isEligible(fp: PlayerWithDetails): boolean {
@@ -180,7 +181,7 @@ type SelectedPlayer = {
     fp: PlayerWithDetails
 } | null
 
-export default function SetLineup({ team, onUpdate, targetGameweek, targetGameweekLockTime }: Props) {
+export default function SetLineup({ team, onUpdate, targetGameweek, targetGameweekLockTime, sidelinedByPlayerId }: Props) {
   const router = useRouter()
   const [formation, setFormation] = useState<Formation>(team.formation as Formation)
   const [players, setPlayers] = useState(() => normalizeSlotOrder(team.players, team.formation as Formation))
@@ -641,6 +642,7 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
                                         player={fp.player}
                                         positionLabel={slotPositionLabel}
                                         outOfPosition={outOfPosition}
+                                        sidelinedInfo={sidelinedByPlayerId[fp.player.id] ?? null}
                                     />
                                 </DraggableWrapper>
                                 : <EmptySlot key={slotId} slotId={slotId} variant="pitch" slot={slot}/>
@@ -668,6 +670,7 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
                                 team={fp.player.team}
                                 isIR={fp.rosterSlot === 'IR'}
                                 size="sm"
+                                sidelinedInfo={sidelinedByPlayerId[fp.player.id] ?? null}
                             />
                         </DraggableWrapper>
                     ))}
@@ -848,6 +851,7 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
                         team={fp.player.team}
                         isIR={fp.rosterSlot === 'IR'}
                         size="sm"
+                        sidelinedInfo={sidelinedByPlayerId[fp.player.id] ?? null}
                     />
                 </DraggableWrapper>
               )}
@@ -874,6 +878,7 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
                         team={fp.player.team}
                         isIR={fp.rosterSlot === 'IR'}
                         size="sm"
+                        sidelinedInfo={sidelinedByPlayerId[fp.player.id] ?? null}
                     />
                 </DraggableWrapper>
               )}
@@ -900,6 +905,7 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
                         team={fp.player.team}
                         isIR={fp.rosterSlot === 'IR'}
                         size="sm"
+                        sidelinedInfo={sidelinedByPlayerId[fp.player.id] ?? null}
                     />
                 </DraggableWrapper>
               )}

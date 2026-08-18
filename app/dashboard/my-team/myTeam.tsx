@@ -26,9 +26,10 @@ type Props = {
     availableFunds: number
     targetGameweek: TargetGameweek
     targetGameweekLockTime: string | null
+    sidelinedByPlayerId: Record<number, { category: string; typeName: string; endDate: string | null }>
 }
 
-export default function MyTeam({ fantasyTeam, myClaims, myBids, availableFunds, targetGameweek, targetGameweekLockTime }: Props) {
+export default function MyTeam({ fantasyTeam, myClaims, myBids, availableFunds, targetGameweek, targetGameweekLockTime, sidelinedByPlayerId }: Props) {
     const router = useRouter()
     const searchParams = useSearchParams()
 
@@ -144,6 +145,7 @@ export default function MyTeam({ fantasyTeam, myClaims, myBids, availableFunds, 
                     onUpdate={setTeam}
                     targetGameweek={targetGameweek}
                     targetGameweekLockTime={targetGameweekLockTime}
+                    sidelinedByPlayerId={sidelinedByPlayerId}
                 />
             )}
             {activeTab === 'waivers' && (
