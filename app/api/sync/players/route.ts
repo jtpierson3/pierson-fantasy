@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { COMPETITIONS } from '@/lib/sportmonksConstants'
-import { getSquad } from '@/lib/sportmonks'
+import { getSquad, getTeamSidelined } from '@/lib/sportmonks'
 import { detectDepartures, getTeamsEligibleForDepartureCheck } from '@/lib/playerDeparture'
 import { requireAutomationSecret } from '@/lib/automationAuth'
 import { logApiCall } from '@/lib/apiCallBudget'
 import { recordDeparture } from '@/lib/playerTransferRecording'
-import { getTeamSidelined } from '@/lib/sportmonks'
 
 const SEASON_ID = COMPETITIONS.premier_league.seasonId
 
@@ -15,11 +14,12 @@ export async function POST(req: Request) {
   if (!authResult.ok) return NextResponse.json({ error: authResult.error }, { status: authResult.status })
 
   const errors: { team: string; message: string }[] = []
-  const teamResults: { team: string; created: number; updated: number; skipped: number }[] = []
+  const teamResults: { team: string; created: number; updated: number; skipped: number, sidelined: number }[] = []
   let totalCreated = 0
   let totalUpdated = 0
   let totalSkipped = 0
   let totalDeparted = 0
+  let totalSidelined = 0
 
   try {
     // Only real clubs in leagues I pay for counts as "tracked"
@@ -52,6 +52,7 @@ export async function POST(req: Request) {
       let teamCreated = 0
       let teamUpdated = 0
       let teamSkipped = 0
+      let teamSidelinedSynced = 0
 
       try {
         // Capture this team's squad BEFORE the fresh sync overwrites anything
@@ -122,7 +123,6 @@ export async function POST(req: Request) {
           }
         }
 
-        teamResults.push({ team: team.name, created: teamCreated, updated: teamUpdated, skipped: teamSkipped })
         totalCreated += teamCreated
         totalUpdated += teamUpdated
         totalSkipped += teamSkipped
@@ -133,7 +133,6 @@ export async function POST(req: Request) {
         })
       }
 
-      let teamSidelinedSynced = 0
       try {
         const {sidelined, remaining: sidelinedRemaining } = await getTeamSidelined(team.id)
 
@@ -184,16 +183,27 @@ export async function POST(req: Request) {
       } catch (err) {
         console.error(`[sync/players] failed to sync sidelined for ${team.id}:`, err)
       }
+
+      totalSidelined += teamSidelinedSynced
+
+      teamResults.push({
+        team: team.name,
+        created: teamCreated,
+        updated: teamUpdated,
+        skipped: teamSkipped,
+        sidelined: teamSidelinedSynced,
+      })
     }
 
     return NextResponse.json({
       success: errors.length === 0,
-      message: `${totalCreated} player(s) created, ${totalUpdated} updated, ${totalDeparted} departure(s) flagged for review across ${teams.length} team(s)`,
+      message: `${totalCreated} player(s) created, ${totalUpdated} updated, ${totalSidelined} sidelined, ${totalDeparted} departure(s) flagged for review across ${teams.length} team(s)`,
       teamsProcessed: teams.length,
       created: totalCreated,
       updated: totalUpdated,
       skipped: totalSkipped,
       departed: totalDeparted,
+      sidelined: totalSidelined,
       teamResults,
       errors,
     })
