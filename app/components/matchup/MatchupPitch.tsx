@@ -29,11 +29,11 @@ type Props = {
 function TeamStartersRows({
   team,
   mirrored,
-  ringColorClass,
+  isHomeTeam,
 }: {
   team: MatchupTeamData
   mirrored: boolean
-  ringColorClass: string
+  isHomeTeam: boolean
 }) {
   const starters = team.players.filter(p => p.rosterSlot === 'STARTER')
   const { result: assignedRows } = assignAllRows(
@@ -57,7 +57,7 @@ function TeamStartersRows({
                 player={fp.player}
                 positionLabel={slotPositionLabel}
                 points={fp.points ?? 0}
-                ringColorClass={ringColorClass}
+                isHomeTeam={isHomeTeam}
               />
             )
           })}
@@ -172,10 +172,10 @@ export default function MatchupPitch({ homeTeam, awayTeam }: Props) {
 
             <div className="relative z-10" style={{ minHeight: '900px' }}>
               <div style={{ height: '440px' }}>
-                <TeamStartersRows team={homeTeam} mirrored={false} ringColorClass='ring-orange-400'/>
+                <TeamStartersRows team={homeTeam} mirrored={false} isHomeTeam={true} />
               </div>
               <div style={{ height: '440px' }}>
-                <TeamStartersRows team={awayTeam} mirrored={true} ringColorClass='ring-blue-400'/>
+                <TeamStartersRows team={awayTeam} mirrored={true} isHomeTeam={false} />
               </div>
             </div>
           </div>

@@ -11,13 +11,19 @@ type Props = {
     points?: number
     positionLabel?: string
     outOfPosition?: boolean
-    ringColorClass?: string
+    isHomeTeam?: boolean
 }
 
-export default function PlayerCard({ player, size = 'md', showName = true, points, positionLabel, outOfPosition, ringColorClass }: Props) {
+export default function PlayerCard({ player, size = 'md', showName = true, points, positionLabel, outOfPosition, isHomeTeam }: Props) {
     const imageSize = size === 'sm' ? 'w-8 h-8' : 'w-10 h-10'
-    const borderColor = size === 'sm' ? 'border' : 'border-2'
+    const borderWidth = size === 'sm' ? 'border' : 'border-2'
     const eligible = isPremierLeagueEligible(player.team?.leagueId)
+
+    // I tried using tailwind here but it kept failing, moving to inline style.
+    const borderColorHex =
+        isHomeTeam === true ? '#fb923c' :
+        isHomeTeam === false ? '#60a5fa' :
+        '#ffffff'
 
     return (
         <div className="flex flex-col items-center gap-1">
@@ -27,7 +33,8 @@ export default function PlayerCard({ player, size = 'md', showName = true, point
                     alt={player.display_name}
                     fill
                     sizes="32px"
-                    className={`object-contain rounded-full bg-white ${borderColor} ${ringColorClass ? ringColorClass.replace('ring-', 'border') : 'border-white'} shadow-sm`}
+                    className={`object-contain rounded-full bg-white ${borderWidth} shadow-sm`}
+                    style={{ borderColor: borderColorHex}}
                 />
             </div>
             {showName && (
