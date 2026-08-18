@@ -229,6 +229,7 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
 
       const activePlayerData = updated[activeIndex]
       const activeIsEligible = isPremierLeagueEligible(activePlayerData.player.team?.leagueId)
+      const activeIsSidelined = !!sidelinedByPlayerId[activePlayerData.player.id]
 
       // Block non-eligible players from being dropped onto Starter/Sub/IR Targets
       const targetsRestrictedZone = overId.startsWith('pitch-') || overId.startsWith('sub-') || overId.startsWith('ir-')
@@ -237,11 +238,19 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
         return prev
       }
 
+      // Block non-sidelined players specifically from IR
+      if (overId.startsWith('ir-') && !activeIsSidelined) {
+        return prev
+      }
+
       // Dropped onto another player — swap slots
       const overPlayerIndex = updated.findIndex(p => p.id === overId)
       if (overPlayerIndex !== -1) {
         const overSlotType = updated[overPlayerIndex].rosterSlot
         if (!activeIsEligible && ['STARTER', 'SUB', 'IR'].includes(overSlotType)) {
+          return prev
+        }
+        if (overSlotType === 'IR' && !activeIsSidelined) {
           return prev
         }
 
@@ -747,7 +756,7 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
                             {isEligible(selectedPlayer.fp) && selectedPlayer.fp.rosterSlot !== 'STARTER' && <option value="STARTER">Starter</option>}
                             {isEligible(selectedPlayer.fp) && selectedPlayer.fp.rosterSlot !== 'SUB' && <option value="SUB">Sub</option>}
                             {selectedPlayer.fp.rosterSlot !== 'RESERVE' && <option value="RESERVE">Reserve</option>}
-                            {isEligible(selectedPlayer.fp) && selectedPlayer.fp.rosterSlot !== 'IR' && <option value="IR">IR</option>}
+                            {isEligible(selectedPlayer.fp) && selectedPlayer.fp.rosterSlot !== 'IR' && sidelinedByPlayerId[selectedPlayer.fp.player.id] && <option value="IR">IR</option>}
                         </select>
                     </div>
 
