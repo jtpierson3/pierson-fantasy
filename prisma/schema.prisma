@@ -209,16 +209,17 @@ model TransferBid {
 }
 
 model PlayerMatchStats {
-  id            String   @id @default(cuid())
-  player        Player   @relation(fields: [playerId], references: [id])
-  playerId      Int
-  fixture       Fixture  @relation(fields: [fixtureId], references: [id])
-  fixtureId     Int
-  minutesPlayed Int      @default(0)
-  wasStarter    Boolean  @default(false)
-  rating        Float?
-  stats         Json // raw typeId -> value map.
-  syncedAt      DateTime @default(now())
+  id               String   @id @default(cuid())
+  player           Player   @relation(fields: [playerId], references: [id])
+  playerId         Int
+  fixture          Fixture  @relation(fields: [fixtureId], references: [id])
+  fixtureId        Int
+  minutesPlayed    Int      @default(0)
+  wasStarter       Boolean  @default(false)
+  rating           Float?
+  positionPlayedId Int?
+  stats            Json // raw typeId -> value map.
+  syncedAt         DateTime @default(now())
 
   @@unique([playerId, fixtureId])
 }
