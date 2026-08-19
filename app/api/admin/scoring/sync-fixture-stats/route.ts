@@ -41,6 +41,7 @@ export async function POST(req: Request) {
 
             const minutesPlayed = statsMap[STAT_TYPE_IDS.MINUTES_PLAYED] ?? 0
             const wasStarter = lineup.type_id === 11
+            const positionPlayedId = lineup.detailedposition?.id ?? null
 
             await prisma.playerMatchStats.upsert({
                 where: { playerId_fixtureId: { playerId: lineup.player_id, fixtureId: fixture.id } },
@@ -48,6 +49,7 @@ export async function POST(req: Request) {
                     minutesPlayed,
                     wasStarter,
                     rating,
+                    positionPlayedId,
                     stats: statsMap,
                 },
                 create: {
@@ -56,6 +58,7 @@ export async function POST(req: Request) {
                     minutesPlayed,
                     wasStarter,
                     rating,
+                    positionPlayedId,
                     stats: statsMap,
                 }
             })

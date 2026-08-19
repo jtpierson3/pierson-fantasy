@@ -101,6 +101,7 @@ export type FixtureLineupEntry = {
     player_id: number
     team_id: number
     type_id: number // 11 starter, 12 substitute
+    detailedposition?: { id: number; name: string } | null
     details: FixtureLineupDetail[]
 }
 
@@ -275,7 +276,7 @@ export async function getLeagueById(leagueId: number): Promise<{league: LeagueSu
 
 export async function getFixtureDetail(fixtureId: number): Promise<{ fixture: FixtureDetail | null; remaining: number | null }> {
     const { data, remaining } = await sportmonksFetchWithMeta(
-        `/fixtures/${fixtureId}?include=lineups.details.type;events;participants`
+        `/fixtures/${fixtureId}?include=lineups.detailedposition;lineups.details.type;events;participants`
     )
     const fixture = (data as { data: FixtureDetail }).data ?? null
     return { fixture, remaining}
