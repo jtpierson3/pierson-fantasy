@@ -63,7 +63,7 @@ export default function PlayerListRow({
                         {sidelinedInfo.category === 'suspended' ? (
                             <div className="w-1.5 h-2 bg-red-600 rounded-sm" />
                         ) : (
-                            <span className="text-red-600 text-[8px] font-bold leading-none"></span>
+                            <span className="text-red-600 text-[8px] font-bold leading-none">+</span>
                         )}
                     </div>
                 )}
