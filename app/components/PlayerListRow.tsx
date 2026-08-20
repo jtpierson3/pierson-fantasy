@@ -57,13 +57,13 @@ export default function PlayerListRow({
                 />
                 {sidelinedInfo && (
                     <div
-                        className="absolute -bottom-0.5 w-3 h-3 rounded-full bg-white flex items-center justify-center shadow-sm cursor-help"
+                        className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white flex items-center justify-center shadow-sm cursor-help"
                         title={`${sidelinedInfo.typeName}${sidelinedInfo.endDate ? ` (until ${new Date(sidelinedInfo.endDate).toLocaleDateString()})` : ''}`}
                     >
                         {sidelinedInfo.category === 'suspended' ? (
                             <div className="w-2 h-2.5 bg-red-600 rounded-sm" />
                         ) : (
-                            <span className="text-red-600 text-xs font-bold leading-none">+</span>
+                            <span className="text-red-600 font-black leading-none" style={{ fontSize: '20px' }}>+</span>
                         )}
                     </div>
                 )}
