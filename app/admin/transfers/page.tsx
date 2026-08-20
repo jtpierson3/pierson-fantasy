@@ -46,6 +46,7 @@ export default async function TransfersPage() {
         reservationOwnership.map(r => [r.playerId, { teamName: r.fantasyTeam.name, username: r.fantasyTeam.user.username }])
     )
 
+    // eslint-disable-next-line react-hooks/purity -- Server Component computing a real DB query time window, not a render-purity concern
     const recentSyncCutoff = new Date(Date.now() - 2 * 60 * 60 * 1000)
     const recentRealPlayers = await prisma.player.findMany({
         where: { 
