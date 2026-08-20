@@ -61,9 +61,9 @@ export default function PlayerListRow({
                         title={`${sidelinedInfo.typeName}${sidelinedInfo.endDate ? ` (until ${new Date(sidelinedInfo.endDate).toLocaleDateString()})` : ''}`}
                     >
                         {sidelinedInfo.category === 'suspended' ? (
-                            <div className="w-1.5 h-2 bg-red-600 rounded-sm" />
+                            <div className="w-2 h-2.5 bg-red-600 rounded-sm" />
                         ) : (
-                            <span className="text-red-600 text-[8px] font-bold leading-none">+</span>
+                            <span className="text-red-600 text-xs font-bold leading-none">+</span>
                         )}
                     </div>
                 )}
