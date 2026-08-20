@@ -20,12 +20,59 @@ type ReviewedTransfer = Prisma.PlayerTransferGetPayload<{
     }
 }>
 
+type ReservedPlayerOwner = { teamName: string; username: string } | null
+
+type SuggestedMatch = {
+    reserved: {
+        id: number
+        name: string
+        currentClubName: string | null
+        reservedAt: string
+        owner: ReservedPlayerOwner
+    }
+    real: {
+        id: number
+        name: string
+        image_path: string | null
+        teamName: string | null
+    }
+    similarity: number
+}
+
+type ReservedPlayerDisplay = {
+    id: number
+    name: string
+    currentClubName: string | null
+    reservedAt: string
+    owner: ReservedPlayerOwner
+}
+
 type Props = {
     pendingTransfers: PendingTransfer[]
     recentlyReviewed: ReviewedTransfer[]
+    suggestedMatches: SuggestedMatch[]
+    allReservedPlayers: ReservedPlayerDisplay[]
 }
 
-export default function TransferReview({ pendingTransfers, recentlyReviewed }: Props) {
+function SimilarityBadge({ similarity }: { similarity: number }) {
+    const percent = Math.round(similarity * 100)
+    return (
+        <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">
+            {percent}% match
+        </span>
+    )
+}
+
+function OwnerLabel({ owner }: { owner: { teamName: string; username: string } | null }) {
+    if (!owner) return <span className="text-xs text-gray-400">Not currently rostered</span>
+    return (
+        <span className="text-xs text-gray-400">
+            {owner.teamName}-({owner.username})
+        </span>
+    )
+}
+
+export default function TransferReview({ pendingTransfers, recentlyReviewed, suggestedMatches, allReservedPlayers }: Props) {
     const router = useRouter()
     const [amounts, setAmounts] = useState<Record<string, string>>({})
     const [processingId, setProcessingId] = useState<string | null>(null)
@@ -71,6 +118,47 @@ export default function TransferReview({ pendingTransfers, recentlyReviewed }: P
             router.refresh()
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to dismiss transfer')
+        } finally {
+            setProcessingId(null)
+        }
+    }, [router])
+
+    const handleMerge = useCallback(async (reservedPlayerId: number, realPlayerId: number) => {
+        setProcessingId(`merge-${reservedPlayerId}`)
+        setError(null)
+        try {
+            const res = await fetch('/api/admin/reserved-players/merge', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reservedPlayerId, realPlayerId })
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error ?? 'Failed to merge')
+            router.refresh()
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to merge')
+        } finally {
+            setProcessingId(null)
+        }
+    }, [router])
+
+    const handleDeleteReserved = useCallback(async (playerId: number) => {
+        const confirmed = window.confirm('Delete this reserved player, this action cannot be undone')
+        if (!confirmed) return
+
+        setProcessingId(`delete-${playerId}`)
+        setError(null)
+        try {
+            const res = await fetch('/api/admin/reserved-players/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ playerId })
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error ?? 'Failed to delete')
+            router.refresh()
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to delete')
         } finally {
             setProcessingId(null)
         }
@@ -177,6 +265,81 @@ export default function TransferReview({ pendingTransfers, recentlyReviewed }: P
                     ))}
 
                 </div>
+            )}
+
+            {/* Suggested Merges */}
+            <h2 className="text-sm font-medium text-gray-900 mb-3 mt-8">Suggested Merges</h2>
+            {suggestedMatches.length === 0 ? (
+            <p className="text-sm text-gray-400 mb-8">No likely matches detected.</p>
+            ) : (
+            <div className="flex flex-col gap-3 mb-8">
+                {suggestedMatches.map(match => (
+                <div key={`${match.reserved.id}-${match.real.id}`} className="bg-white border border-gray-100 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-3">
+                    <SimilarityBadge similarity={match.similarity} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 mb-3">
+                    <div>
+                        <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Reserved</p>
+                        <p className="text-sm font-medium text-gray-900">{match.reserved.name}</p>
+                        <p className="text-xs text-gray-400">{match.reserved.currentClubName ?? '—'}</p>
+                        <OwnerLabel owner={match.reserved.owner} />
+                        <p className="text-xs text-gray-400">Reserved {new Date(match.reserved.reservedAt).toLocaleDateString()}</p>
+                    </div>
+                    <div>
+                        <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Real Player</p>
+                        <div className="flex items-center gap-2">
+                        <div className="relative w-7 h-7 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+                            {match.real.image_path && (
+                            <Image src={match.real.image_path} alt={match.real.name} fill className="object-contain" />
+                            )}
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-gray-900">{match.real.name}</p>
+                            <p className="text-xs text-gray-400">{match.real.teamName ?? '—'}</p>
+                        </div>
+                        </div>
+                    </div>
+                    </div>
+                    <button
+                    onClick={() => handleMerge(match.reserved.id, match.real.id)}
+                    disabled={processingId === `merge-${match.reserved.id}`}
+                    className="px-4 py-2 text-sm rounded-lg bg-green-700 text-white hover:bg-green-600 transition-colors disabled:opacity-50 font-medium"
+                    >
+                    {processingId === `merge-${match.reserved.id}` ? 'Merging...' : 'Confirm Merge'}
+                    </button>
+                </div>
+                ))}
+            </div>
+            )}
+
+            {/* All Reserved Players */}
+            <h2 className="text-sm font-medium text-gray-900 mb-3">All Reserved Players</h2>
+            {allReservedPlayers.length === 0 ? (
+            <p className="text-sm text-gray-400">No reserved players currently in the system.</p>
+            ) : (
+            <div className="flex flex-col gap-1.5">
+                {allReservedPlayers.map(reserved => (
+                <div key={reserved.id} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg text-sm">
+                    <div>
+                    <span className="text-gray-900 font-medium">{reserved.name}</span>
+                    <span className="text-gray-400 ml-2">{reserved.currentClubName ?? '—'}</span>
+                    <div className="flex items-center gap-2 mt-0.5">
+                        <OwnerLabel owner={reserved.owner} />
+                        <span className="text-xs text-gray-300">·</span>
+                        <span className="text-xs text-gray-400">Reserved {new Date(reserved.reservedAt).toLocaleDateString()}</span>
+                    </div>
+                    </div>
+                    <button
+                    onClick={() => handleDeleteReserved(reserved.id)}
+                    disabled={processingId === `delete-${reserved.id}`}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                    >
+                    {processingId === `delete-${reserved.id}` ? '...' : 'Delete'}
+                    </button>
+                </div>
+                ))}
+            </div>
             )}
         </div>
     )
