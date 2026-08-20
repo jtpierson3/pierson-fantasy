@@ -46,10 +46,11 @@ export default async function TransfersPage() {
         reservationOwnership.map(r => [r.playerId, { teamName: r.fantasyTeam.name, username: r.fantasyTeam.user.username }])
     )
 
+    const recentSyncCutoff = new Date(Date.now() - 2 * 60 * 60 * 1000)
     const recentRealPlayers = await prisma.player.findMany({
         where: { 
             id: { gt: 0 },
-            updatedAt: { gte: new Date(Date.now() - 2 * 60 * 60 * 1000)}
+            updatedAt: { gte: recentSyncCutoff }
         },
         select: { id: true, display_name: true, image_path: true, teamId: true, team: true }
     })
