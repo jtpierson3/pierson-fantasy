@@ -3,6 +3,13 @@ import { getPositionColor, getPositionShort } from "@/lib/helpers"
 import { isPremierLeagueEligible } from "@/lib/playerEligibility"
 import { DisplayPlayer } from "@/lib/playerTypes"
 
+type SubRule = 'NONE' | 'STANDARD_SUB' | 'RESERVE_UPGRADE' | 'NOBODY_ELIGIBLE'
+
+type SubResultInfo = {
+    rule: SubRule
+    role: 'IN' | 'OUT' // whether this player was the one who came in or the one who was displaced.
+    otherPlayerName?: string // for the tooltip e.g. "Swapped for Solanke"
+}
 
 type Props = {
     player: DisplayPlayer,
@@ -13,9 +20,11 @@ type Props = {
     outOfPosition?: boolean
     isHomeTeam?: boolean
     sidelinedInfo?: { category: string; typeName: string; endDate: string | null } | null
+    subResultInfo?: SubResultInfo | null
+    didNotPlay?: boolean
 }
 
-export default function PlayerCard({ player, size = 'md', showName = true, points, positionLabel, outOfPosition, isHomeTeam, sidelinedInfo }: Props) {
+export default function PlayerCard({ player, size = 'md', showName = true, points, positionLabel, outOfPosition, isHomeTeam, sidelinedInfo, subResultInfo, didNotPlay }: Props) {
     const imageSize = size === 'sm' ? 'w-8 h-8' : 'w-10 h-10'
     const borderWidth = size === 'sm' ? 'border' : 'border-2'
     const eligible = isPremierLeagueEligible(player.team?.leagueId)
@@ -27,7 +36,7 @@ export default function PlayerCard({ player, size = 'md', showName = true, point
         '#ffffff'
 
     return (
-        <div className="flex flex-col items-center gap-1">
+        <div className={`flex flex-col items-center gap-1 ${didNotPlay ? 'opacity-40' : ''}`}>
             <div className={`relative ${imageSize}`}>
                 <Image 
                     src={player.image_path}
@@ -47,6 +56,50 @@ export default function PlayerCard({ player, size = 'md', showName = true, point
                         ) : (
                             <span className="text-red-600 text-[10px] font-bold leading-none"></span>
                         )}
+                    </div>
+                )}
+
+                {subResultInfo && subResultInfo.rule === 'STANDARD_SUB' && (
+                    <div
+                        className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-white shadow-sm flex flex-col items-center justify-center cursor-help"
+                        title={subResultInfo.otherPlayerName ? `Auto-sub: ${subResultInfo.otherPlayerName}` : 'Auto-substitution'}
+                    >
+                        <span className="text-green-600 text-[8px] leading-none">→</span>
+                        <span className="text-red-600 text-[8px] leading-none">←</span>
+                    </div>
+                )}
+
+                {subResultInfo && subResultInfo.rule === 'RESERVE_UPGRADE' && subResultInfo.role === 'IN' && (
+                    <div
+                        className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-white shadow-sm flex items-center justify-center cursor-help"
+                        title={subResultInfo.otherPlayerName ? `Promoted from reserves for ${subResultInfo.otherPlayerName}` : 'Promoted from reserves'}
+                    >
+                        <span className="text-green-600 text-xs font-bold leading-none">+</span>
+                    </div>
+                )}
+
+                {subResultInfo && subResultInfo.rule === 'RESERVE_UPGRADE' && subResultInfo.role === 'OUT' && (
+                    <div
+                        className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-white shadow-sm flex items-center justify-center cursor-help"
+                        title={subResultInfo.otherPlayerName ? `Replaced by ${subResultInfo.otherPlayerName}` : 'Moved to reserves'}
+                    >
+                        <span className="text-green-600 text-xs font-bold leading-none">-</span>
+                    </div>
+                )}
+
+                {subResultInfo && subResultInfo.rule === 'NOBODY_ELIGIBLE' && subResultInfo.role === 'IN' && (
+                    <div 
+                        className="absolute inset-0 rounded-full bg-red-500/70 flex items-center justify-center cursor-help"
+                        title="No eligible replacement - this slot scored 0"
+                    />
+                )}
+
+                {subResultInfo && subResultInfo.rule === 'NOBODY_ELIGIBLE' && subResultInfo.role === 'OUT' && (
+                    <div 
+                        className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-whiite flex items-center justify-center shadow-sm cursor-help"
+                        title="No eligible replacement was available - moved to reserves"
+                    >
+                        <div className="w-2 h-2.5 bg-red-600 rounded-sm" />
                     </div>
                 )}
             </div>
