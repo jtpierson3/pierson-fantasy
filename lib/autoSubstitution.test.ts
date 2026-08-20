@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolveAutoSubstitutions, type PlayerGameweekData, type StarterSlotAssignment } from './autoSubstitution'
+import { resolveAutoSubstitutions, resolveReserveUpgrades, type PlayerGameweekData, type StarterSlotAssignment } from './autoSubstitution'
 import type { FormationSlot } from './formations'
 
 function fixedSlot(position: string): FormationSlot {
@@ -217,4 +217,105 @@ describe('resolveAutoSubstitutions (Rule 2 — bucket-based)', () => {
     // is already occupying the winning position, sub doesn't STRICTLY beat them
     expect(result[0].finalPlayer.fantasyTeamPlayerId).toBe('s1')
   })
+
+  describe('resolveReserveUpgrades (Rule 3)', () => {
+    function reservePlayer(id: string, points: number, positionPlayedId: number | null, rank: number, didPlay = true): PlayerGameweekData {
+        return { fantasyTeamPlayerId: id, playerId: 1, points, positionPlayedId, broadPositionPlayedId: null, didPlay, rank }
+    }
+
+    it('returns empty when there are no empty slots', () => {
+        const result = resolveReserveUpgrades([], [reservePlayer('r1', 5, ST, 1)])
+        expect(result.size).toBe(0)
+    })
+
+    it('fills a single empty slot with the first eligible reserve by rank', () => {
+        const slot = starterSlot(0, fixedSlot('ST'), player('s1', 0, null, false))
+        const reserve1 = reservePlayer('r1', 4, ST, 1)
+        const reserve2 = reservePlayer('r2', 20, ST, 2) // higher points, but lower rank priority
+
+        const result = resolveReserveUpgrades([slot], [reserve1, reserve2])
+
+        expect(result.get(0)?.fantasyTeamPlayerId).toBe('r1')
+    })
+
+    it('skips a reserve who is not eligible for the slot, regardless of rank', () => {
+        const slot = starterSlot(0, fixedSlot('ST'), player('s1', 0, null, false))
+        const reserve1 = reservePlayer('r1', 4, CB, 1) // wrong position
+        const reserve2 = reservePlayer('r2', 3, ST, 2)
+
+        const result = resolveReserveUpgrades([slot], [reserve1, reserve2])
+
+        expect(result.get(0)?.fantasyTeamPlayerId).toBe('r2')
+    })
+
+    it('THE STRANDING CASE — fills both a fixed and flex slot correctly by processing fixed first', () => {
+        const fixedCMSlot = starterSlot(0, fixedSlot('CM'), player('s_cm', 0, null, false))
+        const flexSlot0 = starterSlot(1, flexSlot(['W', 'CM']), player('s_flex', 0, null, false))
+
+        // Reserve rank 1 can ONLY play CM (narrowly eligible)
+        const reserveCM = reservePlayer('r_cm', 4, CM, 1)
+        // Reserve rank 2 can ONLY play W (also narrowly eligible, but for the other slot)
+        const reserveW = reservePlayer('r_w', 8, W, 2)
+
+        const result = resolveReserveUpgrades([fixedCMSlot, flexSlot0], [reserveCM, reserveW])
+
+        // Both slots should be filled — the CM reserve MUST go to the fixed
+        // CM slot (only place they're eligible), freeing the flex slot for
+        // the W reserve (their only option too).
+        expect(result.get(0)?.fantasyTeamPlayerId).toBe('r_cm')
+        expect(result.get(1)?.fantasyTeamPlayerId).toBe('r_w')
+    })
+
+    it('a naive rank-order-only approach would strand a slot — confirms fixed-first processing prevents that', () => {
+        // Same setup, but reserve ranks REVERSED (W is rank 1, CM is rank 2) —
+        // if we walked reserves in rank order and let them pick ANY eligible
+        // slot, the W reserve (rank 1) might grab the flex slot first (since
+        // W qualifies there), stranding the CM reserve with nowhere to go
+        // (the fixed CM slot needs a CM, and the only CM reserve now has no
+        // flex slot left to fall back to). Processing SLOTS fixed-then-flex
+        // prevents this regardless of reserve rank order.
+        const fixedCMSlot = starterSlot(0, fixedSlot('CM'), player('s_cm', 0, null, false))
+        const flexSlot0 = starterSlot(1, flexSlot(['W', 'CM']), player('s_flex', 0, null, false))
+
+        const reserveW = reservePlayer('r_w', 8, W, 1)   // rank 1, W-only
+        const reserveCM = reservePlayer('r_cm', 4, CM, 2) // rank 2, CM-only
+
+        const result = resolveReserveUpgrades([fixedCMSlot, flexSlot0], [reserveW, reserveCM])
+
+        // Fixed CM slot processed first — only reserveCM is eligible, they win it
+        expect(result.get(0)?.fantasyTeamPlayerId).toBe('r_cm')
+        // Flex slot processed second — reserveW is the only one left, wins it
+        expect(result.get(1)?.fantasyTeamPlayerId).toBe('r_w')
+    })
+
+    it('a single reserve can only fill one slot even if eligible for multiple', () => {
+        const slot1 = starterSlot(0, fixedSlot('ST'), player('s1', 0, null, false))
+        const slot2 = starterSlot(1, fixedSlot('ST'), player('s2', 0, null, false))
+        const reserve = reservePlayer('r1', 5, ST, 1)
+
+        const result = resolveReserveUpgrades([slot1, slot2], [reserve])
+
+        expect(result.size).toBe(1)
+        expect([...result.values()][0].fantasyTeamPlayerId).toBe('r1')
+    })
+
+    it('leaves a slot unfilled when no reserve is eligible', () => {
+        const slot = starterSlot(0, fixedSlot('GK'), player('s1', 0, null, false))
+        const reserve = reservePlayer('r1', 5, ST, 1)
+
+        const result = resolveReserveUpgrades([slot], [reserve])
+
+        expect(result.size).toBe(0)
+    })
+
+    it('a reserve who did not play is never eligible', () => {
+        const slot = starterSlot(0, fixedSlot('ST'), player('s1', 0, null, false))
+        const reserve = reservePlayer('r1', 0, ST, 1, false) // didn't play
+
+        const result = resolveReserveUpgrades([slot], [reserve])
+
+        expect(result.size).toBe(0)
+    })
+  })
+
 })

@@ -178,3 +178,87 @@ export function resolveAutoSubstitutions(
     return { slots: results }
 }
 
+/**
+ * Resolves Reserve Relief for whatever slots are still empty after Rule 2 and the week is finalized.
+ * Fixed position slots are resolved first, then the flex spot with whoevers lefrt, so a narrowly
+ * eligible reserve isn't stranded by a flex slot claiming them first.
+ */
+export function resolveReserveUpgrades(
+    emptySlots: StarterSlotAssignment[],
+    reserves: PlayerGameweekData[]
+): Map<number, PlayerGameweekData> {
+    if (emptySlots.length === 0) return new Map()
+
+    const fixedEmptySlots = emptySlots.filter(s => s.slot.type === 'fixed')
+    const flexEmptySlots = emptySlots.filter(s => s.slot.type === 'flexible')
+
+    const sortedReserves = [...reserves].sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999))
+    const usedReserveIds = new Set<string>()
+    const assignments = new Map<number, PlayerGameweekData>()
+
+    function fillSlots(slots: StarterSlotAssignment[]) {
+        for (const { slotIndex, slot } of slots) {
+            const firstEligible = sortedReserves.find( r => {
+                if (usedReserveIds.has(r.fantasyTeamPlayerId)) return false
+                if (!r.didPlay) return false
+                const position = getPlayedPosition(r)
+                if (position === null) return false
+                return canFillSlot(slot, position)
+            })
+
+            if (firstEligible) {
+                usedReserveIds.add(firstEligible.fantasyTeamPlayerId)
+                assignments.set(slotIndex, firstEligible)
+            }
+        }
+    }
+
+    fillSlots(fixedEmptySlots)
+    fillSlots(flexEmptySlots)
+
+    return assignments
+}
+
+/**
+ * Runs both Standard Sub and Reserve Upgrade in sequence - meant to be called once gameweek is
+ * finalized. All rules are independent and only consider the state that the lineup is in after
+ * the previous rule has done it's thing.
+ */
+export function finalizeLineup(
+    starterSlots: StarterSlotAssignment[],
+    subs: PlayerGameweekData[],
+    reserves: PlayerGameweekData[]
+): ResolvedSlotResult[] {
+    const { slots: ruleTwoResults } = resolveAutoSubstitutions(starterSlots, subs)
+
+    const emptySlotAssignments = starterSlots.filter(({ slotIndex, slot, originalStarter }) => {
+        const ruleTwoResult = ruleTwoResults.find(r => r.slotIndex === slotIndex)
+        if (ruleTwoResult?.rule !== 'NONE') return false
+        if (originalStarter.didPlay) return false
+
+        const hadAnyEligibleSubAtAll = subs.some(s => {
+            const position = getPlayedPosition(s)
+            return position !== null && canFillSlot(slot, position)
+        })
+        return !hadAnyEligibleSubAtAll
+    })
+
+    const reserveAssignments = resolveReserveUpgrades(emptySlotAssignments, reserves)
+
+    return ruleTwoResults.map(result => {
+        const reservePick = reserveAssignments.get(result.slotIndex)
+        if (reservePick) {
+            return {
+                ...result,
+                FinalPlayer: reservePick,
+                displacedPlayer: result.finalPlayer,
+                rule: 'RESERVE_UPGRADE' as const
+            }
+        }
+        const isStillEmpty = emptySlotAssignments.some(s => s.slotIndex === result.slotIndex)
+        if (isStillEmpty) {
+            return { ...result, rule: 'NOBODY_ELIGIBLE' as const }
+        }
+        return result
+    })
+}
