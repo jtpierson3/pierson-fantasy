@@ -53,10 +53,10 @@ export async function POST(req: Request) {
                 if (fixture.gameweekNumber) touchedGameweekNumbers.add(fixture.gameweekNumber)
                 results.push({ fixtureId: fixture.id, pass: 1, success: true })
             } catch (err) {
-                results.push({ fixtureId: fixture.id, pass: 1, success: false, error: instanceof Error ? err.message : 'Unknown error' })
+                results.push({ fixtureId: fixture.id, pass: 1, success: false, error: err instanceof Error ? err.message : 'Unknown error' })
             }
         }
-        
+
         // --- Pass 2 Candidates ---
         // A gameweek is eligible once its LAST fixture's kickoff was >= 48 hours ago,
         // and Pass 2 processes EVERY fixture in that gameweek (corrections check),
