@@ -354,29 +354,31 @@ model PlayerTransfer {
 }
 
 model Fixture {
-  id                  Int                   @id
-  leagueId            Int
-  seasonId            Int
-  round               String?
-  gameweekNumber      Int?
-  homeTeamId          Int?
-  awayTeamId          Int?
-  homeTeam            Team?                 @relation("HomeFixtures", fields: [homeTeamId], references: [id])
-  awayTeam            Team?                 @relation("AwayFixtures", fields: [awayTeamId], references: [id])
-  homeTeamName        String
-  awayTeamName        String
-  homeTeamImage       String?
-  awayTeamImage       String?
-  homeScore           Int?
-  awayScore           Int?
-  status              String
-  kickoff             DateTime
-  venue               String?
-  competition         String
-  createdAt           DateTime              @default(now())
-  updatedAt           DateTime              @default(now())
-  playerMatchStats    PlayerMatchStats[]
-  playerFixturePoints PlayerFixturePoints[]
+  id                    Int                   @id
+  leagueId              Int
+  seasonId              Int
+  round                 String?
+  gameweekNumber        Int?
+  homeTeamId            Int?
+  awayTeamId            Int?
+  homeTeam              Team?                 @relation("HomeFixtures", fields: [homeTeamId], references: [id])
+  awayTeam              Team?                 @relation("AwayFixtures", fields: [awayTeamId], references: [id])
+  homeTeamName          String
+  awayTeamName          String
+  homeTeamImage         String?
+  awayTeamImage         String?
+  homeScore             Int?
+  awayScore             Int?
+  status                String
+  kickoff               DateTime
+  venue                 String?
+  competition           String
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @default(now())
+  playerMatchStats      PlayerMatchStats[]
+  playerFixturePoints   PlayerFixturePoints[]
+  statsPass1CompletedAt DateTime?
+  statsPass2CompletedAt DateTime?
 
   @@index([kickoff])
   @@index([gameweekNumber])
