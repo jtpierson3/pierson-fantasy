@@ -47,7 +47,7 @@ export default async function TransfersPage() {
     )
 
     // eslint-disable-next-line react-hooks/purity -- Server Component computing a real DB query time window, not a render-purity concern
-    const recentSyncCutoff = new Date(Date.now() - 6 * 60 * 60 * 1000)
+    const recentSyncCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000)
     const recentRealPlayers = await prisma.player.findMany({
         where: { 
             id: { gt: 0 },

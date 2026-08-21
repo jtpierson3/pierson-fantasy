@@ -50,14 +50,6 @@ export async function recordDeparture(playerId: number) {
         return
     }
 
-    // Deduplication - if we already have a record for this exact real transfer, skip entirely
-    if (sportmonksTransferId !== null) {
-        const existing = await prisma.playerTransfer.findUnique({
-            where: { sportmonksTransferId }
-        })
-        if (existing) return
-    }
-
     // Only set teamId to the destination if it's a club we actually track;
     // otherwise null, rather than claiming false precision about an untracked
     // club when it could change later
@@ -71,6 +63,21 @@ export async function recordDeparture(playerId: number) {
         where: { id: playerId },
         data: { teamId: newTeamId }
     })
+
+    // Premier League -> Premier League (or any tracked club -> tracked club)
+    // transfer - the player is still fully usable in the league.
+    // No payout, no roster impact, nothing to review, stop here.
+    if (trackedDestinationTeam) {
+        return
+    }
+
+    // Deduplication - if we already have a record for this exact real transfer, skip entirely
+    if (sportmonksTransferId !== null) {
+        const existing = await prisma.playerTransfer.findUnique({
+            where: { sportmonksTransferId }
+        })
+        if (existing) return
+    }
 
     // check current fantasy ownership auto-confirm if nobody has them,
     // leave pending for review if someone does (so a payout can be assigned)
