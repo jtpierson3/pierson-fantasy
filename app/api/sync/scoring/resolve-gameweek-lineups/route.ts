@@ -33,28 +33,34 @@ export async function POST(req: Request) {
             })
 
             for (const result of results) {
+                if (result.rule === 'NONE') continue
+                
                 const starterRow = starterRows.find(r => r.slotOrder === result.slotIndex)
                 if (!starterRow) continue
 
-                const changed = result.rule !== 'NONE'
-
+                // Thes starter's row now displays the resplacement players
                 await prisma.gameweekLineupPlayer.update({
                     where: { id: starterRow.id },
                     data: {
-                        resolvedPlayerId: changed ? result.finalPlayer.playerId : null,
-                        subRule: changed ? result.rule : null,
+                        resolvedPlayerId: result.finalPlayer.playerId,
+                        subRule: result.rule,
                         resolvedAt: new Date()
                     }
                 })
 
-                // If someone else was displaced INTO this slot, mark who displaced whom
-                // on the DISPLACED player's own row (for the OUT icon)
+                // The REPLACEMENT's own original row (their bench slot) now displays the 
+                // DISPLACED starrter instead - a clean symmetric swap
                 if (result.displacedPlayer) {
-                    const displacedRow = lineup.players.find(p => p.playerId === result.displacedPlayer!.playerId)
-                    if (displacedRow) {
+                    const replacementOwnRow = lineup.players.find(p => p.playerId === result.finalPlayer!.playerId)
+                    if (replacementOwnRow) {
                         await prisma.gameweekLineupPlayer.update({
-                            where: { id: displacedRow.id },
-                            data: { displacedByPlayerId: result.finalPlayer.playerId }
+                            where: { id: replacementOwnRow.id },
+                            data: { 
+                                resolvedPlayerId: result.displacedPlayer.playerId,
+                                subRule: result.rule,
+                                displacedByPlayerId: result.finalPlayer.playerId,
+                                resolvedAt: new Date()
+                            }
                         })
                     }
                 }
