@@ -7,6 +7,7 @@ import MatchupTicker from '@/app/components/matchup/MatchupTicker'
 import type { MatchupTeamData, MatchupPlayer } from '@/app/components/matchup/MatchupPitch'
 import { getLeagueStandings } from '@/lib/leagueStandings'
 import { getPlayerPointsForGameweek } from '@/lib/playerPoints'
+import { buildDisplayLineup } from '@/lib/lineupDisplayResolution'
 
 function MatchupSkeleton() {
     return (
@@ -51,28 +52,51 @@ async function buildTeamData(fantasyTeamId: string, gameweekId: string, fantasyL
         }
     })
 
-    const playerIds = (snapshot?.players ?? []).map(p => p.playerId)
+    const rawPlayers = snapshot?.players ?? []
+    const playerIds = rawPlayers.map(p => p.playerId)
     const pointsMap = gameweek
         ? await getPlayerPointsForGameweek(playerIds, gameweek.gameweekNumber)
-        : new Map<number, number>() 
+        : new Map<number, number>()
 
-    const players: MatchupPlayer[] = (snapshot?.players ?? []).map(p => ({
-        id: p.id,
-        playerId: p.playerId,
-        rosterSlot: p.rosterSlot,
-        slotOrder: p.slotOrder,
-        points: pointsMap.get(p.playerId) ?? 0,
-        player: {
-            id: p.player.id,
-            display_name: p.player.display_name,
-            image_path: p.player.image_path,
-            position_id: p.player.position_id,
-            detailed_position_id: p.player.detailed_position_id,
-            team: p.player.team
-                ? { name: p.player.team.name, image_path: p.player.team.image_path, leagueId: p.player.team.leagueId }
-                : null,
-        }
-    }))
+    const displayRows = buildDisplayLineup(
+        rawPlayers.map(p => ({
+            id: p.id,
+            playerId: p.playerId,
+            rosterSlot: p.rosterSlot,
+            slotOrder: p.slotOrder,
+            resolvedPlayerId: p.resolvedPlayerId,
+            subRule: p.subRule,
+            displacedByPlayerId: p.displacedByPlayerId 
+        }))
+    )
+
+    const playersByPlayerId = new Map(rawPlayers.map(p => [p.playerId, p.player]))
+
+    const players = displayRows
+        .map(row => {
+            const playerData = playersByPlayerId.get(row.playerId)
+            if (!playerData) return null
+
+            return {
+                id: row.id,
+                playerId: row.playerId,
+                rosterSlot: row.rosterSlot,
+                slotOrder: row.slotOrder,
+                points: pointsMap.get(row.playerId) ?? 0,
+                subResultInfo: row.subResultInfo,
+                player: {
+                    id: playerData.id,
+                    display_name: playerData.display_name,
+                    image_path: playerData.image_path,
+                    position_id: playerData.position_id,
+                    detailed_position_id: playerData.detailed_position_id,
+                    team: playerData.team
+                        ? { name: playerData.team.name, image_path: playerData.team.image_path, leagueId: playerData.team.leagueId }
+                        : null,
+                }
+            }
+        })
+        .filter((p): p is NonNullable<typeof p> => p !== null) satisfies MatchupPlayer[]
 
     return {
         name: team?.name ?? 'Unknown Team',
