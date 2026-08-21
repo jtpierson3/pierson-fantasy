@@ -28,7 +28,7 @@ export async function POST(req: Request) {
         const awayFormationEntry = fixture.formations?.find(f => f.location === 'away')
 
         await prisma.fixture.update({
-            where: { id: fixture. id },
+            where: { id: fixture.id },
             data: {
                 homeFormation: homeFormationEntry?.formation ?? null,
                 awayFormation: awayFormationEntry?.formation ?? null
