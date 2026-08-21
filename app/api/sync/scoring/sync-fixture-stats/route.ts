@@ -24,6 +24,17 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Fixture not found on Sportmonks' }, { status: 404 })
         }
 
+        const homeFormationEntry = fixture.formations?.find(f => f.location === 'home')
+        const awayFormationEntry = fixture.formations?.find(f => f.location === 'away')
+
+        await prisma.fixture.update({
+            where: { id: fixture. id },
+            data: {
+                homeFormation: homeFormationEntry?.formation ?? null,
+                awayFormation: awayFormationEntry?.formation ?? null
+            }
+        })
+
         let synced = 0
 
         for (const lineup of fixture.lineups) {

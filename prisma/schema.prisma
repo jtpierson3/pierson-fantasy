@@ -379,6 +379,8 @@ model Fixture {
   playerFixturePoints   PlayerFixturePoints[]
   statsPass1CompletedAt DateTime?
   statsPass2CompletedAt DateTime?
+  homeFormation         String?
+  awayFormation         String?
 
   @@index([kickoff])
   @@index([gameweekNumber])

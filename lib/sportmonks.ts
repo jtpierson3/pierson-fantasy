@@ -113,11 +113,18 @@ export type FixtureEvent = {
     minute: number
 }
 
+export type FixtureFormation = {
+    team_id: number
+    location: 'home' | 'away'
+    formation: string
+}
+
 export type FixtureDetail = {
     id: number
     participants?: { id: number; meta?: { location: 'home' | 'away' } }[]
     lineups: FixtureLineupEntry[]
     events: FixtureEvent[]
+    formations: FixtureFormation[]
 }
 
 export type SidelinedEntry = {
@@ -276,7 +283,7 @@ export async function getLeagueById(leagueId: number): Promise<{league: LeagueSu
 
 export async function getFixtureDetail(fixtureId: number): Promise<{ fixture: FixtureDetail | null; remaining: number | null }> {
     const { data, remaining } = await sportmonksFetchWithMeta(
-        `/fixtures/${fixtureId}?include=lineups.detailedposition;lineups.details.type;events;participants`
+        `/fixtures/${fixtureId}?include=lineups.detailedposition;lineups.details.type;events;participants;formations`
     )
     const fixture = (data as { data: FixtureDetail }).data ?? null
     return { fixture, remaining}
