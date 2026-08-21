@@ -1,0 +1,28 @@
+name: Process Scoring
+
+on:
+    schedule:
+        - cron: '0 * * * *' # every hour
+    workflow_dispatch: {} 
+
+jobs: 
+    rollup:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repo
+              uses: actions/checkout@v4
+            
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                python-version: '3.12'
+            
+            - name: Install dependencies
+              run: pip install -r python/requirements.txt
+
+            - name: Run scoring pipeline
+              env:
+                APP_URL: https://pierson-fantasy.vercel.app
+                SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+                VERCEL_BYPASS_SECRET: ${{ secrets.VERCEL_BYPASS_SECRET }}
+              run: python python/process_scoring.py
