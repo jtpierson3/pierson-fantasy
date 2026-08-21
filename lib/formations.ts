@@ -325,3 +325,8 @@ export function canFillSlot(slot: FormationSlot, detailedPositionType: PositionT
     if (slot.type === 'fixed') return slot.position === detailedPositionType
     return slot.positions.includes(detailedPositionType)
 }
+
+export function isSupportedFormation(formation: string | null): formation is Formation {
+  if (!formation) return false
+  return formation in FORMATION_DEFINITIONS
+}
