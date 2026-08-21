@@ -188,6 +188,12 @@ model GameweekLineupPlayer {
   playerId         Int
   rosterSlot       RosterSlot
   slotOrder        Int
+
+  // Auto-Substitution Resolution - only meaningful for STARTER rows
+  resolvedPlayerId    Int?
+  subRule             String?
+  displacedByPlayerId Int?
+  resolvedAt          DateTime?
 }
 
 model TransferBid {
