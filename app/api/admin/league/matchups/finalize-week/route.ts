@@ -48,14 +48,17 @@ export async function POST(req: Request) {
             weeklyScores.push({ teamId: m.awayTeamId, score: m.awayPoints })
         })
 
-        // Determine top 6 (or top 7 if a tie at the boundary) cutoff
+        
+        const totalTeamCount = gameweek.fantasyLeague.teams.length
+        const cutoffBase = Math.floor(totalTeamCount / 2)
+
         const sortedScores = [...weeklyScores].sort((a, b) => b.score - a.score)
-        let cutoffCount = 6
-        if (sortedScores.length > 6) {
-            const sixthScore = sortedScores[5].score
-            const seventhScore = sortedScores[6].score
-            if (seventhScore === sixthScore) {
-                cutoffCount = 7
+        let cutoffCount = cutoffBase
+        if (sortedScores.length > cutoffBase) {
+            const lastInCutoffScore = sortedScores[cutoffBase- 1 ].score
+            const nextScore = sortedScores[cutoffBase].score
+            if (nextScore === lastInCutoffScore) {
+                cutoffCount = cutoffBase + 1 
             }
         }
         const topScoreThreshold = sortedScores[Math.min(cutoffCount, sortedScores.length) - 1]?.score ?? -Infinity
