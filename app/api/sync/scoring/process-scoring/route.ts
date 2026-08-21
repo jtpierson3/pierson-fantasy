@@ -35,10 +35,18 @@ export async function POST(req: Request) {
     const results: { fixtureId: number; pass: 1 | 2; success: boolean; error?: string }[] = []
 
     try {
+        const currentGameweeks = await prisma.fantasyGameweek.findMany({
+            where: { isCurrent: true, isComplete: false},
+            select: { gameweekNumber: true },
+            distinct: ['gameweekNumber']
+        })
+        const activeGameweekNumbers = currentGameweeks.map(g => g.gameweekNumber)
+
         const pass1Fixtures = await prisma.fixture.findMany({
             where: {
                 kickoff: { lte: pass1Cutoff },
-                statsPass1CompletedAt: null
+                statsPass1CompletedAt: null,
+                gameweekNumber: { in: activeGameweekNumbers }
             }
         })
 
@@ -61,13 +69,7 @@ export async function POST(req: Request) {
         // A gameweek is eligible once its LAST fixture's kickoff was >= 48 hours ago,
         // and Pass 2 processes EVERY fixture in that gameweek (corrections check),
         // regardless of whether it already had Pass 1
-        const allGameweekNumbers = await prisma.fixture.findMany({
-            where: { gameweekNumber: { not: null } },
-            select: { gameweekNumber: true },
-            distinct: ['gameweekNumber']
-        })
-
-        for (const { gameweekNumber } of allGameweekNumbers) {
+        for (const gameweekNumber of activeGameweekNumbers) {
             if (gameweekNumber === null) continue
 
             const fixturesInWeek = await prisma.fixture.findMany({

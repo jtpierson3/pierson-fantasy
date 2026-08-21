@@ -27,6 +27,15 @@ export async function POST(req: Request) {
         let synced = 0
 
         for (const lineup of fixture.lineups) {
+            const playerExists = await prisma.player.findUnique({
+                where: { id: lineup.player_id },
+                select: { id: true }
+            })
+            if (!playerExists) {
+                console.warn(`[sync-fixture-stats] skipping stats for unsynced player ${lineup.player_id}`)
+                continue
+            }
+
             const statsMap: Record<number, number> = {}
             let rating: number | null = null
 
