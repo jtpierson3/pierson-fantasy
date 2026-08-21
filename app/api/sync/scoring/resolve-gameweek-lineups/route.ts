@@ -29,7 +29,7 @@ export async function POST(req: Request) {
             // (or not at all) with fresh data
             await prisma.gameweekLineupPlayer.updateMany({
                 where: { gameweekLineupId: lineup.id },
-                data: { resolvedPlayerId: null, subRule: null, displacedPlayerId: null, resolvedAt: null }
+                data: { resolvedPlayerId: null, subRule: null, displacedByPlayerId: null, resolvedAt: null }
             })
 
             for (const result of results) {
