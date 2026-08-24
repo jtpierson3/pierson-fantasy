@@ -1,0 +1,5 @@
+curl -X POST "https://pierson-fantasy.vercel.app/api/sync/scoring/calculate-fixture-points" \
+  -H "Authorization: Bearer WhatIsMexicoHoneyWeedOrTequila" \
+  -H "x-vercel-protection-bypass: PAD9gfKHXSgfcTzrtLDAVyTP5XgQk3si" \
+  -H "Content-Type: application/json" \
+  -d '{"fixtureId": 19722203}'
