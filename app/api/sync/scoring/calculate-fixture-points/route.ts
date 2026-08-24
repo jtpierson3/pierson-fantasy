@@ -55,14 +55,10 @@ export async function POST(req: Request) {
 
         let calculated = 0
 
-        const debugInfo: { playerId: number; positionPlayedId: number | null; positionType: string | null; scoringPosition: string | null }[] = []
-
         for (const ps of allStats) {
             const broadPositionId = ps.positionPlayedId === 24 ? 24 : null
             const positionType = getPositionType(ps.positionPlayedId, broadPositionId)
             const scoringPosition = toScoringPosition(positionType)
-
-            debugInfo.push({ playerId: ps.playerId, positionPlayedId: ps.positionPlayedId, positionType, scoringPosition })
             if (!scoringPosition) continue // skip players with no resolvable position
 
             const rules = rulesByPosition.get(scoringPosition) ?? []
@@ -86,7 +82,7 @@ export async function POST(req: Request) {
             calculated++
         }
 
-        return NextResponse.json({ success: true, playersCalculated: calculated, debugInfo })
+        return NextResponse.json({ success: true, playersCalculated: calculated })
     } catch (err) {
         console.error('[calculate-fixture-points] error:', err)
         return NextResponse.json({ error: 'Failed to calculate fixture points' }, { status: 500 })
