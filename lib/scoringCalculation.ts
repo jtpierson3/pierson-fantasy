@@ -17,6 +17,8 @@ export type PlayerStatsInput = {
 export type ScoreBreakdownLine = {
     label: string
     points: number
+    count?: number
+    pointsPerUnit?: number
 }
 
 export type ScoreResult = {
@@ -57,7 +59,7 @@ export function calculatePlayerPoints(
             const sortedTiers = [...rule.tiers].sort((a, b) => b.min - a.min)
             const matchedTier = sortedTiers.find(t => value >= t.min)
             if (matchedTier && matchedTier.points > 0) {
-                breakdown.push({ label: rule.displayName, points: matchedTier.points })
+                breakdown.push({ label: rule.displayName, points: matchedTier.points, count: value })
             }
             continue
         }
@@ -69,7 +71,7 @@ export function calculatePlayerPoints(
 
         const points = count * rule.pointsPerUnit
         if (points !== 0) {
-            breakdown.push({ label: rule.displayName, points })
+            breakdown.push({ label: rule.displayName, points, count, pointsPerUnit: rule.pointsPerUnit })
         }
     }
 

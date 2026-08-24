@@ -191,9 +191,16 @@ export default function RealMatchView({ fixture, homePlayers, awayPlayers }: Pro
             <p className="text-xs text-gray-400 mb-3">{selectedPlayer.points} pts</p>
             <div className="flex flex-col gap-1">
               {Array.isArray(selectedPlayer.breakdown) &&
-                (selectedPlayer.breakdown as { label: string; points: number }[]).map((line, i) => (
+                (selectedPlayer.breakdown as { label: string; points: number, count?: number; pointsPerUnit: number }[]).map((line, i) => (
                   <div key={i} className="flex items-center justify-between text-xs">
-                    <span className="text-gray-500">{line.label}</span>
+                    <span className="text-gray-500">
+                        {line.label}
+                        {line.count !== undefined && line.pointsPerUnit !== undefined && (
+                            <span className="text-gray-400 ml-1">
+                                ({line.count} X {line.pointsPerUnit})
+                            </span>
+                        )}
+                    </span>
                     <span className={`font-medium ${line.points >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
                       {line.points > 0 ? '+' : ''}{line.points}
                     </span>
