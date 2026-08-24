@@ -231,6 +231,18 @@ export const FORMATION_DEFINITIONS: Record<string, FormationDefinition> = {
             ...fixed('ST', 1),
         ]
     },
+
+    '4-1-4-1': {
+        name: '4-1-4-1',
+        slots: [
+            ...fixed('GK', 1),
+            ...fixed('CB', 2),
+            ...fixed('FB', 2),
+            ...fixed('CM', 3),
+            ...fixed('W', 2),
+            ...fixed('ST', 1),
+        ]
+    }
 }
 
 export const FORMATIONS = Object.keys(FORMATION_DEFINITIONS) as Formation[]
