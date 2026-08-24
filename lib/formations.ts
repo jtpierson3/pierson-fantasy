@@ -242,6 +242,18 @@ export const FORMATION_DEFINITIONS: Record<string, FormationDefinition> = {
             ...fixed('W', 2),
             ...fixed('ST', 1),
         ]
+    },
+
+    '5-4-1': {
+        name: '5-4-1',
+        slots: [
+            ...fixed('GK', 1),
+            ...fixed('CB', 3),
+            ...flex(['W', 'FB'], 2),
+            ...fixed('CM', 2),
+            ...fixed('W', 2),
+            ...fixed('ST', 1),
+        ]
     }
 }
 

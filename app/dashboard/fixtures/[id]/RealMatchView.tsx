@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { getFormationRows, isSupportedFormation, type Formation } from '@/lib/formations'
-import { assignAllRows } from '@/lib/lineupAssignment'
+import { isSupportedFormation, type Formation } from '@/lib/formations'
 import PlayerCard from '@/app/components/playerCard'
+import { assignRealMatchLineup } from '@/lib/realMatchLineupAssignment'
 
 type RealPlayer = {
   id: string
@@ -61,12 +61,15 @@ function TeamPitchHalf({ teamName, formation, players, mirrored, borderColorHex,
   }
 
   const starters = players.filter(p => p.wasStarter)
-  const { result: assignedRows } = assignAllRows(
-    getFormationRows(formation as Formation),
+
+  const { rows: assignedRows } = assignRealMatchLineup(
+    formation as Formation,
     starters.map(p => ({
       id: p.id,
-      slotOrder: 0,
-      player: { position_id: p.player.position_id, detailed_position_id: p.positionPlayedId },
+      playerId: p.playerId,
+      positionPlayedId: p.positionPlayedId,
+      broadPositionId: p.positionPlayedId === 24 ? 24 : null,
+      original: p
     }))
   )
 
@@ -77,10 +80,9 @@ function TeamPitchHalf({ teamName, formation, players, mirrored, borderColorHex,
       {rows.map(row => (
         <div key={row.label} className="flex justify-around items-center py-2">
           {row.slots.map((slot, i) => {
-            const assignedStub = row.assigned[i]
-            if (!assignedStub) return <div key={i} className="w-14 h-14" />
-            const realPlayer = starters.find(p => p.id === assignedStub.id)
-            if (!realPlayer) return <div key={i} className="w-14 h-14" />
+            const assignedEntry = row.assigned[i]
+            if (!assignedEntry) return <div key={i} className="w-14 h-14" />
+            const realPlayer = assignedEntry.original as RealPlayer
             const slotPositionLabel = slot.type === 'fixed' ? slot.position : slot.label
             return (
               <button key={realPlayer.id} onClick={() => onSelectPlayer(realPlayer.id)}>
