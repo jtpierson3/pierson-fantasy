@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-import { isWaiverWindowClosed } from '@/lib/waiverWindow'
 import { validateBidAmount } from '@/lib/transferBidValuation'
 
 export async function POST(req: Request) {
@@ -13,10 +12,6 @@ export async function POST(req: Request) {
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
         const { fantasyTeamId, playerId, amount, playerToDropId } = await req.json()
-
-        if (await isWaiverWindowClosed()) {
-            return NextResponse.json({ error: 'Bidding window is currently closed' }, { status: 400 })
-        }
 
         const team = await prisma.fantasyTeam.findFirst({
             where: { id: fantasyTeamId, userId: user.id },

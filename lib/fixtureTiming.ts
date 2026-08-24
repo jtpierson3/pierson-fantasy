@@ -3,13 +3,6 @@ import { calculateWaiverCloseTime } from './waiverWindowCalculation'
 
 export type FixtureWindowInfo = {
     closesAt: Date
-    triggeringFixture: {
-        id: number
-        competition: string
-        homeTeamName: string
-        awayTeamName: string
-        kickoff: Date
-    }
 } | null
 
 export type WaiverClaimInput = {
@@ -42,38 +35,24 @@ export type WaiverProcessingResult = {
 
 const MAX_NON_IR_ROSTER = 23
 
-/**
- * Finds the next upcoming fixture chronologically taht involves at least one premier league team
- * that we track (homeTeamId/awayTeamId not null). This naturally skips early cup rounds involving
- * lower league sides without needing to hardcode the round PL teams join
- */
 export async function getCurrentWaiverWindow(): Promise<FixtureWindowInfo> {
     const now = new Date()
 
-    const nextFixture = await prisma.fixture.findFirst({
-        where: {
-            kickoff: { gt: now },
-            OR: [
-                { homeTeamId: { not: null } },
-                { awayTeamId: { not: null } }
-            ],
-        },
-        orderBy: { kickoff: 'asc' }
+    // Find the earliest gameweek whose first fixture hasn't started yet-
+    // this correctly advances even if the previous gamemweek is still
+    // marked incomplete
+    const upcomingGameweek = await prisma.fantasyGameweek.findFirst({
+        where: { startDate: { gt: now } },
+        orderBy: { gameweekNumber: 'asc' },
+        select: { startDate: true }
     })
 
-    if (!nextFixture) return null
+    if (!upcomingGameweek) return null
 
-    const closesAt = calculateWaiverCloseTime(nextFixture.kickoff)
+    const closesAt = calculateWaiverCloseTime(upcomingGameweek.startDate)
 
     return {
-        closesAt,
-        triggeringFixture: {
-            id: nextFixture.id,
-            competition: nextFixture.competition,
-            homeTeamName: nextFixture.homeTeamName,
-            awayTeamName: nextFixture.awayTeamName,
-            kickoff: nextFixture.kickoff
-        }
+        closesAt
     }
 }
 

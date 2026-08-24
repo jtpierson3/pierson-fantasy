@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { type FixtureWindowInfo } from '@/lib/fixtureTiming'
 
 type SyncResult = {
   success: boolean
@@ -8,17 +9,6 @@ type SyncResult = {
   error?: string
   [key: string]: unknown
 }
-
-type WaiverWindowInfo = {
-    closesAt: Date
-    triggeringFixture: {
-        id: number
-        competition: string
-        homeTeamName: string
-        awayTeamName: string
-        kickoff: Date
-    }
-} | null
 
 type SyncKey = 'league' | 'teams' | 'players' | 'fixtures'
 
@@ -30,7 +20,7 @@ const SYNC_ACTIONS: { key: SyncKey; label: string; description: string }[] = [
 ]
 
 type Props = {
-    waiverWindow: WaiverWindowInfo
+    waiverWindow: FixtureWindowInfo
 }
 
 export default function SyncPanel({ waiverWindow }: Props) {
@@ -95,15 +85,6 @@ export default function SyncPanel({ waiverWindow }: Props) {
             <div className="flex flex-col gap-1">
                 <p className="text-sm text-white">
                     Closes: <span className="font-medium">{new Date(waiverWindow.closesAt).toLocaleString()}</span>
-                </p>
-                <p className="text-sm text-gray-400">
-                    Triggering Fixture ({waiverWindow.triggeringFixture.competition}): {' '}
-                    <span className="text-white">
-                        {waiverWindow.triggeringFixture.homeTeamName} vs {waiverWindow.triggeringFixture.awayTeamName}
-                    </span>
-                </p>
-                <p className="text-xs text-gray-500">
-                    Kickoff: {new Date(waiverWindow.triggeringFixture.kickoff).toLocaleString()}
                 </p>
             </div>
         ) : (

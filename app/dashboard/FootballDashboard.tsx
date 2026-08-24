@@ -102,7 +102,7 @@ export default async function FootballDashobard() {
     })
 
     const waiverWindow = await getCurrentWaiverWindow()
-
+    
     const recentActivityRaw = await prisma.waiverClaim.findMany({
         where: {
             status: 'won',
@@ -166,7 +166,7 @@ export default async function FootballDashobard() {
                     </div>
                     <WaiverClaimsTile 
                         claimCount={pendingClaimsCount}
-                        closesAt={waiverWindow?.closesAt.toISOString() ?? null}
+                        closesAt={waiverWindow?.closesAt.toISOString() ?? 'Waiver Window Issue'}
                     />
                     <SidelinedTile sidelinedCount={sidelinedCount} />
                 </div>

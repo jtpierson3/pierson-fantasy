@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-import { isWaiverWindowClosed } from '@/lib/waiverWindow'
 
 export async function POST(req: Request) {
     try {
@@ -12,10 +11,6 @@ export async function POST(req: Request) {
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
         const { fantasyTeamId, playerToAddId, playerToDropId } = await req.json()
-
-        if (await isWaiverWindowClosed()) {
-            return NextResponse.json({ error: 'Waiver window is currently closed' }, { status: 400 })
-        }
 
         const fantasyTeam = await prisma.fantasyTeam.findFirst({
             where: { id: fantasyTeamId, userId: user.id },

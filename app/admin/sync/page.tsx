@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
-import { getCurrentWaiverWindow } from '@/lib/waiverWindow'
+import { getCurrentWaiverWindow } from '@/lib/fixtureTiming'
 import SyncPanel from './SyncPanel'
 
 export default async function SyncPage() {
