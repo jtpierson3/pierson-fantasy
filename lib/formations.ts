@@ -321,6 +321,7 @@ export const DETAILED_POSITION_MAP: Record<number, PositionType> = {
     156: 'W',  // Right Wing
     157: 'W',  // Left Midfield
     158: 'W',  // Right Midfield
+    27: 'ST', // For some reason, sportmonks does not seem to be using 151 at all when defining strikers.
 }
 
 export function getPositionType (
