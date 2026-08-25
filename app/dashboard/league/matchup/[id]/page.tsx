@@ -6,7 +6,7 @@ import MatchupPitch from '@/app/components/matchup/MatchupPitch'
 import MatchupTicker from '@/app/components/matchup/MatchupTicker'
 import type { MatchupTeamData, MatchupPlayer } from '@/app/components/matchup/MatchupPitch'
 import { getLeagueStandings } from '@/lib/leagueStandings'
-import { getPlayerPointsForGameweek } from '@/lib/playerPoints'
+import { getPlayerPointsForGameweek, PlayerGameweekPoints } from '@/lib/playerPoints'
 import { buildDisplayLineup } from '@/lib/lineupDisplayResolution'
 
 function MatchupSkeleton() {
@@ -56,7 +56,7 @@ async function buildTeamData(fantasyTeamId: string, gameweekId: string, fantasyL
     const playerIds = rawPlayers.map(p => p.playerId)
     const pointsMap = gameweek
         ? await getPlayerPointsForGameweek(playerIds, gameweek.gameweekNumber)
-        : new Map<number, number>()
+        : new Map<number, PlayerGameweekPoints>()
 
     const displayRows = buildDisplayLineup(
         rawPlayers.map(p => ({
@@ -77,12 +77,15 @@ async function buildTeamData(fantasyTeamId: string, gameweekId: string, fantasyL
             const playerData = playersByPlayerId.get(row.playerId)
             if (!playerData) return null
 
+            const gwPoints = pointsMap.get(row.playerId)
+
             return {
                 id: row.id,
                 playerId: row.playerId,
                 rosterSlot: row.rosterSlot,
                 slotOrder: row.slotOrder,
-                points: pointsMap.get(row.playerId) ?? 0,
+                points: gwPoints?.points ?? 0,
+                breakdown: gwPoints?.breakdown ?? [],
                 subResultInfo: row.subResultInfo,
                 player: {
                     id: playerData.id,

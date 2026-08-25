@@ -1,14 +1,17 @@
 'use client'
 
+import { useState } from 'react'
 import { getFormationRows, type Formation } from '@/lib/formations'
 import { assignAllRows, type SlotAssignable } from '@/lib/lineupAssignment'
 import PlayerCard from '@/app/components/playerCard'
 import type { DisplayPlayer } from '@/lib/playerTypes'
+import PlayerScoringModal from '@/app/components/PlayerScoringModal'
 
 export type MatchupPlayer = SlotAssignable & {
   rosterSlot: string
   player: DisplayPlayer & { detailed_position_id: number | null }
   points?: number
+  breakdown?: unknown
 }
 
 export type MatchupTeamData = {
@@ -30,10 +33,12 @@ function TeamStartersRows({
   team,
   mirrored,
   isHomeTeam,
+  onSelectPlayer,
 }: {
   team: MatchupTeamData
   mirrored: boolean
   isHomeTeam: boolean
+  onSelectPlayer: (id: string) => void
 }) {
   const starters = team.players.filter(p => p.rosterSlot === 'STARTER')
   const { result: assignedRows } = assignAllRows(
@@ -52,13 +57,18 @@ function TeamStartersRows({
             if (!fp) return <div key={i} className="w-14 h-14" />
             const slotPositionLabel = slot.type === 'fixed' ? slot.position : slot.label
             return (
-              <PlayerCard
+              <button
                 key={fp.id}
-                player={fp.player}
-                positionLabel={slotPositionLabel}
-                points={fp.points ?? 0}
-                isHomeTeam={isHomeTeam}
-              />
+                onClick={() => onSelectPlayer(fp.id)}
+              >
+                <PlayerCard
+                  key={fp.id}
+                  player={fp.player}
+                  positionLabel={slotPositionLabel}
+                  points={fp.points ?? 0}
+                  isHomeTeam={isHomeTeam}
+                />
+              </button>
             )
           })}
         </div>
@@ -72,11 +82,13 @@ function BenchSection({
     slot,
     label,
     isHomeTeam,
+    onSelectPlayer,
 }: {
     team: MatchupTeamData
     slot: 'SUB' | 'RESERVE'
     label: string
     isHomeTeam: boolean
+    onSelectPlayer: (id: string) => void
 }) {
     const players = team.players
         .filter(p => p.rosterSlot === slot)
@@ -89,13 +101,14 @@ function BenchSection({
             </p>
             <div className="flex flex-col gap-1.5">
                 {players.map(fp => (
-                    <div
+                    <button
                         key={fp.id}
-                        className="bg-white border border-gray-100 rounded-lg px-2 py-1.5 flex items-center gap-2"
+                        onClick={() => onSelectPlayer(fp.id)}
+                        className="bg-white border border-gray-100 rounded-lg px-2 py-1.5 flex items-center gap-2 text-left"
                     >
                         <span className="text-xs font-medium text-gray-400 w-4">{fp.slotOrder}</span>
                         <PlayerCard player={fp.player} points={fp.points ?? 0} size="sm" isHomeTeam={isHomeTeam} />
-                    </div>
+                    </button>
                 ))}
             </div>
         </div>
@@ -109,6 +122,11 @@ function ordinal(n: number): string {
 }
 
 export default function MatchupPitch({ homeTeam, awayTeam }: Props) {
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
+
+  const selectedPlayer = [...homeTeam.players, ...awayTeam.players]
+    .find(p => p.id === selectedPlayerId) ?? null
+
   return (
     <div className="flex flex-col gap-4">
       {/* Header */}
@@ -151,10 +169,10 @@ export default function MatchupPitch({ homeTeam, awayTeam }: Props) {
       {/* Reserves | Subs | Pitch | Subs | Reserves */}
       <div className="flex gap-3">
         <div className="w-40 flex-shrink-0">
-            <BenchSection team={homeTeam} slot="RESERVE" label="Reserves" isHomeTeam={true}/>
+            <BenchSection team={homeTeam} slot="RESERVE" label="Reserves" isHomeTeam={true} onSelectPlayer={setSelectedPlayerId}/>
         </div>
         <div className="w-40 flex-shrink-0">
-            <BenchSection team={homeTeam} slot="SUB" label="Subs" isHomeTeam={true}/>
+            <BenchSection team={homeTeam} slot="SUB" label="Subs" isHomeTeam={true} onSelectPlayer={setSelectedPlayerId}/>
         </div>
 
         <div className="flex-1">
@@ -174,22 +192,32 @@ export default function MatchupPitch({ homeTeam, awayTeam }: Props) {
 
             <div className="relative z-10" style={{ minHeight: '900px' }}>
               <div style={{ height: '440px' }}>
-                <TeamStartersRows team={homeTeam} mirrored={false} isHomeTeam={true} />
+                <TeamStartersRows team={homeTeam} mirrored={false} isHomeTeam={true} onSelectPlayer={setSelectedPlayerId}/>
               </div>
               <div style={{ height: '440px' }}>
-                <TeamStartersRows team={awayTeam} mirrored={true} isHomeTeam={false} />
+                <TeamStartersRows team={awayTeam} mirrored={true} isHomeTeam={false} onSelectPlayer={setSelectedPlayerId}/>
               </div>
             </div>
           </div>
         </div>
         
         <div className="w-40 flex-shrink-0">
-          <BenchSection team={awayTeam} slot="SUB" label="Subs" isHomeTeam={false} />
+          <BenchSection team={awayTeam} slot="SUB" label="Subs" isHomeTeam={false} onSelectPlayer={setSelectedPlayerId}/>
         </div>
         <div className="w-40 flex-shrink-0">
-          <BenchSection team={awayTeam} slot="RESERVE" label="Reserves" isHomeTeam={false} />
+          <BenchSection team={awayTeam} slot="RESERVE" label="Reserves" isHomeTeam={false} onSelectPlayer={setSelectedPlayerId}/>
         </div>
       </div>
+
+      {selectedPlayer && (
+        <PlayerScoringModal
+          playerName={selectedPlayer.player.display_name}
+          playerImage={selectedPlayer.player.image_path}
+          points={selectedPlayer.points ?? 0}
+          breakdown={selectedPlayer.breakdown}
+          onClose={() => setSelectedPlayerId(null)}
+        />
+      )}
     </div>
   )
 }

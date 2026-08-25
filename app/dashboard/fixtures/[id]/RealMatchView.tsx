@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { isSupportedFormation, type Formation } from '@/lib/formations'
 import PlayerCard from '@/app/components/playerCard'
 import { assignRealMatchLineup } from '@/lib/realMatchLineupAssignment'
+import  PlayerScoringModal from '@/app/components/PlayerScoringModal'
 
 type RealPlayer = {
   id: string
@@ -184,36 +185,18 @@ export default function RealMatchView({ fixture, homePlayers, awayPlayers }: Pro
           </div>
         </div>
 
-        {/* Score breakdown panel */}
-        {selectedPlayer && (
-          <div className="w-72 flex-shrink-0 bg-white border border-gray-100 rounded-xl p-4">
-            <h3 className="text-sm font-medium text-gray-900 mb-1">{selectedPlayer.player.display_name}</h3>
-            <p className="text-xs text-gray-400 mb-3">{selectedPlayer.points} pts</p>
-            <div className="flex flex-col gap-1">
-              {Array.isArray(selectedPlayer.breakdown) &&
-                (selectedPlayer.breakdown as { label: string; points: number, count?: number; pointsPerUnit: number }[]).map((line, i) => (
-                  <div key={i} className="flex items-center justify-between text-xs">
-                    <span className="text-gray-500">
-                        {line.label}
-                        {line.count !== undefined && line.pointsPerUnit !== undefined && (
-                            <span className="text-gray-400 ml-1">
-                                ({line.count} X {line.pointsPerUnit})
-                            </span>
-                        )}
-                        {line.count !== undefined && line.pointsPerUnit === undefined && (
-                            <span className="text-gray-400 ml-1">
-                                ({line.count})
-                            </span>
-                        )}
-                    </span>
-                    <span className={`font-medium ${line.points >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
-                      {line.points > 0 ? '+' : ''}{line.points}
-                    </span>
-                  </div>
-                ))}
-            </div>
-          </div>
-        )}
+        <div>
+            {selectedPlayer && (
+                <PlayerScoringModal
+                    playerName={selectedPlayer.player.display_name}
+                    playerImage={selectedPlayer.player.image_path}
+                    points={selectedPlayer.points}
+                    breakdown={selectedPlayer.breakdown}
+                    onClose={() => setSelectedPlayerId(null)}
+                />
+            )}
+        </div>
+
       </div>
     </div>
   )
