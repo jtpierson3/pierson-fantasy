@@ -71,7 +71,7 @@ export function calculatePlayerPoints(
 
         const points = count * rule.pointsPerUnit
         if (points !== 0) {
-            breakdown.push({ label: rule.displayName, points, count, pointsPerUnit: rule.pointsPerUnit })
+            breakdown.push({ label: rule.displayName, points: Math.round(points * 100)/100, count, pointsPerUnit: rule.pointsPerUnit })
         }
     }
 

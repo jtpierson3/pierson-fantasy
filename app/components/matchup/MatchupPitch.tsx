@@ -60,6 +60,7 @@ function TeamStartersRows({
               <button
                 key={fp.id}
                 onClick={() => onSelectPlayer(fp.id)}
+                className="cursor-pointer"
               >
                 <PlayerCard
                   key={fp.id}
@@ -104,7 +105,7 @@ function BenchSection({
                     <button
                         key={fp.id}
                         onClick={() => onSelectPlayer(fp.id)}
-                        className="bg-white border border-gray-100 rounded-lg px-2 py-1.5 flex items-center gap-2 text-left"
+                        className="bg-white border border-gray-100 rounded-lg px-2 py-1.5 flex items-center gap-2 text-left cursor-pointer"
                     >
                         <span className="text-xs font-medium text-gray-400 w-4">{fp.slotOrder}</span>
                         <PlayerCard player={fp.player} points={fp.points ?? 0} size="sm" isHomeTeam={isHomeTeam} />

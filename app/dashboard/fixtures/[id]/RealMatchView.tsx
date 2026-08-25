@@ -86,7 +86,7 @@ function TeamPitchHalf({ teamName, formation, players, mirrored, borderColorHex,
             const realPlayer = assignedEntry.original as RealPlayer
             const slotPositionLabel = slot.type === 'fixed' ? slot.position : slot.label
             return (
-              <button key={realPlayer.id} onClick={() => onSelectPlayer(realPlayer.id)}>
+              <button key={realPlayer.id} onClick={() => onSelectPlayer(realPlayer.id)} className="cursor-pointer">
                 <PlayerCard
                   player={realPlayer.player}
                   positionLabel={slotPositionLabel}
