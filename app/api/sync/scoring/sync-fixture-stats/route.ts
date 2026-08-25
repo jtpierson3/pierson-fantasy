@@ -4,6 +4,7 @@ import { getFixtureDetail } from '@/lib/sportmonks'
 import { logApiCall } from '@/lib/apiCallBudget'
 import { requireAutomationSecret } from '@/lib/automationAuth'
 import { STAT_TYPE_IDS } from '@/lib/scoringStatTypes'
+import { mapFixtureStatus } from '@/lib/sportmonksConstants'
 
 export async function POST(req: Request) {
     const authResult = requireAutomationSecret(req)
@@ -27,11 +28,18 @@ export async function POST(req: Request) {
         const homeFormationEntry = fixture.formations?.find(f => f.location === 'home')
         const awayFormationEntry = fixture.formations?.find(f => f.location === 'away')
 
+        const currentScores = fixture.scores?.filter(s => s.description === 'CURRENT') ?? []
+        const homeScoreEntry = currentScores.find(s => s.score.participant === 'home')
+        const awayScoreEntry = currentScores.find(s => s.score.participant === 'away')
+
         await prisma.fixture.update({
             where: { id: fixture.id },
             data: {
                 homeFormation: homeFormationEntry?.formation ?? null,
-                awayFormation: awayFormationEntry?.formation ?? null
+                awayFormation: awayFormationEntry?.formation ?? null,
+                homeScore: homeScoreEntry?.score.goals ?? null,
+                awayScore: awayScoreEntry?.score.goals ?? null,
+                status: mapFixtureStatus(fixture.state_id)
             }
         })
 

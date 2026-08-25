@@ -200,6 +200,11 @@ export default function RealMatchView({ fixture, homePlayers, awayPlayers }: Pro
                                 ({line.count} X {line.pointsPerUnit})
                             </span>
                         )}
+                        {line.count !== undefined && line.pointsPerUnit === undefined && (
+                            <span className="text-gray-400 ml-1">
+                                ({line.count})
+                            </span>
+                        )}
                     </span>
                     <span className={`font-medium ${line.points >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
                       {line.points > 0 ? '+' : ''}{line.points}
