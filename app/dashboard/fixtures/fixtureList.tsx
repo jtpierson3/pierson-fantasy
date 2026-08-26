@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import Image from 'next/image'
 import type { Prisma } from '@prisma/client'
 import { COMPETITIONS, type CompetitionKey } from '@/lib/sportmonksConstants'
+import Link from 'next/link'
 
 type FixtureWithTeams = Prisma.FixtureGetPayload<{
   include: { homeTeam: true; awayTeam: true }
@@ -135,9 +136,10 @@ export default function FixtureList({ fixtures }: Props) {
           {displayedFixtures.map(fixture => {
             const isFinished = FINISHED_STATUSES.has(fixture.status)
             return (
-              <div
+              <Link
                 key={fixture.id}
-                className="bg-white border border-gray-100 rounded-xl p-4"
+                href={`/dashboard/fixtures/${fixture.id}`}
+                className="block bg-white border border-gray-100 rounded-xl p-4 cursor-pointer hover:border-gray-300 hover:shadow-sm transition-shadow"
               >
                 <p className="text-xs text-gray-400 mb-2">
                   {formatKickoff(fixture.kickoff)}
@@ -195,7 +197,7 @@ export default function FixtureList({ fixtures }: Props) {
                     {fixture.status}
                   </p>
                 )}
-              </div>
+              </Link>
             )
           })}
         </div>
