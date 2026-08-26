@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { env } from '@/lib/env'
-import { getFixturesBySeason } from '@/lib/sportmonks'
+import { getUpcomingFixturesBySeason } from '@/lib/sportmonks'
+import { logApiCall } from '@/lib/apiCallBudget'
 import { COMPETITIONS, mapFixtureStatus, type CompetitionKey } from '@/lib/sportmonksConstants'
 
 export async function POST(req: Request) {
@@ -22,7 +23,12 @@ export async function POST(req: Request) {
       let updated = 0
 
       try {
-        const fixtures = await getFixturesBySeason(seasonId)
+        const { fixtures, remaining } = await getUpcomingFixturesBySeason(seasonId, COMPETITIONS[key].seasonEndDate)
+
+        await logApiCall(`fixtures/between (${key})`, 'SYNC_FIXTURES', {
+          triggeredBy: 'sync/fixtures',
+          remainingAfterCall: remaining
+        })
 
         for (const fx of fixtures) {
           const participants = fx.participants ?? []

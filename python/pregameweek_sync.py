@@ -50,7 +50,14 @@ def run() -> dict:
     )
     sync.raise_for_status()
 
-    return {"ran": True, "gameweekNumber": gameweek_number, "SyncResult": sync.json()}
+    fixtures_sync = requests.post(
+        f'{APP_URL}/api/sync/fixtures',
+        headers=headers(),
+        timeout=120,
+    )
+    fixtures_sync.raise_for_status()
+
+    return {"ran": True, "gameweekNumber": gameweek_number, "SyncResult": sync.json(), "fixturesSyncResult": fixtures_sync.json()}
 
 if __name__ == "__main__":
     try:

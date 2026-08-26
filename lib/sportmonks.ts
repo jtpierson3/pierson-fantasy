@@ -161,6 +161,32 @@ type SportmonksFetchResult<T> = {
     remaining: number | null
 }
 
+async function sportmonksFetchPaginatedWithMeta<T>(
+    endpoint: string,
+    revalidate = 60
+): Promise<{ data: T[]; remaining: number | null}> {
+    let allData: T[] = []
+    let page = 1
+    let hasMore = true
+    let remaining: number | null = null
+
+    while (hasMore) {
+        const separator = endpoint.includes('?') ? '&' : '?'
+        const pageUrl = `${endpoint}${separator}page=${page}`
+        const result = await sportmonksFetchWithMeta(pageUrl, revalidate) as SportmonksFetchResult<SportmonksPaginatedResponse<T>>
+    
+        allData = allData.concat(result.data.data ?? [])
+        remaining = result.remaining
+        hasMore = result.data.pagination?.has_more ?? false
+        page++
+
+        // Safety Valve
+        if (page > 40) break
+    }
+
+    return { data: allData, remaining }
+}
+
 export async function sportmonksFetchWithMeta(
     endpoint: string,
     revalidate = 60,
@@ -297,4 +323,16 @@ export async function getTeamSidelined(teamId: number): Promise<{ sidelined: Sid
     )
     const sidelined = (data as { data: { sidelined: SidelinedEntry[] } }).data?.sidelined ?? []
     return { sidelined, remaining }
+}
+
+export async function getUpcomingFixturesBySeason(
+    seasonId: number,
+    endDate: string
+): Promise<{ fixtures: Fixture[]; remaining: number | null }> {
+    const startDate = new Date().toISOString().slice(0, 10)
+    const { data, remaining } = await sportmonksFetchPaginatedWithMeta<Fixture>(
+        `/fixtures/between/${startDate}/${endDate}?filters=fixtureSeasons:${seasonId}&include=participants;scores;venue;state;round;stage&per_page=50`,
+        DAILY_RESET
+    )
+    return { fixtures: data, remaining }
 }

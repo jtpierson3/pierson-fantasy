@@ -1,10 +1,10 @@
 // All Competitions we sync - single source of truth for League/Season Ids
 export const COMPETITIONS = {
-    premier_league: { leagueId: 8, seasonId: 28083 },
-    fa_cup: { leagueId: 24, seasonId: 28020 },
-    carabao_cup: { leagueId: 27, seasonId: 27917 },
-    championship: { leagueId: 9, seasonId: 0},
-    la_liga: { leagueId: 564, seasonId: 0 }
+    premier_league: { leagueId: 8, seasonId: 28083, seasonEndDate: '2027-06-11' },
+    fa_cup: { leagueId: 24, seasonId: 28020 , seasonEndDate: '2027-06-11'},
+    carabao_cup: { leagueId: 27, seasonId: 27917, seasonEndDate: '2027-06-11' },
+    championship: { leagueId: 9, seasonId: 0, seasonEndDate: '2027-06-11' },
+    la_liga: { leagueId: 564, seasonId: 0, seasonEndDate: '2027-06-11' }
 } as const
 
 export type CompetitionKey = keyof typeof COMPETITIONS
