@@ -42,6 +42,37 @@ type Props = {
   awayPlayers: RealPlayer[]
 }
 
+function BenchSection({
+  players,
+  isHomeTeam,
+  onSelectPlayer,
+}: {
+  players: RealPlayer[]
+  isHomeTeam: boolean
+  onSelectPlayer: (id: string) => void
+}) {
+  const bench = players.filter(p => !p.wasStarter)
+
+  return (
+    <div>
+      <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">
+        Bench
+      </p>
+      <div className="flex flex-col gap-1.5">
+        {bench.map(fp => (
+          <button
+            key={fp.id}
+            onClick={() => onSelectPlayer(fp.id)}
+            className="bg-white border border-gray-100 rounded-lg px-2 py-1.5 flex items-center gap-2 text-left cursor-pointer"
+          >
+            <PlayerCard player={fp.player} points={fp.points} size="sm" isHomeTeam={isHomeTeam} />
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function TeamPitchHalf({ teamName, formation, players, mirrored, borderColorHex, selectedPlayerId, onSelectPlayer }: {
   teamName: string
   formation: string | null
@@ -141,7 +172,10 @@ export default function RealMatchView({ fixture, homePlayers, awayPlayers }: Pro
         </div>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex gap-3">
+        <div className="w-40 flex-shrink-0">
+          <BenchSection players={homePlayers} isHomeTeam={true} onSelectPlayer={setSelectedPlayerId} />
+        </div>
         {/* Pitch */}
         <div className="flex-1">
           <div
@@ -183,6 +217,9 @@ export default function RealMatchView({ fixture, homePlayers, awayPlayers }: Pro
               </div>
             </div>
           </div>
+        </div>
+        <div className="w-40 flex-shrink-0">
+          <BenchSection players={awayPlayers} isHomeTeam={false} onSelectPlayer={setSelectedPlayerId} />
         </div>
 
         <div>
