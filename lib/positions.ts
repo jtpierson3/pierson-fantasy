@@ -13,13 +13,13 @@ export const DETAILED_POSITIONS: Record<number, { name: string; short: string; p
     149: { name: 'Defensive Midfield', short: 'CDM', parentPositionId: 26 },
     150: { name: 'Attacking Midfield', short: 'CAM', parentPositionId: 26 },
     151: { name: 'Centre Forward', short: 'CF', parentPositionId: 27 },
-    152: { name: 'Left Wing', short: 'LW', parentPositionId: 27 },
+    152: { name: 'Left Wing', short: 'LW', parentPositionId: 26 },
     153: { name: 'Central Midfield', short: 'CM', parentPositionId: 26 },
     154: { name: 'Right Back', short: 'RB', parentPositionId: 25 },
     155: { name: 'Left Back', short: 'LB', parentPositionId: 25 },
-    156: { name: 'Right Wing', short: 'RW', parentPositionId: 25 },
-    157: { name: 'Left Midfield', short: 'LM', parentPositionId: 25 },
-    158: { name: 'Right Midfield', short: 'RM', parentPositionId: 25 },
+    156: { name: 'Right Wing', short: 'RW', parentPositionId: 26 },
+    157: { name: 'Left Midfield', short: 'LM', parentPositionId: 26},
+    158: { name: 'Right Midfield', short: 'RM', parentPositionId: 26 },
 }
 
 export function getPositionLabel(positionId: number | null | undefined): string {
