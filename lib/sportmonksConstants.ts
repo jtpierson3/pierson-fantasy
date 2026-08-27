@@ -16,22 +16,29 @@ export type FixtureState = {
 }
 
 export const LEAGUE_CUP_ROUND_TO_GAMEWEEK: Record<string, number> = {
-    '2nd Round': 40,
-    '3rd Round': 41,
-    '4th Round': 42,
-    'Quarter-finals': 43,
+    'Round 2': 40,
+    'Round 3': 41,
+    'Round 4': 42,
+    'Quarterfinals': 43,
     'Semi-finals': 44,
     'Final': 45
 }
 
 export const DOMESTIC_CUP_ROUND_TO_GAMEWEEK: Record<string, number> = {
-    '3rd Round': 50,
-    '4th Round': 51,
+    'Round 3': 50,
+    'Round 4': 51,
     '5th Round': 52,
     'Quarter-finals': 53,
     'Semi-finals': 54,
     'Final': 55
 }
+
+function invertRoundMap(map: Record<string, number>): Record<number, string> {
+    return Object.fromEntries(Object.entries(map).map(([ name, num]) => [num, name]))
+}
+
+export const LEAGUE_CUP_GAMEWEEK_TO_ROUND: Record<number, string> = invertRoundMap(LEAGUE_CUP_ROUND_TO_GAMEWEEK)
+export const DOMESTIC_CUP_GAMEWEEK_TO_ROUND: Record<number, string> = invertRoundMap(DOMESTIC_CUP_ROUND_TO_GAMEWEEK)
 
 export const TRANSFER_TYPES = {
     LOAN_TRANSFER: 218,

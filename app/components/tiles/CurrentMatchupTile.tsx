@@ -1,25 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { getOpponent, getMyPoints, getTheirPoints } from '@/lib/matchupHelpers'
-
-type TeamSummary = {
-    id: string
-    name: string
-    user: { username: string }
-}
-
-type MatchupSummary = {
-    id: string
-    homePoints: number
-    awayPoints: number
-    isComplete: boolean
-    homeTeamId: string
-    awayTeamId: string
-    homeTeam: TeamSummary
-    awayTeam: TeamSummary
-    gameweek: { gameweekNumber: number }
-}
+import { getOpponent, getMyPoints, getTheirPoints, type MatchupSummary } from '@/lib/matchupHelpers'
 
 type Props = {
   matchup: MatchupSummary | null

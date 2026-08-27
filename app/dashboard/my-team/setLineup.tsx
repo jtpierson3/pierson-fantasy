@@ -573,19 +573,25 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
         </div>
 
         {targetGameweek && lockDate && (
-          <div className={`px-4 py-3 rounded-xl border flex items-center justify-between ${
+          <div className={`px-4 py-3 rounded-xl border flex flex-col gap-1 ${
             isLocked
               ? 'bg-red-50 border-red-200'
               : 'bg-blue-50 border-blue-200'
           }`}>
-            <p className={`test-sm font-medium ${isLocked ? 'text-red-700' : 'text-blue-700'}`}>
-              Lineup for Gameweek {targetGameweek.gameweekNumber}
-            </p>
-            <p className={`text-sm font-semibold ${isLocked ? 'text-red-700' : 'text-blue-700'}`}>
-              {isLocked ? 'Locked' : `Closes in ${formatCountdown(lockDate, now)}`}
-            </p>
+            <div className="flex items-center justify-between">
+              <p className={`text-sm font-medium ${isLocked ? 'text-red-700' : 'text-blue-700'}`}>
+                Lineup for Gameweek {targetGameweek.gameweekNumber}
+              </p>
+              <p className={`text-sm font-semibold ${isLocked ? 'text-red-700' : 'text-blue-700'}`}>
+                {isLocked ? 'Locked' : `Closes in ${formatCountdown(lockDate, now)}`}
+              </p>
+            </div>
+            {targetGameweek.competition !== 'premier_league' && (
+              <p className={`text-xs ${isLocked ? 'text-red-600' : 'text-blue-600'}`}>
+                {targetGameweek.competition === 'league_cup' ? 'League Cup' : 'Domestic Cup' } week - your entire roster is eligible, slot assignments do not affect scoring. Please save a lineup anyway if you made waiver changes to ensure all players are in lineup.
+              </p>
+            )}
           </div>
-          
         )}
 
         {!targetGameweek && (

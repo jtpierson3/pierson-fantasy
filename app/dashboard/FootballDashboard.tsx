@@ -2,9 +2,9 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import { getLeagueStandings } from '@/lib/leagueStandings'
-import { selectClosestGameweek } from '@/lib/gameweekSelection'
+import { selectClosestGameweekForCompetition } from '@/lib/gameweekSelection'
 import ClubSummaryTile from '@/app/components/tiles/ClubSummaryTile'
-import CurrentMatchupTile from '@/app/components/tiles/CurrentMatchupTile'
+import CurrentCompetitionTile from '@/app/components/tiles/CurrentCompetitionTile'
 import LatestLineupTile from '@/app/components/tiles/LatestLineupTile'
 import { getCurrentWaiverWindow } from '@/lib/fixtureTiming'
 import WaiverClaimsTile from '@/app/components/tiles/WaiverClaimsTile'
@@ -12,6 +12,7 @@ import LeagueActivityTile from '@/app/components/tiles/LeagueActivityTile'
 import NextFixturesTile from '@/app/components/tiles/NextFixturesTile'
 import { COMPETITIONS } from '@/lib/sportmonksConstants'
 import SidelinedTile from '@/app/components/tiles/SidelinedTile'
+import { GameweekWithDateRange } from '@/lib/gameweekSelection'
 
 export default async function FootballDashobard() {
     const { userId } = await auth()
@@ -44,11 +45,44 @@ export default async function FootballDashobard() {
     // Determine which gameweek's matchup to show, based on date proximity
     const allGameweeks = await prisma.fantasyGameweek.findMany({
         where: { fantasyLeagueId: myTeam.fantasyLeagueId },
-        select: { id: true, gameweekNumber: true, startDate: true, endDate: true },
-        orderBy: { gameweekNumber: 'asc' }
+        select: { id: true, gameweekNumber: true, startDate: true, endDate: true, competition: true },
+        orderBy: { startDate: 'asc' }
     })
 
-    const closestGameweek = selectClosestGameweek(allGameweeks, new Date())
+    const now = new Date()
+    const closestPremLeagueGameweek = selectClosestGameweekForCompetition(allGameweeks, 'premier_league', now)
+    const closestDomCupGameweek = selectClosestGameweekForCompetition(allGameweeks, 'domestic_cup', now)
+    const closestLeagueCupGameweek = selectClosestGameweekForCompetition(allGameweeks, 'league_cup', now)
+
+    const RELEVANT_WINDOW_DAYS = 7
+    function isCurrentlyRelevant(gw: GameweekWithDateRange) {
+        const windowStart = new Date(gw.startDate.getTime() - RELEVANT_WINDOW_DAYS * 86400000)
+        const windowEnd = new Date(gw.endDate.getTime() + RELEVANT_WINDOW_DAYS * 86400000)
+        return now >= windowStart && now <= windowEnd
+    }
+
+    const cupSlides = await Promise.all(
+        [
+            { gw: closestLeagueCupGameweek, competition: 'league_cup' as const },
+            { gw: closestDomCupGameweek, competition: 'domestic_cup' as const },
+        ]
+            .filter((entry): entry is { gw: GameweekWithDateRange; competition: 'league_cup' | 'domestic_cup' } =>
+                entry.gw !== null && isCurrentlyRelevant(entry.gw)
+            )
+            .map(async ({ gw, competition }) => {
+                const snapshot = await prisma.gameweekLineup.findUnique({
+                    where: { fantasyTeamId_gameweekId: { fantasyTeamId: myTeam.id, gameweekId: gw.id } },
+                    select: { cupPointsTotal: true }
+                })
+                return {
+                    competition,
+                    gameweekNumber: gw.gameweekNumber,
+                    cupPointsTotal: snapshot?.cupPointsTotal ?? null
+                }
+            })
+    )
+
+    const closestGameweek = closestPremLeagueGameweek
 
     const currentMatchup = closestGameweek
         ? await prisma.fantasyMatchup.findFirst({
@@ -173,7 +207,7 @@ export default async function FootballDashobard() {
 
                 {/* Column 1 Row 2 - Current Matchup */}
                 <div style={{ gridColumn: 1, gridRow: 2 }}>
-                    <CurrentMatchupTile matchup={currentMatchup} currentTeamId={myTeam.id} />
+                    <CurrentCompetitionTile matchup={currentMatchup} currentTeamId={myTeam.id} cupSlides={cupSlides} />
                 </div>
 
                 {/* Column 1 Row 3 - Latest Lineup */}

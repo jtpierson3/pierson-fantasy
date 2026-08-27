@@ -16,7 +16,7 @@ type Props = {
 export default function LeagueDashboard({ league, currentTeamId}: Props) {
     const router = useRouter()
 
-    const currentGameweek = league.gameweeks.find(gw => gw.isCurrent)
+    const currentGameweek = league.gameweeks.find(gw => gw.isCurrent && gw.competition === 'premier_league')
     const allMatchups = getTeamMatchups(
         league.teams.find(t => t.id === currentTeamId)!,
         league.gameweeks
