@@ -18,6 +18,12 @@ enum RosterSlot {
   IR
 }
 
+enum FantasyCompetition {
+  premier_league
+  league_cup
+  domestic_cup
+}
+
 enum ApiCallSource {
   SYNC_LEAGUE
   SYNC_TEAMS
@@ -116,20 +122,21 @@ model FantasyTeamPlayer {
 }
 
 model FantasyGameweek {
-  id              String           @id @default(cuid())
-  fantasyLeague   FantasyLeague    @relation(fields: [fantasyLeagueId], references: [id])
+  id              String             @id @default(cuid())
+  fantasyLeague   FantasyLeague      @relation(fields: [fantasyLeagueId], references: [id])
   fantasyLeagueId String
   gameweekNumber  Int
   startDate       DateTime
   endDate         DateTime
-  isComplete      Boolean          @default(false)
-  isCurrent       Boolean          @default(false)
+  isComplete      Boolean            @default(false)
+  isCurrent       Boolean            @default(false)
   matchups        FantasyMatchup[]
-  createdAt       DateTime         @default(now())
+  createdAt       DateTime           @default(now())
   waiverLock      DateTime?
   waiverClaims    WaiverClaim[]
   gameweekLineups GameweekLineup[]
   transferBids    TransferBid[]
+  competition     FantasyCompetition @default(premier_league)
 
   @@unique([fantasyLeagueId, gameweekNumber])
 }
@@ -168,14 +175,15 @@ model WaiverClaim {
 }
 
 model GameweekLineup {
-  id            String                 @id @default(cuid())
-  fantasyTeam   FantasyTeam            @relation(fields: [fantasyTeamId], references: [id])
-  fantasyTeamId String
-  gameweek      FantasyGameweek        @relation(fields: [gameweekId], references: [id])
-  gameweekId    String
-  formation     String
-  lockedAt      DateTime               @default(now())
-  players       GameweekLineupPlayer[]
+  id             String                 @id @default(cuid())
+  fantasyTeam    FantasyTeam            @relation(fields: [fantasyTeamId], references: [id])
+  fantasyTeamId  String
+  gameweek       FantasyGameweek        @relation(fields: [gameweekId], references: [id])
+  gameweekId     String
+  formation      String
+  lockedAt       DateTime               @default(now())
+  players        GameweekLineupPlayer[]
+  cupPointsTotal Int?
 
   @@unique([fantasyTeamId, gameweekId])
 }

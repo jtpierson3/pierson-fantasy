@@ -15,6 +15,24 @@ export type FixtureState = {
     name: string
 }
 
+export const LEAGUE_CUP_ROUND_TO_GAMEWEEK: Record<string, number> = {
+    '2nd Round': 40,
+    '3rd Round': 41,
+    '4th Round': 42,
+    'Quarter-finals': 43,
+    'Semi-finals': 44,
+    'Final': 45
+}
+
+export const DOMESTIC_CUP_ROUND_TO_GAMEWEEK: Record<string, number> = {
+    '3rd Round': 50,
+    '4th Round': 51,
+    '5th Round': 52,
+    'Quarter-finals': 53,
+    'Semi-finals': 54,
+    'Final': 55
+}
+
 export const TRANSFER_TYPES = {
     LOAN_TRANSFER: 218,
     TRANSFER: 219,

@@ -1,9 +1,34 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { FantasyCompetition } from '@prisma/client'
 import { env } from '@/lib/env'
 import { getUpcomingFixturesBySeason } from '@/lib/sportmonks'
 import { logApiCall } from '@/lib/apiCallBudget'
-import { COMPETITIONS, mapFixtureStatus, type CompetitionKey } from '@/lib/sportmonksConstants'
+import { COMPETITIONS, DOMESTIC_CUP_ROUND_TO_GAMEWEEK, LEAGUE_CUP_ROUND_TO_GAMEWEEK, mapFixtureStatus, type CompetitionKey } from '@/lib/sportmonksConstants'
+
+async function syncCupGameweeks(competition: FantasyCompetition, gameweekNumbers: Set<number>) {
+  const leagues = await prisma.fantasyLeague.findMany({ select: { id: true } })
+
+  for (const gameweekNumber of gameweekNumbers) {
+    const roundFixtures = await prisma.fixture.findMany({
+      where: { competition, gameweekNumber },
+      select: { kickoff: true }
+    })
+    if (roundFixtures.length === 0) continue
+
+    const kickoffs = roundFixtures.map(f => f.kickoff.getTime())
+    const startDate = new Date(Math.min(...kickoffs))
+    const endDate = new Date(Math.max(...kickoffs))
+
+    for (const league of leagues) {
+      await prisma.fantasyGameweek.upsert({
+        where: { fantasyLeagueId_gameweekNumber: { fantasyLeagueId: league.id, gameweekNumber } },
+        update: { startDate, endDate }, // keeps dates fresh
+        create: { fantasyLeagueId: league.id, gameweekNumber, startDate, endDate, competition },
+      })
+    }
+  }
+}
 
 export async function POST(req: Request) {
   const authHeader = req.headers.get('authorization')
@@ -21,6 +46,7 @@ export async function POST(req: Request) {
       const { leagueId, seasonId } = COMPETITIONS[key]
       let created = 0
       let updated = 0
+      const competitionGameweekNumbers = new Set<number>()
 
       try {
         const { fixtures, remaining } = await getUpcomingFixturesBySeason(seasonId, COMPETITIONS[key].seasonEndDate)
@@ -51,10 +77,22 @@ export async function POST(req: Request) {
 
           const roundOrStageName = fx.round?.name ?? fx.stage?.name ?? null
 
-          const gameweekNumber =
-            key === 'premier_league' && fx.round?.name
-              ? parseInt(fx.round.name) || null
-              : null
+          let gameweekNumber: number | null = null
+          let competition: FantasyCompetition = 'premier_league'
+
+          if (key === 'premier_league' && fx.round?.name) {
+            gameweekNumber = parseInt(fx.round.name) || null
+          } else if (key === 'carabao_cup' && fx.stage?.name) {
+            gameweekNumber = LEAGUE_CUP_ROUND_TO_GAMEWEEK[fx.stage.name] ?? null
+            competition = 'league_cup'
+          } else if (key === 'fa_cup' && fx.stage?.name) {
+            gameweekNumber = DOMESTIC_CUP_ROUND_TO_GAMEWEEK[fx.stage.name] ?? null
+            competition = 'domestic_cup'
+          }
+
+          if (gameweekNumber !== null && (key === 'carabao_cup' || key === 'fa_cup')) {
+            competitionGameweekNumbers.add(gameweekNumber)
+          }
 
           const data = {
             leagueId,
@@ -83,6 +121,10 @@ export async function POST(req: Request) {
 
           if (existing) updated++
           else created++
+        }
+
+        if (key === 'carabao_cup' || key === 'fa_cup') {
+          await syncCupGameweeks(key === 'carabao_cup' ? 'league_cup' : 'domestic_cup', competitionGameweekNumbers)
         }
 
         competitionResults.push({ competition: key, created, updated, fetched: fixtures.length })

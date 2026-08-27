@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAutomationSecret } from '@/lib/automationAuth'
 import { resolveGameweekLineup } from '@/lib/lineupResolution'
+import { resolveCupGameweekForAllTeams } from '@/lib/cupScoring'
 
 export async function POST(req: Request) {
     const authResult = requireAutomationSecret(req)
@@ -9,6 +10,16 @@ export async function POST(req: Request) {
 
     const { gameweekId } = await req.json()
     if (!gameweekId) return NextResponse.json({ error: 'gameweekId is required' }, { status: 400 })
+
+    const gameweek = await prisma.fantasyGameweek.findUnique({
+        where: { id: gameweekId }
+    })
+    if (!gameweek) return NextResponse.json({ error: 'Gameweek not found' }, { status: 404 })
+
+    if (gameweek.competition !== 'premier_league') {
+        const resolvedCount = await resolveCupGameweekForAllTeams(gameweekId)
+        return NextResponse.json({ success: true, teamsResolved: resolvedCount })
+    }
 
     try {
         const lineups = await prisma.gameweekLineup.findMany({

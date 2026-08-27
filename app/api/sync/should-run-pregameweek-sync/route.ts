@@ -12,11 +12,10 @@ export async function GET(req: Request) {
         const allGameweeks = await prisma.fantasyGameweek.findMany({
             where: { isComplete: false },
             orderBy: { gameweekNumber: 'asc' },
-            select: { gameweekNumber: true, startDate: true, endDate: true, id: true }
         })
 
         for (const gw of allGameweeks) {
-            const lockTime = await getGameweekLockTime(gw.startDate, gw.endDate)
+            const lockTime = await getGameweekLockTime(gw)
             if (!lockTime) continue
 
             const now = new Date()

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
+import { getActiveWaiverGameweek } from '@/lib/fixtureTiming'
 
 export async function POST(req: Request) {
     try {
@@ -44,9 +45,7 @@ export async function POST(req: Request) {
         }
 
         // Find the current gameweek to tie the claim to
-        const currentGameweek = await prisma.fantasyGameweek.findFirst({
-            where: { fantasyLeagueId: fantasyTeam.fantasyLeagueId, isCurrent: true }
-        })
+        const currentGameweek = await getActiveWaiverGameweek(fantasyTeam.fantasyLeagueId)
         if (!currentGameweek) { 
             return NextResponse.json({ error: 'No acitve gameweek found' }, { status: 400 })
         }

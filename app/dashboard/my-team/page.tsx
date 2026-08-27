@@ -125,7 +125,7 @@ async function MyTeamContent() {
     allGameweeks.map(async gw => ({
       id: gw.id,
       gameweekNumber: gw.gameweekNumber,
-      lockTime: await getGameweekLockTime(gw.startDate, gw.endDate)
+      lockTime: await getGameweekLockTime(gw)
     }))
   )
 
