@@ -1,8 +1,9 @@
 'use client'
 
-import CurrentMatchupTile from "./CurrentMatchupTile"
-import { type MatchupSummary } from '@/lib/matchupHelpers'
 import { useState } from 'react'
+import CurrentMatchupTile from './CurrentMatchupTile'
+import CurrentCupTile from './CurrentCupTile'
+import { type MatchupSummary } from '@/lib/matchupHelpers'
 
 type CupSlide = {
     competition: 'league_cup' | 'domestic_cup'

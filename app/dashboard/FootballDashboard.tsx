@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { getLeagueStandings } from '@/lib/leagueStandings'
 import { selectClosestGameweekForCompetition } from '@/lib/gameweekSelection'
 import ClubSummaryTile from '@/app/components/tiles/ClubSummaryTile'
-import CurrentMatchupTile from '@/app/components/tiles/CurrentMatchupTile'
+import CurrentCompetitionTile from '@/app/components/tiles/CurrentCompetitionTile'
 import LatestLineupTile from '@/app/components/tiles/LatestLineupTile'
 import { getCurrentWaiverWindow } from '@/lib/fixtureTiming'
 import WaiverClaimsTile from '@/app/components/tiles/WaiverClaimsTile'
@@ -61,10 +61,28 @@ export default async function FootballDashobard() {
         return now >= windowStart && now <= windowEnd
     }
 
-    const relevantCupGameweeks = [closestLeagueCupGameweek, closestDomCupGameweek]
-        .filter((gw): gw is NonNullable<typeof gw> => gw !== null && isCurrentlyRelevant(gw))
+    const cupSlides = await Promise.all(
+        [
+            { gw: closestLeagueCupGameweek, competition: 'league_cup' as const },
+            { gw: closestDomCupGameweek, competition: 'domestic_cup' as const },
+        ]
+            .filter((entry): entry is { gw: GameweekWithDateRange; competition: 'league_cup' | 'domestic_cup' } =>
+                entry.gw !== null && isCurrentlyRelevant(entry.gw)
+            )
+            .map(async ({ gw, competition }) => {
+                const snapshot = await prisma.gameweekLineup.findUnique({
+                    where: { fantasyTeamId_gameweekId: { fantasyTeamId: myTeam.id, gameweekId: gw.id } },
+                    select: { cupPointsTotal: true }
+                })
+                return {
+                    competition,
+                    gameweekNumber: gw.gameweekNumber,
+                    cupPointsTotal: snapshot?.cupPointsTotal ?? null
+                }
+            })
+    )
 
-    const closestGameweek = closestPremLeagueGameweek 
+    const closestGameweek = closestPremLeagueGameweek
 
     const currentMatchup = closestGameweek
         ? await prisma.fantasyMatchup.findFirst({
@@ -189,7 +207,7 @@ export default async function FootballDashobard() {
 
                 {/* Column 1 Row 2 - Current Matchup */}
                 <div style={{ gridColumn: 1, gridRow: 2 }}>
-                    <CurrentMatchupTile matchup={currentMatchup} currentTeamId={myTeam.id} />
+                    <CurrentCompetitionTile matchup={currentMatchup} currentTeamId={myTeam.id} cupSlides={cupSlides} />
                 </div>
 
                 {/* Column 1 Row 3 - Latest Lineup */}
