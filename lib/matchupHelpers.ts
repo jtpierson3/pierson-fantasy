@@ -11,6 +11,24 @@ export type MatchupForHelpers<T extends MatchupTeamRef> = {
     awayTeam: T
 }
 
+export type TeamSummary = {
+    id: string
+    name: string
+    user: { username: string }
+}
+
+export type MatchupSummary = {
+    id: string
+    homePoints: number
+    awayPoints: number
+    isComplete: boolean
+    homeTeamId: string
+    awayTeamId: string
+    homeTeam: TeamSummary
+    awayTeam: TeamSummary
+    gameweek: { gameweekNumber: number }
+}
+
 /**
  * Given a matchup and a team's id, returns that team's opponent.
  */

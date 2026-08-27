@@ -76,6 +76,12 @@ const COMPETITION_TO_FIXTURE_KEY: Record<FantasyCompetition, string> = {
     domestic_cup: 'fa_cup',
 }
 
+export async function getCurrentGameweekByCompetition(fantasyLeagueId: string, competition: FantasyCompetition) {
+    return prisma.fantasyGameweek.findFirst({
+        where: { fantasyLeagueId, competition, isCurrent: true }
+    })
+}
+
 /**
  * Finds the earliest upcoming Premier League fixture for a given FantasyGAmeweek's
  * date trange. used to determine when lineups lock for that gameweek - the lock 

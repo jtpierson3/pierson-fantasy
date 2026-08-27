@@ -1,3 +1,5 @@
+import { FantasyCompetition } from "@prisma/client"
+
 export type GameweekWithLockInfo = {
     id: string
     gameweekNumber: number
@@ -34,6 +36,14 @@ export function selectClosestGameweek(
     }
 
     return gameweeks[gameweeks.length - 1]
+}
+
+export function selectClosestGameweekForCompetition(
+    gameweeks: (GameweekWithDateRange & { competition: FantasyCompetition })[],
+    competition: FantasyCompetition,
+    now: Date
+) {
+    return selectClosestGameweek(gameweeks.filter(g => g.competition === competition), now)
 }
 
 /**
