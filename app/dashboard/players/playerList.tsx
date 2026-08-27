@@ -37,6 +37,7 @@ type Props = {
     allRosteredPlayers: RosteredPlayer[]
     draftComplete: boolean
     myPendingClaimPlayerIds: number[]
+    scores: Record<number, { total: number; games: number }>
 }
 
 type Layout = 'grid' | 'list'
@@ -50,25 +51,32 @@ const POSITION_IDS: Record<PositionFilter, number | null> = {
     ATT: 27
 }
 
-export default function PlayerList({ players, teams, myFantasyTeam, allRosteredPlayers, draftComplete, myPendingClaimPlayerIds }: Props) {
+export default function PlayerList({ players, teams, myFantasyTeam, allRosteredPlayers, draftComplete, myPendingClaimPlayerIds, scores }: Props) {
     const [layout, setLayout] = useState<Layout>('grid')
     const [search, setSearch] = useState('')
     const [positionFilter, setPositionFilter] = useState<PositionFilter>('ALL')
     const [teamFilter, setTeamFilter] = useState<string>('ALL')
     const [showAllLeagues, setShowAllLeagues] = useState(false)
     const [showFreeAgentsOnly, setShowFreeAgentsOnly] = useState(true)
+    const [minScore, setMinScore] = useState(0)
+    const [sortByScore, setSortByScore] = useState(false)
 
     const filtered = useMemo(() => {
-        return players.filter(p => {
+        const list =  players.filter(p => {
             const matchesSearch = normalizeForSearch(p.display_name).includes(normalizeForSearch(search))
             const matchesPosition = positionFilter === 'ALL' || p.position_id === POSITION_IDS[positionFilter]
             const matchesTeam = teamFilter === 'ALL' || p.teamId === parseInt(teamFilter)
             const matchesEligibility = showAllLeagues || isPremierLeagueEligible(p.team?.leagueId)
             const isOwned = allRosteredPlayers.some(rp => rp.playerId === p.id)
             const matchesOwnership = !showFreeAgentsOnly || !isOwned
-            return matchesSearch && matchesPosition && matchesTeam && matchesEligibility && matchesOwnership
+            const matchesScore = (scores[p.id]?.total ?? 0) >= minScore
+            return matchesSearch && matchesPosition && matchesTeam && matchesEligibility && matchesOwnership && matchesScore
         })
-    }, [players, search, positionFilter, teamFilter, showAllLeagues, showFreeAgentsOnly, allRosteredPlayers])
+        if (sortByScore) {
+            list.sort((a, b) => (scores[b.id]?.total ?? 0) - (scores[a.id]?.total ?? 0))
+        }
+        return list
+    }, [players, search, positionFilter, teamFilter, showAllLeagues, showFreeAgentsOnly, allRosteredPlayers, scores, minScore, sortByScore])
 
     const teamOptions = useMemo(() => {
         return showAllLeagues
@@ -255,6 +263,27 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
                 >
                     {showFreeAgentsOnly ? 'Free Agents Only' : 'All Players'}
                 </button>
+
+                {/* Min Score Filter */}
+                <div className="flex items-center gap-1.5">
+                    <label className="text-xs font-medium text-gray-500">Min Pts</label>
+                    <input
+                        type="number"
+                        value={minScore}
+                        onChange={e => setMinScore(Number(e.target.value) || 0)}
+                        className="w-16 px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600 text-gray-900"
+                    />
+                </div>
+
+                {/* Sort by score */}
+                <button
+                    onClick={() => setSortByScore(prev => !prev)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                        sortByScore ? 'bg-green-800 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                    }`}
+                >
+                    Sort By Score
+                </button>
             </div>  
 
             {/* No results */}
@@ -318,6 +347,19 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
                                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getPositionColor(player.position_id)}`}>
                                     {getPositionShort(player.position_id)}
                                 </span>
+
+                                {/* SCORING */}
+                                <div className="mt-2 flex items-center justify-center gap-3 text-xs">
+                                    <span className="font-semibold text-gray-900">
+                                        {(scores[player.id]?.total ?? 0).toFixed(2)} pts
+                                    </span>
+                                    <span className="text-gray-400">
+                                        {scores[player.id]?.games
+                                            ? (scores[player.id].total / scores[player.id].games).toFixed(2)
+                                            : '0'}/gm
+                                    </span>
+                                </div>
+                                
                                 {/* Ownership + Add */}
                                 <div
                                     className="mt-2"

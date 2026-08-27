@@ -49,6 +49,17 @@ async function PlayersContent() {
     }
   })
 
+  const scoreAgg = await prisma.playerFixturePoints.groupBy({
+    by: ['playerId'],
+    _sum: { points: true },
+    _count: { _all: true },
+  })
+
+  const scores: Record<number, { total: number; games: number }> = {}
+  for (const row of scoreAgg) {
+    scores[row.playerId] = { total: row._sum.points ?? 0, games: row._count._all } 
+  }
+
   // Get all rostered players in the same league
   const allRosteredPlayers = myFantasyTeam
     ? await prisma.fantasyTeamPlayer.findMany({
@@ -95,6 +106,7 @@ async function PlayersContent() {
       allRosteredPlayers={allRosteredPlayers}
       draftComplete={myFantasyTeam?.fantasyLeague.draftComplete ?? false}
       myPendingClaimPlayerIds={myPendingClaimPlayerIds}
+      scores={scores}
     />
   )
 }
