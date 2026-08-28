@@ -47,7 +47,7 @@ export default function LeagueActivityTile({ activity }: Props) {
                 <p className="text-xs text-gray-400">No recent activity</p>
             ) : (
                 <div className="flex flex-col gap-2 overflow-hidden">
-                    {activity.map(item => (
+                    {activity.slice(0,6).map(item => (
                         <div key={item.id} className="text-xs border-b border-gray-50 last:border-0 pb-2 last:pb-0">
                             <div className="flex items-center justify-between">
                                 <p className="font-medium text-gray-900 truncate">
