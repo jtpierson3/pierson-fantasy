@@ -7,6 +7,7 @@ import type { FantasyTeamWithPlayers } from './types'
 import ClaimModal from '@/app/components/ClaimModal'
 import FuturePlayerSearch from '@/app/components/FuturePlayerSearch'
 import TransferBidModal from '@/app/components/TransferBidModal'
+import type { WaiverClaimBadge } from '@/lib/waiverClaimStatus'
 
 type SearchPlayer = {
   id: number
@@ -33,8 +34,7 @@ export type ClaimStatus = {
   submittedAt: string
   player: { id: number; display_name: string; image_path: string | null }
   playerToDrop: { display_name: string } | null
-  isLeading: boolean
-  competingClaimsCount: number
+  badge: WaiverClaimBadge
   currentHighBid: number | null
   currentHighBidderName: string | null
   myBidAmount: number | null
@@ -269,21 +269,28 @@ function WaiversTabInner({ team, initialClaims, initialBids, availableFunds }: P
                     </div>
                   </div>
                   <div className="text-right flex items-center gap-2">
-                    {claim.competingClaimsCount > 1 ? (
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        claim.isLeading
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-red-100 text-red-600'
-                      }`}>
-                        {claim.isLeading ? 'Leading' : 'Losing'}
-                      </span>
-                    ) : (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium">
-                        Only Claim
-                      </span>
-                    )}
                     {(() => {
-                      const contested = claim.competingClaimsCount > 1 && !claim.isLeading
+                      const BADGES: Record<WaiverClaimBadge, { label: string; className: string }> = {
+                        'only-claim': { label: 'Only Claim', className: 'bg-gray-100 text-gray-500' },
+                        'leading': { label: 'Leading', className: 'bg-green-100 text-green-700' },
+                        'losing': { label: 'Losing', className: 'bg-red-100 text-red-600' },
+                        'losing-to-bid': { label: 'Outbid', className: 'bg-red-100 text-red-600' },
+                      }
+                      const b = BADGES[claim.badge]
+                      return (
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full font-medium ${b.className}`}
+                          title={claim.badge === 'losing-to-bid'
+                            ? 'A transfer fund bid on this player will process before this waiver claims'
+                            : undefined
+                          }
+                        >
+                          {b.label}
+                        </span>
+                      )
+                    })()}
+                    {(() => {
+                      const contested = claim.badge === 'losing' || claim.badge === 'losing-to-bid'
                       const canAfford = availableFunds >= bidMinFor(claim.currentHighBid)
                       if (!contested && !claim.hasForeignBid) return null
                       if (claim.myBidAmount !== null) {

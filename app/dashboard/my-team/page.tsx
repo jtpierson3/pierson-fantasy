@@ -7,6 +7,7 @@ import { getGameweekLockTime } from '@/lib/fixtureTiming'
 import { mergeLineupWithSnapshot } from '@/lib/lineupSnapshot'
 import { selectTargetGameweek } from '@/lib/gameweekSelection'
 import { getActiveSidelinedForPlayers } from '@/lib/playerSidelined'
+import { getWaiverClaimBadge } from '@/lib/waiverClaimStatus'
 
 function MyTeamSkeleton() {
   return (
@@ -87,13 +88,11 @@ async function MyTeamContent() {
         where: {
           playerToAddId: claim.playerToAddId,
           status: 'pending',
-          fantasyTeam: { fantasyLeagueId: fantasyTeam.fantasyLeagueId }
+          fantasyTeam: { fantasyLeagueId: fantasyTeam.fantasyLeagueId },
+          NOT: { fantasyTeamId: fantasyTeam.id}
         },
-        include: { fantasyTeam: true }
+        include: { fantasyTeam: { select: { waiverPriority: true } } },
       })
-
-      const bestPriority = Math.min(...competingClaims.map(c => c.fantasyTeam.waiverPriority))
-      const isLeading = fantasyTeam.waiverPriority === bestPriority
 
       const bidsOnPlayer = await prisma.transferBid.findMany({
         where: {
@@ -104,8 +103,19 @@ async function MyTeamContent() {
         orderBy: { amount: 'desc' },
         include: { fantasyTeam: { select: { id: true, name: true } } }
       })
+
       const highBid = bidsOnPlayer[0] ?? null
       const myBid = bidsOnPlayer.find(b => b.fantasyTeam.id === fantasyTeam.id) ?? null
+      const hasForeignBid = highBid ? highBid.fantasyTeam.id !== fantasyTeam.id : false
+
+      const projectedBidWinnerIsMe = bidsOnPlayer.length === 0 ? null : highBid!.fantasyTeam.id === fantasyTeam.id
+
+      const badge = getWaiverClaimBadge({
+        myWaiverPriority: fantasyTeam.waiverPriority,
+        competingClaimPriorities: competingClaims.map(c => c.fantasyTeam.waiverPriority),
+        hasForeignBid,
+        projectedBidWinnerIsMe,
+      })
 
       return {
         id: claim.id,
@@ -120,12 +130,12 @@ async function MyTeamContent() {
         playerToDrop: claim.playerToDrop
           ? { display_name: claim.playerToDrop.display_name }
           : null,
-        isLeading,
-        competingClaimsCount: competingClaims.length,
+        badge,
+        hasOtherClaims: competingClaims.length > 0,
         currentHighBid: highBid?.amount ?? null,
         currentHighBidderName: highBid?.fantasyTeam.name,
         myBidAmount: myBid?.amount ?? null,
-        hasForeignBid: highBid ? highBid.fantasyTeam.id !== fantasyTeam.id : false,
+        hasForeignBid,
       }
     })
   )

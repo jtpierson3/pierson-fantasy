@@ -4,7 +4,7 @@ import { env } from '@/lib/env'
 import { isWaiverWindowClosed } from '@/lib/fixtureTiming'
 import { resolveTransferBids, type TransferBidInput, type TransferBidTeamInput } from '@/lib/transferBidResolution'
 import { findCascadeInvalidations, type PendingClaimLike } from '@/lib/transferCascade'
-import { resolveWaiverClaims, type WaiverClaimInput, type WaiverTeamInput } from '@/lib/fixtureTiming'
+import { resolveWaiverClaims, type WaiverClaimInput, type WaiverTeamInput } from '@/lib/waiverClaimResolution'
 
 export async function POST(req: Request) {
     const authHeader = req.headers.get('authorization')
