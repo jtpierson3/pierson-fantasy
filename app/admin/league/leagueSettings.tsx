@@ -789,7 +789,7 @@ export default function LeagueSettings({
                     <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 max-w-md w-full shadow-xl max-h-[85vh] overflow-y-auto">
                         <h3 className="text-base font-medium text-white mb-1">Set Draft Order</h3>
                         <p className="text-sm text-gray-400 mb-6">
-                            Order teams from 1st pick to last pick. Waiver priority will be set as the inverse (last pick gets first waiver priority).
+                            Order teams from 1st pick to last pick. This sets each team&apos;s draft position, which seeds the waiver order before the season starts and breaks ties once standings begin.
                         </p>
 
                         <div className="flex flex-col gap-2 mb-4">
@@ -842,7 +842,7 @@ export default function LeagueSettings({
                                 disabled={draftOrderSaving}
                                 className="px-4 py-2 text-sm rounded-lg bg-green-700 text-white hover:bg-green-600 transition-colors disabled:opacity-50 font-medium"
                             >
-                                {draftOrderSaving ? 'Saving...' : 'Save Draft Order & Set Priority'}
+                                {draftOrderSaving ? 'Saving...' : 'Save Draft Order'}
                             </button>
                         </div>
                     </div>

@@ -56,7 +56,6 @@ async function processLeague(leagueId: string) {
         include: { fantasyTeam: true } 
     })
 
-    const bidTeamsSummary = []
     let bidsProcessed = 0
     let bidsWon = 0
     let bidsLost = 0
@@ -147,8 +146,6 @@ async function processLeague(leagueId: string) {
                 data: { fundsBalance: { decrement: amount } }
             })
         }
-
-        bidTeamsSummary.push({ won: bidsWon, lost: bidsLost })
     }
 
     // ====================== PHASE 2: Normal Waiver Claims (Post TFB roster state) ======================
