@@ -95,6 +95,18 @@ async function MyTeamContent() {
       const bestPriority = Math.min(...competingClaims.map(c => c.fantasyTeam.waiverPriority))
       const isLeading = fantasyTeam.waiverPriority === bestPriority
 
+      const bidsOnPlayer = await prisma.transferBid.findMany({
+        where: {
+          playerId: claim.playerToAddId,
+          status: 'pending',
+          fantasyTeam: { fantasyLeagueId: fantasyTeam.fantasyLeagueId }
+        },
+        orderBy: { amount: 'desc' },
+        include: { fantasyTeam: { select: { id: true, name: true } } }
+      })
+      const highBid = bidsOnPlayer[0] ?? null
+      const myBid = bidsOnPlayer.find(b => b.fantasyTeam.id === fantasyTeam.id) ?? null
+
       return {
         id: claim.id,
         rank: claim.rank,
@@ -110,6 +122,10 @@ async function MyTeamContent() {
           : null,
         isLeading,
         competingClaimsCount: competingClaims.length,
+        currentHighBid: highBid?.amount ?? null,
+        currentHighBidderName: highBid?.fantasyTeam.name,
+        myBidAmount: myBid?.amount ?? null,
+        hasForeignBid: highBid ? highBid.fantasyTeam.id !== fantasyTeam.id : false,
       }
     })
   )

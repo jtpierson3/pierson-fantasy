@@ -71,7 +71,7 @@ export default function ClaimModal({
         >
             <div
                 className="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl"
-                onClick={e => e.stopPropagation}
+                onClick={e => e.stopPropagation()}
             >
                 <h3 className="text-base font-medium text-gray-900 mb-1">
                     Claim {playerName}

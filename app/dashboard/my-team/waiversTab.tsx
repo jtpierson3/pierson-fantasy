@@ -35,6 +35,10 @@ export type ClaimStatus = {
   playerToDrop: { display_name: string } | null
   isLeading: boolean
   competingClaimsCount: number
+  currentHighBid: number | null
+  currentHighBidderName: string | null
+  myBidAmount: number | null
+  hasForeignBid: boolean
 }
 
 type Props = {
@@ -68,6 +72,10 @@ function WaiversTabInner({ team, initialClaims, initialBids, availableFunds }: P
   const [orderDirty, setOrderDirty] = useState(false)
 
   const [raisingBid, setRaisingBid] = useState<BidStatus | null>(null)
+  const [biddingClaim, setBiddingClaim] = useState<ClaimStatus | null>(null)
+
+  const MIN_STARTING_BID = 1_000_000
+  const bidMinFor = (highBid: number | null) => highBid ? Math.floor(highBid / 1_000_000) * 1_000_000 + 1_000_000 : MIN_STARTING_BID
 
   useEffect(() => {
       const timeout = setTimeout(async () => {
@@ -274,6 +282,33 @@ function WaiversTabInner({ team, initialClaims, initialBids, availableFunds }: P
                         Only Claim
                       </span>
                     )}
+                    {(() => {
+                      const contested = claim.competingClaimsCount > 1 && !claim.isLeading
+                      const canAfford = availableFunds >= bidMinFor(claim.currentHighBid)
+                      if (!contested && !claim.hasForeignBid) return null
+                      if (claim.myBidAmount !== null) {
+                        return (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
+                            Bid ${claim.myBidAmount}
+                          </span>
+                        )
+                      }
+                      if (!canAfford) {
+                        return (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 font-medium">
+                            No Funds to Bid
+                          </span>
+                        )
+                      }
+                      return (
+                        <button
+                          onClick={() => setBiddingClaim(claim)}
+                          className="text-xs px-3 py-0.5 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors font-medium"
+                        >
+                          {claim.hasForeignBid ? 'Counter Bid' : 'Submit Bid'}
+                        </button>
+                      )
+                    })()}
                     <button
                       onClick={() => cancelClaim(claim.id)}
                       disabled={cancellingId === claim.id}
@@ -346,6 +381,19 @@ function WaiversTabInner({ team, initialClaims, initialBids, availableFunds }: P
 
       </div>
     </div>
+
+    {biddingClaim && (
+      <TransferBidModal 
+        playerId={biddingClaim.player.id}
+        playerName={biddingClaim.player.display_name}
+        fantasyTeamId={team.id}
+        rosterPlayers={team.players}
+        availableFunds={availableFunds}
+        currentHighBid={biddingClaim.currentHighBid}
+        existingBidAmount={biddingClaim.myBidAmount}
+        onClose={() => setBiddingClaim(null)}
+      />
+    )}
 
     {raisingBid && (
       <TransferBidModal 

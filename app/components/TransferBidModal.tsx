@@ -80,13 +80,13 @@ export default function TransferBidModal({
         } catch (err) {
             setError(err instanceof Error ? err.message: 'Failed to place bid')
         } finally {
-            setSaving(true)
+            setSaving(false)
         }
     }, [amount, rosterFull, dropPlayerId, fantasyTeamId, playerId, router, onClose])
 
     return (
         <div
-            className="fixed inset-0 bg/black/60 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
             onClick={onClose}
         >
             <div
