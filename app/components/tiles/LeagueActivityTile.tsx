@@ -4,10 +4,13 @@ import { useRouter } from 'next/navigation'
 
 type ActivityItem = {
     id: string
+    kind: 'claim' | 'bid'
     teamName: string
     playerAddedName: string
     playerDroppedName: string | null
     processedAt: string
+    amount: number | null
+    bidStatus: 'pending' | 'won' | 'lost' | null
 }
 
 type Props = {
@@ -22,6 +25,10 @@ function timeAgo(iso: string): string {
     if (hours < 24) return `${hours}h ago`
     const days = Math.floor(hours / 24)
     return `${days}d ago`
+}
+
+function formatM(amount: number): string {
+    return `$${(amount / 1_000_000).toFixed(amount % 1_000_000 === 0 ? 0 : 1)}M`
 }
 
 export default function LeagueActivityTile({ activity }: Props) {
@@ -43,11 +50,32 @@ export default function LeagueActivityTile({ activity }: Props) {
                     {activity.map(item => (
                         <div key={item.id} className="text-xs border-b border-gray-50 last:border-0 pb-2 last:pb-0">
                             <div className="flex items-center justify-between">
-                                <p className="font-medium text-gray-900 truncate">{item.teamName}</p>
+                                <p className="font-medium text-gray-900 truncate">
+                                    {item.teamName}
+                                    {item.kind === 'bid' && (
+                                        <span
+                                            className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                                                item.bidStatus === 'pending'
+                                                    ? 'bg-blue-50 text-blue-600'
+                                                    : item.bidStatus === 'won'
+                                                    ? 'bg-green-50 text-green-700'
+                                                    : 'bg-gray-100 text-gray-400' 
+                                            }`}
+                                        >
+                                            {item.bidStatus === 'pending'
+                                                ? `bid ${formatM(item.amount ?? 0)}`
+                                                : item.bidStatus === 'won'
+                                                ? `won ${formatM(item.amount ?? 0)}`
+                                                : 'bid lost'}
+                                        </span>
+                                    )}
+                                </p>
                                 <span className="text-gray-400 flex-shrink-0 ml-2">{timeAgo(item.processedAt)}</span>
                             </div>
                             <p className="text-gray-500 truncate">
-                                <span className="text-green-600">{item.playerAddedName}</span>
+                                <span className={item.bidStatus === 'lost' ? 'text-gray-400' : 'text-green-600'}>
+                                    {item.playerAddedName}
+                                </span>
                                 {item.playerDroppedName && (
                                     <span className="text-red-500"> - {item.playerDroppedName}</span>
                                 )}

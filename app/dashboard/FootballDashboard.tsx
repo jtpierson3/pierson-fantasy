@@ -137,7 +137,7 @@ export default async function FootballDashobard() {
 
     const waiverWindow = await getCurrentWaiverWindow()
     
-    const recentActivityRaw = await prisma.waiverClaim.findMany({
+    const recentClaimsRaw = await prisma.waiverClaim.findMany({
         where: {
             status: 'won',
             fantasyTeam: { fantasyLeagueId: myTeam.fantasyLeagueId }
@@ -148,16 +148,82 @@ export default async function FootballDashobard() {
             playerToDrop: true
         },
         orderBy: { processedAt: 'desc' },
-        take: 20, //fetch a generous batch, the tile will only render what fits.
+        take: 20,
     })
 
-    const recentActivity = recentActivityRaw.map(claim => ({
-        id: claim.id,
+    const bidsRaw = await prisma.transferBid.findMany({
+        where: {
+            fantasyTeam: { fantasyLeagueId: myTeam.fantasyLeagueId },
+            OR: [
+                { status: 'pending' },
+                { status: { in: ['won', 'lost'] }, processedAt: { not: null } },
+            ],
+        },
+        include: { fantasyTeam: true, player: true },
+        orderBy: [{ amount: 'desc' }, { submittedAt: 'desc' }],
+        take: 40,
+    })
+
+    const bidDropIds = Array.from(
+        new Set(bidsRaw.map(b => b.playerToDropId).filter((v): v is number => v !== null))
+    )
+    const bidDropPlayers = bidDropIds.length
+        ? await prisma.player.findMany({
+            where: { id: { in: bidDropIds } },
+            select: { id: true, display_name: true },
+        })
+        : []
+    const dropNameById = new Map(bidDropPlayers.map(p => [p.id, p.display_name]))
+
+    const leadingPendingByPlayer = new Map<number, (typeof bidsRaw)[number]>()
+    for (const b of bidsRaw) {
+        if (b.status !== 'pending') continue
+        const existing = leadingPendingByPlayer.get(b.playerId)
+        if (!existing || b.amount > existing.amount) leadingPendingByPlayer.set(b.playerId, b)
+    }
+
+    type ActivityItem = {
+        id: string
+        kind: 'claim' | 'bid'
+        teamName: string
+        playerAddedName: string
+        playerDroppedName: string | null
+        processedAt: string
+        amount: number | null
+        bidStatus: 'pending' | 'won' | 'lost' | null
+    }
+
+    const claimItems: ActivityItem[] = recentClaimsRaw.map(claim => ({
+        id: `claim:${claim.id}`,
+        kind: 'claim',
         teamName: claim.fantasyTeam.name,
         playerAddedName: claim.playerToAdd.display_name,
         playerDroppedName: claim.playerToDrop?.display_name ?? null,
-        processedAt: claim.processedAt?.toISOString() ?? claim.submittedAt.toISOString()
+        processedAt: claim.processedAt?.toISOString() ?? claim.submittedAt.toISOString(),
+        amount: null,
+        bidStatus: null,
     }))
+
+    const bidItems: ActivityItem[] = bidsRaw
+        .filter(b =>
+            b.status === 'pending'
+                ? leadingPendingByPlayer.get(b.playerId)?.id === b.id
+                : true
+        )
+        .map(b => ({
+            id: `bid:${b.id}`,
+            kind: 'bid',
+            teamName: b.fantasyTeam.name,
+            playerAddedName: b.player.display_name,
+            playerDroppedName: b.playerToDropId ? dropNameById.get(b.playerToDropId) ?? null : null,
+            processedAt: (b.processedAt ?? b.submittedAt).toISOString(),
+            amount: b.amount,
+            bidStatus: b.status as 'pending' | 'won' | 'lost',
+        }))
+
+    const recentActivity = [...claimItems, ...bidItems].sort(
+        (a,b) => new Date(b.processedAt).getTime() - new Date(a.processedAt).getTime()
+    )
 
     const upcomingFixturesRaw = await prisma.fixture.findMany({
         where: {
