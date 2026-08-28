@@ -27,10 +27,10 @@ export async function POST(req: Request) {
         const total = orderedTeamIds.length
 
         await Promise.all(
-            orderedTeamIds.map((teamId: string, draftPosition: number) => 
+            orderedTeamIds.map((teamId: string, i: number) => 
                 prisma.fantasyTeam.update({
                     where: { id: teamId },
-                    data: { waiverPriority: total - draftPosition }
+                    data: { draftPosition: i + 1 }
                 })
             )
         )

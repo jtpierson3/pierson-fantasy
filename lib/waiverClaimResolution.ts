@@ -70,6 +70,7 @@ export function resolveWaiverClaims(
             
             if (teamClaims.length === 0) {
                 teamsToRemove.push(teamId)
+                continue
             }
 
             let processedOne = false

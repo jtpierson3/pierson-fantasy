@@ -8,6 +8,7 @@ import { mergeLineupWithSnapshot } from '@/lib/lineupSnapshot'
 import { selectTargetGameweek } from '@/lib/gameweekSelection'
 import { getActiveSidelinedForPlayers } from '@/lib/playerSidelined'
 import { getWaiverClaimBadge } from '@/lib/waiverClaimStatus'
+import { getWaiverPriorityOrder } from '@/lib/waiverPriorityOrder'
 
 function MyTeamSkeleton() {
   return (
@@ -59,6 +60,13 @@ async function MyTeamContent() {
     )
   }
 
+  const leagueTeams = await prisma.fantasyTeam.findMany({
+    where: { fantasyLeagueId: fantasyTeam.fantasyLeagueId },
+    select: { id: true, totalLeaguePoints: true, totalFantasyPoints: true, draftPosition: true },
+  })
+  const waiverOrder = getWaiverPriorityOrder(leagueTeams)
+  const myWaiverPos = waiverOrder.get(fantasyTeam.id) ?? Number.MAX_SAFE_INTEGER
+
   const rosterPlayerIds = fantasyTeam.players.map(p => p.playerId)
   const sidelinedMap = await getActiveSidelinedForPlayers(rosterPlayerIds)
 
@@ -91,7 +99,6 @@ async function MyTeamContent() {
           fantasyTeam: { fantasyLeagueId: fantasyTeam.fantasyLeagueId },
           NOT: { fantasyTeamId: fantasyTeam.id}
         },
-        include: { fantasyTeam: { select: { waiverPriority: true } } },
       })
 
       const bidsOnPlayer = await prisma.transferBid.findMany({
@@ -111,8 +118,8 @@ async function MyTeamContent() {
       const projectedBidWinnerIsMe = bidsOnPlayer.length === 0 ? null : highBid!.fantasyTeam.id === fantasyTeam.id
 
       const badge = getWaiverClaimBadge({
-        myWaiverPriority: fantasyTeam.waiverPriority,
-        competingClaimPriorities: competingClaims.map(c => c.fantasyTeam.waiverPriority),
+        myWaiverPriority: myWaiverPos,
+        competingClaimPriorities: competingClaims.map(c => waiverOrder.get(c.fantasyTeamId) ?? Number.MAX_SAFE_INTEGER),
         hasForeignBid,
         projectedBidWinnerIsMe,
       })

@@ -98,12 +98,12 @@ model FantasyTeam {
   awayMatchups       FantasyMatchup[]    @relation("AwayMatchups")
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
-  waiverPriority     Int                 @default(0)
   waiverClaims       WaiverClaim[]
   gameweekLineups    GameweekLineup[]
   fundsBalance       Float               @default(0)
   transferBids       TransferBid[]
   playerTransfers    PlayerTransfer[]
+  draftPosition      Int?
 
   @@unique([userId, fantasyLeagueId])
 }

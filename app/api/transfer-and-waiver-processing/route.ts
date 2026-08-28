@@ -5,6 +5,7 @@ import { isWaiverWindowClosed } from '@/lib/fixtureTiming'
 import { resolveTransferBids, type TransferBidInput, type TransferBidTeamInput } from '@/lib/transferBidResolution'
 import { findCascadeInvalidations, type PendingClaimLike } from '@/lib/transferCascade'
 import { resolveWaiverClaims, type WaiverClaimInput, type WaiverTeamInput } from '@/lib/waiverClaimResolution'
+import { getWaiverPriorityOrder } from '@/lib/waiverPriorityOrder'
 
 export async function POST(req: Request) {
     const authHeader = req.headers.get('authorization')
@@ -37,6 +38,17 @@ export async function POST(req: Request) {
 }
 
 async function processLeague(leagueId: string) {
+    let playersWonByBid = new Set<number>()
+    let claimsKilledByBids = 0
+
+    // Waiver-line order for the whole league, worst team first. Drives the transfer-bid
+    // tie break and waiver-claim priority.
+    const leagueTeams = await prisma.fantasyTeam.findMany({
+        where: { fantasyLeagueId: leagueId },
+        select: { id: true, totalLeaguePoints: true, totalFantasyPoints: true, draftPosition: true },
+    })
+    const waiverOrder = getWaiverPriorityOrder(leagueTeams)
+
     // ================== PHASE 1: Transfer Fund Bids ===========================
 
     const pendingBids = await prisma.transferBid.findMany({
@@ -50,17 +62,6 @@ async function processLeague(leagueId: string) {
     let bidsLost = 0
 
     if (pendingBids.length > 0) {
-        // Get standings for tie-breaking (worst record = lowest rank number = wins ties )
-        const allTeams = await prisma.fantasyTeam.findMany({
-            where: { fantasyLeagueId: leagueId },
-            select: { id: true, totalLeaguePoints: true, totalFantasyPoints: true }
-        })
-        const standingsSorted = [...allTeams].sort((a, b) => {
-            if (a.totalLeaguePoints !== b.totalLeaguePoints) return a.totalLeaguePoints - b.totalLeaguePoints
-            return a.totalFantasyPoints - b.totalFantasyPoints
-        })
-        const rankMap = new Map(standingsSorted.map((t, i) => [t.id, i + 1]))
-
         const bidInputs: TransferBidInput[] = pendingBids.map(b => ({
             id: b.id,
             fantasyTeamId: b.fantasyTeamId,
@@ -68,9 +69,9 @@ async function processLeague(leagueId: string) {
             amount: b.amount,
             playerToDropId: b.playerToDropId
         }))
-        const teamInputs: TransferBidTeamInput[] = allTeams.map(t => ({
+        const teamInputs: TransferBidTeamInput[] = leagueTeams.map(t => ({
             id: t.id,
-            standingsRank: rankMap.get(t.id) ?? Infinity
+            standingsRank: waiverOrder.get(t.id) ?? Infinity
         }))
 
         const { bidResults, winningDrops, fundsSpent, playersWon } = resolveTransferBids(bidInputs, teamInputs)
@@ -94,6 +95,15 @@ async function processLeague(leagueId: string) {
         const invalidatedWaiverClaimIds = new Set(
             invalidatedClaimIds.filter(id => id.startsWith('claim:')).map(id => id.replace('claim:', ''))
         )
+
+        playersWonByBid = new Set(
+            playersWon
+                .filter(w => !invalidatedBidIds.has(
+                    pendingBids.find(b => b.fantasyTeamId === w.fantasyTeamId && b.playerId === w.playerId)?.id ?? ''
+                ))
+                .map(w => w.playerId)
+        )
+        claimsKilledByBids += invalidatedWaiverClaimIds.size
 
         // Persist Transfer Bid Results
         for (const result of bidResults) {
@@ -142,14 +152,28 @@ async function processLeague(leagueId: string) {
     }
 
     // ====================== PHASE 2: Normal Waiver Claims (Post TFB roster state) ======================
-
-    const pendingClaims = await prisma.waiverClaim.findMany({
+    const pendingClaimsRaw = await prisma.waiverClaim.findMany({
         where: { status: 'pending', fantasyTeam: { fantasyLeagueId: leagueId } },
-        include: { fantasyTeam: { include: { players: true } } }
+        include: { fantasyTeam: { include: { players: true } } },
     })
 
+    const bidLostClaimIds = pendingClaimsRaw.filter(c => playersWonByBid.has(c.playerToAddId)).map(c => c.id)
+    if (bidLostClaimIds.length) {
+        await prisma.waiverClaim.updateMany({
+            where: { id: { in: bidLostClaimIds } },
+            data: { status: 'lost', processedAt: new Date() },
+        })
+    }
+    claimsKilledByBids += bidLostClaimIds.length
+    const pendingClaims = pendingClaimsRaw.filter(c => !playersWonByBid.has(c.playerToAddId))
+
     if (pendingClaims.length === 0) {
-        return { bidsProcessed, bidsWon, bidsLost, claimsProcessed: 0, claimsWon: 0, claimsLost: 0, claimsInvalidated: 0 }
+        return { bidsProcessed, bidsWon, bidsLost, 
+            claimsProcessed: 0, 
+            claimsWon: 0, 
+            claimsLost: claimsKilledByBids,
+            claimsInvalidated: 0 
+        }
     }
 
     const teamIds = Array.from(new Set(pendingClaims.map(c => c.fantasyTeamId)))
@@ -158,7 +182,7 @@ async function processLeague(leagueId: string) {
         const nonIrPlayers = team.players.filter(p => p.rosterSlot !== 'IR')
         return {
             id: team.id,
-            waiverPriority: team.waiverPriority,
+            waiverPriority: waiverOrder.get(team.id) ?? Number.MAX_SAFE_INTEGER,
             rosterPlayerIds: nonIrPlayers.map(p => p.playerId),
             rosterSize: nonIrPlayers.length
         }
@@ -192,13 +216,6 @@ async function processLeague(leagueId: string) {
                 data: { fantasyTeamId: teamId, playerId, rosterSlot: 'RESERVE' }
             })
         }
-
-        if (finalTeamState[teamId].waiverPriority !== originalTeam.waiverPriority) {
-            await prisma.fantasyTeam.update({
-                where: { id: teamId },
-                data: { waiverPriority: finalTeamState[teamId].waiverPriority }
-            })
-        }
     }
 
     for (const result of claimResults) {
@@ -214,7 +231,7 @@ async function processLeague(leagueId: string) {
         bidsLost,
         claimsProcessed: claimResults.length,
         claimsWon: claimResults.filter(r => r.status === 'won').length,
-        claimsLost: claimResults.filter(r => r.status === 'lost').length,
+        claimsLost: claimResults.filter(r => r.status === 'lost').length + claimsKilledByBids,
         claimsInvalidated: claimResults.filter(r => r.status === 'invalidated').length
     }
 }
