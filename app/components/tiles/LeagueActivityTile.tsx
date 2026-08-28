@@ -10,7 +10,7 @@ type ActivityItem = {
     playerDroppedName: string | null
     processedAt: string
     amount: number | null
-    bidStatus: 'pending' | 'won' | 'lost' | null
+    bidStatus: 'pending' | 'won' | null
 }
 
 type Props = {
@@ -57,25 +57,20 @@ export default function LeagueActivityTile({ activity }: Props) {
                                             className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-medium ${
                                                 item.bidStatus === 'pending'
                                                     ? 'bg-blue-50 text-blue-600'
-                                                    : item.bidStatus === 'won'
-                                                    ? 'bg-green-50 text-green-700'
-                                                    : 'bg-gray-100 text-gray-400' 
+                                                    : 'bg-green-50 text-green-700'
                                             }`}
                                         >
                                             {item.bidStatus === 'pending'
                                                 ? `bid ${formatM(item.amount ?? 0)}`
-                                                : item.bidStatus === 'won'
-                                                ? `won ${formatM(item.amount ?? 0)}`
-                                                : 'bid lost'}
+                                                : `won ${formatM(item.amount ?? 0)}`
+                                            }
                                         </span>
                                     )}
                                 </p>
                                 <span className="text-gray-400 flex-shrink-0 ml-2">{timeAgo(item.processedAt)}</span>
                             </div>
                             <p className="text-gray-500 truncate">
-                                <span className={item.bidStatus === 'lost' ? 'text-gray-400' : 'text-green-600'}>
-                                    {item.playerAddedName}
-                                </span>
+                                <span className='text-green-600'>{item.playerAddedName}</span>
                                 {item.playerDroppedName && (
                                     <span className="text-red-500"> - {item.playerDroppedName}</span>
                                 )}

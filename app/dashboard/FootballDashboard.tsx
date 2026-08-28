@@ -6,7 +6,7 @@ import { selectClosestGameweekForCompetition } from '@/lib/gameweekSelection'
 import ClubSummaryTile from '@/app/components/tiles/ClubSummaryTile'
 import CurrentCompetitionTile from '@/app/components/tiles/CurrentCompetitionTile'
 import LatestLineupTile from '@/app/components/tiles/LatestLineupTile'
-import { getCurrentWaiverWindow } from '@/lib/fixtureTiming'
+import { getCurrentWaiverWindow, getActiveWaiverGameweek } from '@/lib/fixtureTiming'
 import WaiverClaimsTile from '@/app/components/tiles/WaiverClaimsTile'
 import LeagueActivityTile from '@/app/components/tiles/LeagueActivityTile'
 import NextFixturesTile from '@/app/components/tiles/NextFixturesTile'
@@ -136,6 +136,7 @@ export default async function FootballDashobard() {
     })
 
     const waiverWindow = await getCurrentWaiverWindow()
+    const activeWaiverGw = await getActiveWaiverGameweek(myTeam.fantasyLeagueId)
     
     const recentClaimsRaw = await prisma.waiverClaim.findMany({
         where: {
@@ -155,8 +156,11 @@ export default async function FootballDashobard() {
         where: {
             fantasyTeam: { fantasyLeagueId: myTeam.fantasyLeagueId },
             OR: [
-                { status: 'pending' },
-                { status: { in: ['won', 'lost'] }, processedAt: { not: null } },
+                {
+                    status: 'pending',
+                    ...(activeWaiverGw ? { gameweekId: activeWaiverGw.id }: {}),
+                },
+                { status: 'won', processedAt: { not: null } },
             ],
         },
         include: { fantasyTeam: true, player: true },
@@ -175,11 +179,18 @@ export default async function FootballDashobard() {
         : []
     const dropNameById = new Map(bidDropPlayers.map(p => [p.id, p.display_name]))
 
+    const standingsRankById = new Map(standings.map(s => [s.team.id, s.rank]))
+    const worseStanding = (a: (typeof bidsRaw)[number], b: (typeof bidsRaw)[number]) =>
+        (standingsRankById.get(a.fantasyTeamId) ?? Infinity) >
+        (standingsRankById.get(b.fantasyTeamId) ?? Infinity)
+
     const leadingPendingByPlayer = new Map<number, (typeof bidsRaw)[number]>()
     for (const b of bidsRaw) {
         if (b.status !== 'pending') continue
-        const existing = leadingPendingByPlayer.get(b.playerId)
-        if (!existing || b.amount > existing.amount) leadingPendingByPlayer.set(b.playerId, b)
+        const current = leadingPendingByPlayer.get(b.playerId)
+        if (!current || b.amount > current.amount || (b.amount === current.amount && worseStanding(b, current))) {
+            leadingPendingByPlayer.set(b.playerId, b)
+        }
     }
 
     type ActivityItem = {
@@ -190,7 +201,7 @@ export default async function FootballDashobard() {
         playerDroppedName: string | null
         processedAt: string
         amount: number | null
-        bidStatus: 'pending' | 'won' | 'lost' | null
+        bidStatus: 'pending' | 'won' | null
     }
 
     const claimItems: ActivityItem[] = recentClaimsRaw.map(claim => ({
@@ -218,12 +229,12 @@ export default async function FootballDashobard() {
             playerDroppedName: b.playerToDropId ? dropNameById.get(b.playerToDropId) ?? null : null,
             processedAt: (b.processedAt ?? b.submittedAt).toISOString(),
             amount: b.amount,
-            bidStatus: b.status as 'pending' | 'won' | 'lost',
+            bidStatus: b.status as 'pending' | 'won',
         }))
 
-    const recentActivity = [...claimItems, ...bidItems].sort(
-        (a,b) => new Date(b.processedAt).getTime() - new Date(a.processedAt).getTime()
-    )
+    const recentActivity = [...claimItems, ...bidItems]
+        .sort((a,b) => new Date(b.processedAt).getTime() - new Date(a.processedAt).getTime())
+        .slice(0, 20)
 
     const upcomingFixturesRaw = await prisma.fixture.findMany({
         where: {
