@@ -106,11 +106,40 @@ export async function POST(req: Request) {
             })
         }
 
-        // mark gameweek Compelete
-        await prisma.fantasyGameweek.update({
-            where: { id: gameweekId },
-            data: { isComplete: true }
-        })
+        const wasCurrent = gameweek.isCurrent
+
+        const nextGameweek = wasCurrent
+            ? await prisma.fantasyGameweek.findFirst({
+                where: {
+                    fantasyLeagueId: gameweek.fantasyLeagueId,
+                    competition: gameweek.competition,
+                    gameweekNumber: gameweek.gameweekNumber + 1,
+                    isComplete: false,
+                },
+            })
+            : null
+
+        await prisma.$transaction([
+            prisma.fantasyGameweek.update({
+                where: { id: gameweekId },
+                data: {
+                    isComplete: true, 
+                    ...(wasCurrent ? { isCurrent : false }: {}),
+                },
+            }),
+            ...(nextGameweek
+                ?   [
+                        prisma.fantasyGameweek.update({
+                            where: { id: nextGameweek.id },
+                            data: { isCurrent: true },
+                        }),
+                    ]
+                : []),
+        ])
+
+        if (wasCurrent && !nextGameweek) {
+            console.warn(`[finalize-week] finalized GW${gameweek.gameweekNumber} but no GW${gameweek.gameweekNumber + 1} exists - isCurrent is left unset`)
+        }
 
         // Recalculate standings order AFTER updates to compute standings change
         const afterTeams = await prisma.fantasyTeam.findMany({
@@ -133,7 +162,12 @@ export async function POST(req: Request) {
             })
         }
 
-        return NextResponse.json({ success: true })
+        return NextResponse.json({
+            success: true,
+            finalizedGameweek: gameweek.gameweekNumber,
+            newCurrentGameweek: nextGameweek?.gameweekNumber ?? null,
+            advancedCurrent: Boolean(nextGameweek),
+        })
     } catch (err) {
         console.error('[finalize-week] error:', err)
         return NextResponse.json({ error: 'Failed to finalize week' }, { status: 500 })

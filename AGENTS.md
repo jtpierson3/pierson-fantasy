@@ -117,6 +117,8 @@ retention cutoff, a latent inconsistency worth fixing if touching that file.
   `ApiCallSource` enum value (defined in `prisma/schema.prisma`).
 - Starter tier subscription covers a limited set of leagues — do not assume broader data access
   without verifying against the actual subscription scope.
+- Rate limit on the `football-starter` plan is **2000 calls per entity, per hour** (per-entity
+  buckets, not one global bucket) — keep this in mind when adding bulk/backfill sync code.
 
 ## Things intentionally deferred / known incomplete
 - `isCurrent`/`isComplete` gameweek transitions on `FantasyGameweek`, and `isComplete` on

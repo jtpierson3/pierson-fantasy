@@ -40,6 +40,7 @@ export default function MatchupManager({ league }: Props) {
 
   const [finalizing, setFinalizing] = useState(false)
   const [finalizeError, setFinalizeError] = useState<string | null>(null)
+  const [finalizeNotice, setFinalizeNotice] = useState<string | null>(null)
 
   const handleFinalizeWeek = useCallback(async () => {
     if (!currentGameweek) return
@@ -50,6 +51,7 @@ export default function MatchupManager({ league }: Props) {
 
     setFinalizing(true)
     setFinalizeError(null)
+    setFinalizeNotice(null)
     try {
         const res = await fetch('/api/admin/league/matchups/finalize-week', {
             method: 'POST',
@@ -58,6 +60,11 @@ export default function MatchupManager({ league }: Props) {
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error ?? 'Failed to finalize week')
+        if (data.advancedCurrent) {
+          setFinalizeNotice(`Gameweek ${data.finalizedGameweek} finalized - Gameweek ${data.newCurrentGameweek} is now current.`)
+        } else {
+          setFinalizeNotice(`Gameweek ${data.finalizedGameweek} finalized.`)
+        }
         router.refresh()
     } catch (err) {
         setFinalizeError(err instanceof Error ? err.message : 'Failed to finalize week')
@@ -189,6 +196,10 @@ export default function MatchupManager({ league }: Props) {
                     </button>
                 </div>
           </div>
+
+          {finalizeNotice && (
+            <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2 mb-3">{finalizeNotice}</p>
+          )}
 
           {finalizeError && (
             <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">
