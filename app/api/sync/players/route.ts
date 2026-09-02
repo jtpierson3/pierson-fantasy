@@ -155,39 +155,63 @@ export async function POST(req: Request) {
         })
 
         for (const entry of sidelined) {
+          const fields = {
+            category: entry.category,
+            typeId: entry.type_id,
+            typeName: entry.type_name,
+            startDate: new Date(entry.start_date),
+            endDate: entry.end_date ? new Date(entry.end_date) : null,
+            gamesMissed: entry.games_missed,
+            completed: entry.completed,
+          }
+
+          // If Sportmonks now reports a player we only had a MANUAL etnry for, 
+          // promote that row: adopt the sportmonks id and hand ownership to the 
+          // automated sync from here on.
+          const existingBySportmonksId = await prisma.sidelined.findUnique({
+            where: { sportmonksId: entry.id },
+            select: { id: true }
+          })
+
+          if (!existingBySportmonksId) {
+            const manualRow = await prisma.sidelined.findFirst({
+              where: { playerId: entry.player_id, source: 'MANUAL', completed: false },
+              orderBy: { startDate: 'desc' },
+              select: { id: true },
+            })
+            if (manualRow) {
+              await prisma.sidelined.update({
+                where: { id: manualRow.id },
+                data: { ...fields, sportmonksId: entry.id, source: 'SPORTMONKS' },
+              })
+              teamSidelinedSynced++
+              continue
+            }
+          }
+
           await prisma.sidelined.upsert({
             where: { sportmonksId: entry.id },
-            update: {
-              category: entry.category,
-              typeId: entry.type_id,
-              typeName: entry.type.name,
-              startDate: new Date(entry.start_date),
-              endDate: entry.end_date ? new Date(entry.end_date) : null,
-              gamesMissed: entry.games_missed,
-              completed: entry.completed,
-            },
+            update: fields,
             create: {
               sportmonksId: entry.id,
               playerId: entry.player_id,
-              category: entry.category,
-              typeId: entry.type_id,
-              typeName: entry.type.name,
-              startDate: new Date(entry.start_date),
-              endDate: entry.end_date ? new Date(entry.end_date) : null,
-              gamesMissed: entry.games_missed,
-              completed: entry.completed,
+              source: 'SPORTMONKS',
+              ...fields,
             }
           })
           teamSidelinedSynced++ 
         }
 
-        // Cleanup any Sidelined roow for this team's players that's still marked incomplete
+        // Cleanup any Sidelined row for this team's players that's still marked incomplete
         // but ISN't in the fresh sidelined list anymore that has resolved
         // (player recovered/suspension served) - mark it completed
+        // MANUAL rows are left alone - only an admin clears those since Sportmonks not 
+        // listing them is the whole reason they exist.
         const currentSidelinedIds = sidelined.map(s => s.id)
         await prisma.sidelined.updateMany({
           where: {
             completed: false,
+            source: 'SPORTMONKS',
             player: { teamId: team.id },
             sportmonksId: { notIn: currentSidelinedIds }
           },

@@ -33,6 +33,11 @@ enum ApiCallSource {
   PLAYER_SEARCH
 }
 
+enum SidelinedSource {
+  SPORTMONKS
+  MANUAL
+}
+
 // ===================================================
 //      Fantasy Football
 // ===================================================
@@ -395,18 +400,20 @@ model Fixture {
 }
 
 model Sidelined {
-  id           String    @id @default(cuid())
-  sportmonksId Int       @unique
-  player       Player    @relation(fields: [playerId], references: [id])
+  id           String          @id @default(cuid())
+  sportmonksId Int             @unique
+  source       SidelinedSource @default(SPORTMONKS)
+  player       Player          @relation(fields: [playerId], references: [id])
   playerId     Int
   category     String
   typeId       Int
   typeName     String
   startDate    DateTime
   endDate      DateTime?
-  gamesMissed  Int       @default(0)
-  completed    Boolean   @default(false)
-  syncedAt     DateTime  @default(now())
+  gamesMissed  Int             @default(0)
+  completed    Boolean         @default(false)
+  syncedAt     DateTime        @default(now())
+  updatedAt    DateTime        @default(now()) @updatedAt
 
   @@index([playerId, completed])
 }
