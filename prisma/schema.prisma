@@ -401,7 +401,7 @@ model Fixture {
 
 model Sidelined {
   id           String          @id @default(cuid())
-  sportmonksId Int             @unique
+  sportmonksId Int?            @unique
   source       SidelinedSource @default(SPORTMONKS)
   player       Player          @relation(fields: [playerId], references: [id])
   playerId     Int

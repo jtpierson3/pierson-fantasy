@@ -158,7 +158,7 @@ export async function POST(req: Request) {
           const fields = {
             category: entry.category,
             typeId: entry.type_id,
-            typeName: entry.type_name,
+            typeName: entry.type.name,
             startDate: new Date(entry.start_date),
             endDate: entry.end_date ? new Date(entry.end_date) : null,
             gamesMissed: entry.games_missed,

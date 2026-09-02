@@ -21,6 +21,25 @@ export async function requireUser(): Promise<AuthResult> {
 }
 
 /**
+ * Requires the user to be a site admin OR an admin of at least one league.
+ * Use for admin tools that aren't scoped to a specfic league
+ */
+export async function requireLeagueAdmin(): Promise<AuthResult> {
+    const result = await requireUser()
+    if (!result.ok) return result
+
+    if (result.user.isSiteAdmin) return result
+
+    const membership = await prisma.fantasyLeagueMember.findFirst({
+        where: { userId: result.user.id, isAdmin: true },
+        select: { id: true },
+    })
+    if (!membership) return { ok: false, status: 401, error: 'Unauthorized' }
+
+    return result
+}
+
+/**
  * Same as requireUser, but also requires the user to be a site admin.
  * Use at the top of any/api/admin route.
  */
