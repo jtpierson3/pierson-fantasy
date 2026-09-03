@@ -14,8 +14,11 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Invalid input' }, { status: 400 })
         }
 
-        const row = await prisma.sidelined.findUnique({ where: { id }, select: { id: true } })
+        const row = await prisma.sidelined.findUnique({ where: { id }, select: { source: true } })
         if (!row) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+        if (row.source !== 'MANUAL') {
+            return NextResponse.json({ error: 'Only manual entries can be resolved' }, { status: 403 })
+        }
 
         await prisma.sidelined.update({ where: { id }, data: { completed: true } })
         return NextResponse.json({ success: true })
