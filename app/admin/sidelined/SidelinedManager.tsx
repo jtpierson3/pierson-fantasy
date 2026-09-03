@@ -51,7 +51,34 @@ export default function SidelinedManager({ teams, players, entries }: Props) {
         category: 'injury', typeName: '', startDate: '', endDate: '',
     })
 
-    const activePlayerIds = useMemo(() => new Set(entries.filter(e => !e.id.startsWith('__')).map(e => e.playerId)), [entries])
+    const [openTeams, setOpenTeams] = useState<Set<string>>(new Set())
+
+    const activePlayerIds = useMemo(
+        () => new Set(entries.map(e => e.playerId)),
+        [entries],
+    )
+
+    const groupedByTeam = useMemo(() => {
+        const groups = new Map<string, Entry[]>()
+        for (const e of entries) {
+            const key = e.teamName ?? 'Unknown club'
+            if (!groups.has(key)) groups.set(key, [])
+            groups.get(key)!.push(e)
+        }
+        return[...groups.entries()]
+            .map(([teamName, list]) => ({
+                teamName,
+                list: list.sort((a, b) => a.playerName.localeCompare(b.playerName)),
+            }))
+            .sort((a, b) => a.teamName.localeCompare(b.teamName))
+    }, [entries])
+
+    const toggleTeam = (name: string) => 
+        setOpenTeams(prev => {
+            const next = new Set(prev)
+            next.has(name) ? next.delete(name) : next.add(name)
+            return next
+        })
 
     const matches = useMemo(() => {
         const q = query.trim().toLowerCase()
@@ -125,8 +152,6 @@ export default function SidelinedManager({ teams, players, entries }: Props) {
     }
 
     const selectedPlayer = players.find(p => p.id === playerId) ?? null
-    const manualEntries = entries.filter(e => e.source === 'MANUAL')
-    const sportmonksEntries = entries.filter(e => e.source === 'SPORTMONKS')
 
     return (
         <div className="space-y-8 text-gray-100">
@@ -224,84 +249,106 @@ export default function SidelinedManager({ teams, players, entries }: Props) {
                 </button>
             </div>
 
-            {/* Manual entries */}
-            <div>
-                <h2 className="text-sm font-medium text-white mb-3">Manual entries ({manualEntries.length})</h2>
-                <div className="space-y-2">
-                    {manualEntries.length === 0 && <p className="text-sm text-gray-500">None.</p>}
-                    {manualEntries.map(e => (
-                        <div key={e.id} className="rounded-xl border border-gray-800 bg-gray-900 p-3">
-                            {editId === e.id ? (
-                                <div className="space-y-2">
-                                    <p className="text-sm font-medium text-white">{e.playerName}</p>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <select value={editState.category}
-                                            onChange={ev => setEditState(s => ({ ...s, category: ev.target.value }))}
-                                            className="rounded-md border border-gray-700 bg-gray-800 px-2 py-1.5 text-sm">
-                                            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                                        </select>
-                                        <input value={editState.typeName}
-                                            onChange={ev => setEditState(s => ({ ...s, typeName: ev.target.value }))}
-                                            className="rounded-md border border-gray-700 bg-gray-800 px-2 py-1.5 text-sm" />
-                                        <input type="date" value={editState.startDate}
-                                            onChange={ev => setEditState(s => ({ ...s, startDate: ev.target.value }))}
-                                            className="rounded-md border border-gray-700 bg-gray-800 px-2 py-1.5 text-sm" />
-                                        <input type="date" value={editState.endDate}
-                                            onChange={ev => setEditState(s => ({ ...s, endDate: ev.target.value }))}
-                                            className="rounded-md border border-gray-700 bg-gray-800 px-2 py-1.5 text-sm" />
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button onClick={() => submitEdit(e.id)} disabled={busy === `edit-${e.id}`}
-                                            className="rounded-md bg-green-700 px-3 py-1.5 text-xs text-white hover:bg-green-600 disabled:opacity-50">
-                                            Save
-                                        </button>
-                                        <button onClick={() => setEditId(null)}
-                                            className="rounded-md border border-gray-700 px-3 py-1.5 text-xs text-gray-300 hover:text-white">
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="flex items-center gap-3">
-                                    <div className="relative h-9 w-9 flex-shrink-0 overflow-hidden rounded-full bg-gray-800">
-                                        {e.playerImage && <Image src={e.playerImage} alt={e.playerName} fill className="object-contain" />}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="truncate text-sm font-medium text-white">{e.playerName}</p>
-                                        <p className="text-xs text-gray-400">
-                                            {e.teamName ?? '—'} · {e.category} · {e.typeName} · since {new Date(e.startDate).toLocaleDateString()}
-                                            {e.endDate ? ` · exp. ${new Date(e.endDate).toLocaleDateString()}` : ''}
-                                        </p>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button onClick={() => startEdit(e)} className="text-xs text-gray-400 hover:text-white">Edit</button>
-                                        <button onClick={() => call('resolve', { id: e.id }, `resolve-${e.id}`)}
-                                            disabled={busy === `resolve-${e.id}`}
-                                            className="text-xs text-gray-400 hover:text-white disabled:opacity-50">Resolve</button>
-                                        <button onClick={() => call('delete', { id: e.id }, `delete-${e.id}`)}
-                                            disabled={busy === `delete-${e.id}`}
-                                            className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50">Delete</button>
-                                    </div>
+            {/* Sidelined by team */}
+            <div className="space-y-2">
+                {groupedByTeam.length === 0 && (
+                    <p className="text-sm text-gray-500">No players currently sidelined.</p>
+                )}
+                {groupedByTeam.map(({ teamName, list }) => {
+                    const open = openTeams.has(teamName)
+                    return (
+                        <div key={teamName} className="overflow-hidden rounded-xl border border-gray-800 bg-gray-900">
+                            <button
+                                onClick={() => toggleTeam(teamName)}
+                                className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-gray-800/50"
+                            >
+                                <span className="text-sm font-medium text-white">{teamName}</span>
+                                <span className="flex items-center gap-2">
+                                    <span className="rounded-full bg-gray-800 px-2 py-0.5 text-xs text-gray-300">
+                                        {list.length}
+                                    </span>
+                                    <svg
+                                        className={`h-4 w-4 text-gray-500 transition-transform ${open ? 'rotate-90' : ''}`}
+                                        viewBox="0 0 20 20" fill="currentColor"
+                                    >
+                                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                </span>
+                            </button>
+
+                            {open && (
+                                <div className="divide-y divide-gray-800 border-t border-gray-800">
+                                    {list.map(e => (
+                                        <div key={e.id} className="p-3">
+                                            {editId === e.id ? (
+                                                <div className="space-y-2">
+                                                    <p className="text-sm font-medium text-white">{e.playerName}</p>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <select value={editState.category}
+                                                            onChange={ev => setEditState(s => ({ ...s, category: ev.target.value }))}
+                                                            className="rounded-md border border-gray-700 bg-gray-800 px-2 py-1.5 text-sm">
+                                                            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                                        </select>
+                                                        <input value={editState.typeName}
+                                                            onChange={ev => setEditState(s => ({ ...s, typeName: ev.target.value }))}
+                                                            className="rounded-md border border-gray-700 bg-gray-800 px-2 py-1.5 text-sm" />
+                                                        <input type="date" value={editState.startDate}
+                                                            onChange={ev => setEditState(s => ({ ...s, startDate: ev.target.value }))}
+                                                            className="rounded-md border border-gray-700 bg-gray-800 px-2 py-1.5 text-sm" />
+                                                        <input type="date" value={editState.endDate}
+                                                            onChange={ev => setEditState(s => ({ ...s, endDate: ev.target.value }))}
+                                                            className="rounded-md border border-gray-700 bg-gray-800 px-2 py-1.5 text-sm" />
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <button onClick={() => submitEdit(e.id)} disabled={busy === `edit-${e.id}`}
+                                                            className="rounded-md bg-green-700 px-3 py-1.5 text-xs text-white hover:bg-green-600 disabled:opacity-50">
+                                                            Save
+                                                        </button>
+                                                        <button onClick={() => setEditId(null)}
+                                                            className="rounded-md border border-gray-700 px-3 py-1.5 text-xs text-gray-300 hover:text-white">
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-3">
+                                                    <div className="relative h-9 w-9 flex-shrink-0 overflow-hidden rounded-full bg-gray-800">
+                                                        {e.playerImage && <Image src={e.playerImage} alt={e.playerName} fill className="object-contain" />}
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="flex items-center gap-2 truncate text-sm font-medium text-white">
+                                                            {e.playerName}
+                                                            {e.source === 'MANUAL' && (
+                                                                <span className="rounded bg-amber-900/60 px-1.5 py-0.5 text-[10px] font-medium text-amber-300">
+                                                                    Manual
+                                                                </span>
+                                                            )}
+                                                        </p>
+                                                        <p className="text-xs text-gray-400">
+                                                            {e.category} · {e.typeName} · since {new Date(e.startDate).toLocaleDateString()}
+                                                            {e.endDate ? ` · exp. ${new Date(e.endDate).toLocaleDateString()}` : ''}
+                                                        </p>
+                                                    </div>
+                                                    {e.source === 'MANUAL' && (
+                                                        <div className="flex gap-2">
+                                                            <button onClick={() => startEdit(e)} className="text-xs text-gray-400 hover:text-white">Edit</button>
+                                                            <button onClick={() => call('resolve', { id: e.id }, `resolve-${e.id}`)}
+                                                                disabled={busy === `resolve-${e.id}`}
+                                                                className="text-xs text-gray-400 hover:text-white disabled:opacity-50">Resolve</button>
+                                                            <button onClick={() => call('delete', { id: e.id }, `delete-${e.id}`)}
+                                                                disabled={busy === `delete-${e.id}`}
+                                                                className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50">Delete</button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
                             )}
                         </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Sportmonks entries (read-only) */}
-            <div>
-                <h2 className="text-sm font-medium text-white mb-3">From Sportmonks ({sportmonksEntries.length})</h2>
-                <div className="space-y-1.5">
-                    {sportmonksEntries.map(e => (
-                        <div key={e.id} className="flex items-center gap-3 rounded-lg border border-gray-800/60 bg-gray-900/60 px-3 py-2">
-                            <span className="text-sm text-gray-200">{e.playerName}</span>
-                            <span className="text-xs text-gray-500">
-                                {e.teamName ?? '—'} · {e.category} · {e.typeName} · since {new Date(e.startDate).toLocaleDateString()}
-                            </span>
-                        </div>
-                    ))}
-                </div>
+                    )
+                })}
             </div>
         </div>
     )
