@@ -14,7 +14,7 @@ export async function POST(req: Request) {
         const { playerId, category, typeName, startDate, endDate } = await req.json()
 
         if (typeof playerId !== 'number' || !CATEGORIES.includes(category) ||
-            typeof typeName !== 'string' || typeName.trim() || !startDate) 
+            typeof typeName !== 'string' || !typeName.trim() || !startDate) 
         {
             return NextResponse.json({ error: 'Invalid Input' }, { status: 400 })
         }
