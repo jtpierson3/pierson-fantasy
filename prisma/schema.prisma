@@ -31,6 +31,7 @@ enum ApiCallSource {
   SYNC_FIXTURES
   PLAYER_TRANSFER_LOOKUP
   PLAYER_SEARCH
+  SYNC_SIDELINED
 }
 
 enum SidelinedSource {
@@ -406,7 +407,7 @@ model Sidelined {
   player       Player          @relation(fields: [playerId], references: [id])
   playerId     Int
   category     String
-  typeId       Int
+  typeId       Int             @default(0)
   typeName     String
   startDate    DateTime
   endDate      DateTime?

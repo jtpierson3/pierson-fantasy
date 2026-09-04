@@ -1,0 +1,20 @@
+on:
+    schedule:
+        - cron: '0 */4 * * *'
+    workflow_dispatch: {}
+
+jobs:
+    sidelined-sync:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Trigger sidelined sync
+              env:
+                APP_URL: https://pierson-fantasy.vercel.app
+                SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
+                VERCEL_BYPASS_SECRET: ${{ secrets.VERCEL_BYPASS_SECRET }}
+              run: |
+                curl -sf -X POST "$APP_URL/api/sync/sidelined" \
+                -H "Authorization: Bearer $SYNC_SECRET" \
+                -H "x-vercel-protection-bypass: $VERCEL_BYPASS_SECRET" \
+                -H "Content-Type: application/json" \
+                -d '{"triggeredBySource":"github-actions-sidelined"}'

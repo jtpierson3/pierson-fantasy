@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { COMPETITIONS } from '@/lib/sportmonksConstants'
-import { getSquad, getTeamSidelined } from '@/lib/sportmonks'
+import { getSquad } from '@/lib/sportmonks'
 import { detectDepartures, getTeamsEligibleForDepartureCheck } from '@/lib/playerDeparture'
 import { requireAutomationSecret } from '@/lib/automationAuth'
 import { logApiCall } from '@/lib/apiCallBudget'
@@ -27,12 +27,11 @@ export async function POST(req: Request) {
 
 
   const errors: { team: string; message: string }[] = []
-  const teamResults: { team: string; created: number; updated: number; skipped: number, sidelined: number }[] = []
+  const teamResults: { team: string; created: number; updated: number; skipped: number, }[] = []
   let totalCreated = 0
   let totalUpdated = 0
   let totalSkipped = 0
   let totalDeparted = 0
-  let totalSidelined = 0
 
   try {
     // Only real clubs in leagues I pay for counts as "tracked"
@@ -146,101 +145,22 @@ export async function POST(req: Request) {
         })
       }
 
-      try {
-        const {sidelined, remaining: sidelinedRemaining } = await getTeamSidelined(team.id)
-
-        await logApiCall(`teams/${team.id}/sidelined`, 'SYNC_PLAYERS', {
-          triggeredBy: triggeredBySource,
-          remainingAfterCall: sidelinedRemaining,
-        })
-
-        for (const entry of sidelined) {
-          const fields = {
-            category: entry.category,
-            typeId: entry.type_id,
-            typeName: entry.type.name,
-            startDate: new Date(entry.start_date),
-            endDate: entry.end_date ? new Date(entry.end_date) : null,
-            gamesMissed: entry.games_missed,
-            completed: entry.completed,
-          }
-
-          // If Sportmonks now reports a player we only had a MANUAL etnry for, 
-          // promote that row: adopt the sportmonks id and hand ownership to the 
-          // automated sync from here on.
-          const existingBySportmonksId = await prisma.sidelined.findUnique({
-            where: { sportmonksId: entry.id },
-            select: { id: true }
-          })
-
-          if (!existingBySportmonksId) {
-            const manualRow = await prisma.sidelined.findFirst({
-              where: { playerId: entry.player_id, source: 'MANUAL', completed: false },
-              orderBy: { startDate: 'desc' },
-              select: { id: true },
-            })
-            if (manualRow) {
-              await prisma.sidelined.update({
-                where: { id: manualRow.id },
-                data: { ...fields, sportmonksId: entry.id, source: 'SPORTMONKS' },
-              })
-              teamSidelinedSynced++
-              continue
-            }
-          }
-
-          await prisma.sidelined.upsert({
-            where: { sportmonksId: entry.id },
-            update: fields,
-            create: {
-              sportmonksId: entry.id,
-              playerId: entry.player_id,
-              source: 'SPORTMONKS',
-              ...fields,
-            }
-          })
-          teamSidelinedSynced++ 
-        }
-
-        // Cleanup any Sidelined row for this team's players that's still marked incomplete
-        // but ISN't in the fresh sidelined list anymore that has resolved
-        // (player recovered/suspension served) - mark it completed
-        // MANUAL rows are left alone - only an admin clears those since Sportmonks not 
-        // listing them is the whole reason they exist.
-        const currentSidelinedIds = sidelined.map(s => s.id)
-        await prisma.sidelined.updateMany({
-          where: {
-            completed: false,
-            source: 'SPORTMONKS',
-            player: { teamId: team.id },
-            sportmonksId: { notIn: currentSidelinedIds }
-          },
-          data: { completed: true }
-        })
-      } catch (err) {
-        console.error(`[sync/players] failed to sync sidelined for ${team.id}:`, err)
-      }
-
-      totalSidelined += teamSidelinedSynced
-
       teamResults.push({
         team: team.name,
         created: teamCreated,
         updated: teamUpdated,
         skipped: teamSkipped,
-        sidelined: teamSidelinedSynced,
       })
     }
 
     return NextResponse.json({
       success: errors.length === 0,
-      message: `${totalCreated} player(s) created, ${totalUpdated} updated, ${totalSidelined} sidelined, ${totalDeparted} departure(s) flagged for review across ${teams.length} team(s)`,
+      message: `${totalCreated} player(s) created, ${totalUpdated} updated, ${totalDeparted} departure(s) flagged for review across ${teams.length} team(s)`,
       teamsProcessed: teams.length,
       created: totalCreated,
       updated: totalUpdated,
       skipped: totalSkipped,
       departed: totalDeparted,
-      sidelined: totalSidelined,
       teamResults,
       errors,
     })

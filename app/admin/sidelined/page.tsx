@@ -14,6 +14,9 @@ export default async function AdminSidelinedPage() {
     })
     if (!currentUser) notFound()
 
+    const isLeagueAdmin = currentUser.leagues.some(m => m.isAdmin)
+    if (!currentUser.isSiteAdmin && !isLeagueAdmin) notFound()
+
     const plLeagueId = COMPETITIONS.premier_league.leagueId
 
     const teams = await prisma.team.findMany({

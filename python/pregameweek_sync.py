@@ -3,7 +3,7 @@ Pre-gameweek sync trigger
 
 Checks wheter we're currently within the 24-hour window before the next upcoming Gameweek's
 first fixture, and if so - and we haven't already synced for this particular gameweek - 
-triggers the real players sync ( Which also syncs sidelined injuries/suspensions in the same pass).
+triggers the real players sync.
 
 This script is intentionally thin: the actual timing logic lives in should-run-pregame-sync/route.ts,
 and the actual sync logic lives in sync/players/route.ts. This script just checks the first, then calls
