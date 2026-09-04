@@ -19,13 +19,6 @@ export default async function AdminSidelinedPage() {
 
     const plLeagueId = COMPETITIONS.premier_league.leagueId
 
-    const teams = await prisma.team.findMany({
-        where: { leagueId: plLeagueId },
-        orderBy: { name: 'asc' },
-        select: { id: true, name: true },
-    })
-    const teamIds = teams.map(t => t.id)
-
     const players = await prisma.player.findMany({
         where: { teamId: { in: teamIds } },
         orderBy: { display_name: 'asc' },
@@ -42,7 +35,6 @@ export default async function AdminSidelinedPage() {
 
     return (
         <SidelinedManager 
-            teams={teams}
             players={players.map(p => ({
                 id: p.id,
                 name: p.display_name,

@@ -64,7 +64,6 @@ export async function POST(req: Request) {
       let teamCreated = 0
       let teamUpdated = 0
       let teamSkipped = 0
-      let teamSidelinedSynced = 0
 
       try {
         // Capture this team's squad BEFORE the fresh sync overwrites anything

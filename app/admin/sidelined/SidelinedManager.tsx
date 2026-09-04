@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 
 type PlayerOption = { id: number; name: string; teamName: string | null }
-type TeamOption = { id: number; name: string }
 type Entry = {
     id: string
     source: 'SPORTMONKS' | 'MANUAL'
@@ -20,7 +19,6 @@ type Entry = {
 }
 
 type Props = {
-    teams: TeamOption[]
     players: PlayerOption[]
     entries: Entry[]
 }
@@ -32,7 +30,7 @@ function toDateInput(iso: string | null): string {
     return new Date(iso).toISOString().slice(0, 10)
 }
 
-export default function SidelinedManager({ teams, players, entries }: Props) {
+export default function SidelinedManager({ players, entries }: Props) {
     const router = useRouter()
     const [busy, setBusy] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
@@ -76,7 +74,8 @@ export default function SidelinedManager({ teams, players, entries }: Props) {
     const toggleTeam = (name: string) => 
         setOpenTeams(prev => {
             const next = new Set(prev)
-            next.has(name) ? next.delete(name) : next.add(name)
+            if (next.has(name)) next.delete(name)
+            else next.add(name)
             return next
         })
 
