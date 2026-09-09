@@ -1,10 +1,10 @@
 // All Competitions we sync - single source of truth for League/Season Ids
 export const COMPETITIONS = {
-    premier_league: { leagueId: 8, seasonId: 28083, seasonEndDate: '2027-06-11' },
-    fa_cup: { leagueId: 24, seasonId: 28020 , seasonEndDate: '2027-06-11'},
-    carabao_cup: { leagueId: 27, seasonId: 27917, seasonEndDate: '2027-06-11' },
-    championship: { leagueId: 9, seasonId: 0, seasonEndDate: '2027-06-11' },
-    la_liga: { leagueId: 564, seasonId: 0, seasonEndDate: '2027-06-11' }
+    premier_league: { leagueId: 8, seasonId: 28083 },
+    fa_cup: { leagueId: 24, seasonId: 28020 },
+    carabao_cup: { leagueId: 27, seasonId: 27917 },
+    championship: { leagueId: 9, seasonId: 0 },
+    la_liga: { leagueId: 564, seasonId: 0 }
 } as const
 
 export type CompetitionKey = keyof typeof COMPETITIONS
@@ -31,6 +31,63 @@ export const DOMESTIC_CUP_ROUND_TO_GAMEWEEK: Record<string, number> = {
     'Quarter-finals': 53,
     'Semi-finals': 54,
     'Final': 55
+}
+
+function normalizeCupRound(raw: string): string {
+    const s = raw.toLowerCase().replace(/[\s\-]/g, '')
+
+    if (s.includes('quarter')) return 'quarterfinal'
+    if (s.includes('semi')) return 'semifinal'
+    if (s === 'final') return 'final'
+    if (s.includes('prelim')) return 'preliminary'
+    if (s.includes('qualif')) return 'qualifying'
+    const num = s.match(/(\d+)(?:st|nd|rd|th)?/)?.[1]
+    if (num && s.includes('round')) return `round${num}`
+
+    return s
+}
+
+const IGNORED_CUP_ROUNDS: Record<'carabao_cup' | 'fa_cup', Set<string>> = {
+    carabao_cup: new Set(['preliminary', 'round1']),
+    fa_cup: new Set(['preliminary', 'qualifying', 'round1', 'round2']),
+}
+
+export function resolveCupGameweek(
+    competitionKey: 'carabao_cup' | 'fa_cup',
+    rawStageName: string | null
+): { gameweekNumber: number | null; reason: string | null; needsAttention: boolean } {
+    const mapName = competitionKey === 'carabao_cup' ? 'LEAGUE_CUP_ROUND_TO_GAMEWEEK' : 'DOMESTIC_CUP_ROUND_TO_GAMEWEEK'
+    const map = competitionKey === 'carabao_cup' ? LEAGUE_CUP_ROUND_TO_GAMEWEEK : DOMESTIC_CUP_ROUND_TO_GAMEWEEK
+
+    if (!rawStageName) {
+        return {
+            gameweekNumber: null,
+            reason: `${competitionKey}: fixture has no round/stage from Sportmonks, can't place it in a gameweek. Check the API include (should be \'stage\').`,
+            needsAttention: false,
+        }
+    }
+
+    const token = normalizeCupRound(rawStageName)
+
+    for (const [humanName, gw] of Object.entries(map)) {
+        if (normalizeCupRound(humanName) === token) {
+            return { gameweekNumber: gw, reason: null, needsAttention: false}
+        }
+    }
+
+    if (IGNORED_CUP_ROUNDS[competitionKey].has(token)) {
+        return {
+            gameweekNumber: null,
+            reason: `${competitionKey}: "${rawStageName}" is an early round before fantasy-relevant teams enter - intentionally not mapped.`,
+            needsAttention: false,
+        }
+    }
+
+    return {
+        gameweekNumber: null,
+        reason: `${competitionKey}: unrecognized round "${rawStageName}" (normalized "${token}"). Not in ${mapName}. Known rounds: ${Object.keys(map).join(', ')}. If this is a real fantasy round, add "${rawStageName}": <gameweekNumber> to ${mapName} in lib/sportmonksConstants.ts`,
+        needsAttention: true,
+    }
 }
 
 function invertRoundMap(map: Record<string, number>): Record<number, string> {
@@ -79,3 +136,5 @@ export const FIXTURE_STATE_MAP: FixtureState[] = [
 export function mapFixtureStatus(stateId: number): string {
   return FIXTURE_STATE_MAP.find(s => s.id === stateId)?.stateCode ?? 'UNKNOWN'
 }
+
+export const TERMINAL_FIXTURE_STATES = new Set(['FT', 'AET', 'FTP', 'AWD', 'WO'])

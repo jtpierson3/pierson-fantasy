@@ -325,13 +325,11 @@ export async function getTeamSidelined(teamId: number): Promise<{ sidelined: Sid
     return { sidelined, remaining }
 }
 
-export async function getUpcomingFixturesBySeason(
-    seasonId: number,
-    endDate: string
-): Promise<{ fixtures: Fixture[]; remaining: number | null }> {
-    const startDate = new Date().toISOString().slice(0, 10)
+export async function getSeasonFixturesWithMeta(
+    seasonId: number
+): Promise <{ fixtures: Fixture[]; remaining: number | null }> {
     const { data, remaining } = await sportmonksFetchPaginatedWithMeta<Fixture>(
-        `/fixtures/between/${startDate}/${endDate}?filters=fixtureSeasons:${seasonId}&include=participants;scores;venue;state;round;stage&per_page=50`,
+        `/fixtures?filters=fixtureSeasons:${seasonId}&include=participants;scores;venue;state;round;stage&per_page=50`,
         DAILY_RESET
     )
     return { fixtures: data, remaining }

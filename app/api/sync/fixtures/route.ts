@@ -2,16 +2,20 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { FantasyCompetition } from '@prisma/client'
 import { env } from '@/lib/env'
-import { getUpcomingFixturesBySeason } from '@/lib/sportmonks'
+import { getSeasonFixturesWithMeta } from '@/lib/sportmonks'
 import { logApiCall } from '@/lib/apiCallBudget'
-import { COMPETITIONS, DOMESTIC_CUP_ROUND_TO_GAMEWEEK, LEAGUE_CUP_ROUND_TO_GAMEWEEK, mapFixtureStatus, type CompetitionKey } from '@/lib/sportmonksConstants'
+import { COMPETITIONS, DOMESTIC_CUP_ROUND_TO_GAMEWEEK, LEAGUE_CUP_ROUND_TO_GAMEWEEK, mapFixtureStatus, type CompetitionKey, TERMINAL_FIXTURE_STATES, resolveCupGameweek } from '@/lib/sportmonksConstants'
 
-async function syncCupGameweeks(competition: FantasyCompetition, gameweekNumbers: Set<number>) {
+async function syncCupGameweeks(
+  fixtureKey: 'carabao_cup' | 'fa_cup', 
+  gameweekNumbers: Set<number>
+) {
+  const competition: FantasyCompetition = fixtureKey === 'carabao_cup' ? 'league_cup' : 'domestic_cup'
   const leagues = await prisma.fantasyLeague.findMany({ select: { id: true } })
 
   for (const gameweekNumber of gameweekNumbers) {
     const roundFixtures = await prisma.fixture.findMany({
-      where: { competition, gameweekNumber },
+      where: { competition: fixtureKey, gameweekNumber },
       select: { kickoff: true }
     })
     if (roundFixtures.length === 0) continue
@@ -36,22 +40,36 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const unmapped: {
+    competition: string
+    fixtureId: number
+    match: string
+    stageName: string | null
+    reason: string | null
+  }[] = []
+
   const errors: { competition: string; message: string }[] = []
   let totalCreated = 0
   let totalUpdated = 0
-  const competitionResults: { competition: string; created: number; updated: number; fetched: number }[] = []
+  const competitionResults: { competition: string; created: number; updated: number; fetched: number, skipped?: number | string }[] = []
 
   try {
     for (const key of Object.keys(COMPETITIONS) as CompetitionKey[]) {
       const { leagueId, seasonId } = COMPETITIONS[key]
       let created = 0
       let updated = 0
+      let skipped = 0
       const competitionGameweekNumbers = new Set<number>()
 
-      try {
-        const { fixtures, remaining } = await getUpcomingFixturesBySeason(seasonId, COMPETITIONS[key].seasonEndDate)
+      if (!seasonId) {
+        competitionResults.push({ competition: key, created: 0, updated: 0, fetched: 0, skipped: 'no seasonId configured' })
+        continue
+      }
 
-        await logApiCall(`fixtures/between (${key})`, 'SYNC_FIXTURES', {
+      try {
+        const { fixtures, remaining } = await getSeasonFixturesWithMeta(seasonId)
+
+        await logApiCall(`fixtures/season (${key})`, 'SYNC_FIXTURES', {
           triggeredBy: 'sync/fixtures',
           remainingAfterCall: remaining
         })
@@ -75,19 +93,31 @@ export async function POST(req: Request) {
 
           const existing = await prisma.fixture.findUnique({ where: { id: fx.id } })
 
+          if (existing && TERMINAL_FIXTURE_STATES.has(existing.status)) {
+            skipped++
+            continue
+          }
+
           const roundOrStageName = fx.round?.name ?? fx.stage?.name ?? null
 
           let gameweekNumber: number | null = null
-          let competition: FantasyCompetition = 'premier_league'
 
           if (key === 'premier_league' && fx.round?.name) {
             gameweekNumber = parseInt(fx.round.name) || null
-          } else if (key === 'carabao_cup' && fx.stage?.name) {
-            gameweekNumber = LEAGUE_CUP_ROUND_TO_GAMEWEEK[fx.stage.name] ?? null
-            competition = 'league_cup'
-          } else if (key === 'fa_cup' && fx.stage?.name) {
-            gameweekNumber = DOMESTIC_CUP_ROUND_TO_GAMEWEEK[fx.stage.name] ?? null
-            competition = 'domestic_cup'
+          } else if (key === 'carabao_cup' || key === 'fa_cup') {
+            const resolved = resolveCupGameweek(key, fx.stage?.name ?? null)
+            if (resolved.gameweekNumber === null) {
+              if (resolved.needsAttention) console.warn(`[sync/fixtures] ${resolved.reason}`)
+              unmapped.push({
+                competition: key,
+                fixtureId: fx.id,
+                match: fx.name ?? `${home.name} v ${away.name}`,
+                stageName: fx.stage?.name ?? null,
+                reason: resolved.reason,
+              })
+              continue
+            }
+            gameweekNumber = resolved.gameweekNumber
           }
 
           if (gameweekNumber !== null && (key === 'carabao_cup' || key === 'fa_cup')) {
@@ -124,10 +154,10 @@ export async function POST(req: Request) {
         }
 
         if (key === 'carabao_cup' || key === 'fa_cup') {
-          await syncCupGameweeks(key === 'carabao_cup' ? 'league_cup' : 'domestic_cup', competitionGameweekNumbers)
+          await syncCupGameweeks(key, competitionGameweekNumbers)
         }
 
-        competitionResults.push({ competition: key, created, updated, fetched: fixtures.length })
+        competitionResults.push({ competition: key, created, updated, skipped, fetched: fixtures.length })
         totalCreated += created
         totalUpdated += updated
       } catch (err) {
@@ -143,7 +173,9 @@ export async function POST(req: Request) {
       message: `${totalCreated} fixture(s) created, ${totalUpdated} updated across ${Object.keys(COMPETITIONS).length} competitions`,
       competitionResults,
       errors,
-    })
+      unmapped,
+    },
+    { status: errors.length === 0 ? 200 : 500 })
   } catch (err) {
     console.error('[sync/fixtures] error:', err)
     return NextResponse.json(
@@ -153,6 +185,7 @@ export async function POST(req: Request) {
         created: totalCreated,
         updated: totalUpdated,
         errors,
+        unmapped,
       },
       { status: 500 }
     )

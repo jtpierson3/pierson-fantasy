@@ -56,8 +56,11 @@ def run() -> dict:
         timeout=120,
     )
     fixtures_sync.raise_for_status()
+    fixtures_result = fixtures_sync.json()
+    if not fixtures_result.get("success"):
+        raise RuntimeError(f"Fixtures sync reported failure: {fixtures_result.get('errors')}")
 
-    return {"ran": True, "gameweekNumber": gameweek_number, "SyncResult": sync.json(), "fixturesSyncResult": fixtures_sync.json()}
+    return {"ran": True, "gameweekNumber": gameweek_number, "SyncResult": sync.json(), "fixturesSyncResult": fixtures_result}
 
 if __name__ == "__main__":
     try:
