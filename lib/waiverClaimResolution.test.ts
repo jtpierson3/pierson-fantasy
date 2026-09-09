@@ -24,6 +24,8 @@ function claim(
     }
 }
 
+const fullRoster = () => Array.from({ length: 23 }, (_, i) => i + 1)
+
 const statusOf = (r: ReturnType<typeof resolveWaiverClaims>, claimId: string) =>
     r.claimResults.find(c => c.claimId === claimId)?.status
 
@@ -75,5 +77,100 @@ describe('resolveWaiverClaims', () => {
         expect(statusOf(res, 'a1')).toBe('won')
         expect(statusOf(res, 'b1')).toBe('won')
         expect(statusOf(res, 'a2')).toBe('lost')
+    })
+
+    it('drop target is still on the roster: claim swaps the player out', () => {
+        const res = resolveWaiverClaims(
+            [claim('c1', 'A', 100, { drop: 2 })],
+            [team('A', 1, [1, 2, 3])]
+        )
+
+        expect(statusOf(res, 'c1')).toBe('won')
+        expect(res.finalTeamState['A'].rosterPlayerIds).toContain(100)
+        expect(res.finalTeamState['A'].rosterPlayerIds).not.toContain(2)
+        expect(res.finalTeamState['A'].rosterPlayerIds).toHaveLength(3)
+    })
+
+    it('drop target already gone but roster has room: claim still adds the player', () => {
+        const res = resolveWaiverClaims(
+            [claim('c1', 'A', 100, { drop: 99 })],
+            [team('A', 1, [1, 2, 3])]
+        )
+
+        expect(statusOf(res, 'c1')).toBe('won')
+        expect(res.finalTeamState['A'].rosterPlayerIds).toContain(100)
+        expect(res.finalTeamState['A'].rosterPlayerIds).toHaveLength(4)
+    })
+
+    it('drop target already gone and roster full: claim is lost', () => {
+        const res = resolveWaiverClaims(
+            [claim('c1', 'A', 100, { drop: 99 })],
+            [team('A', 1, fullRoster())]
+        )
+
+        expect(statusOf(res, 'c1')).toBe('lost')
+        expect(res.finalTeamState['A'].rosterPlayerIds).not.toContain(100)
+        expect(res.finalTeamState['A'].rosterPlayerIds).toHaveLength(23)
+    })
+
+    it('no-drop claim on a full roster is lost', () => {
+        const res = resolveWaiverClaims(
+            [claim('c1', 'A', 100)],
+            [team('A', 1, fullRoster())]
+        )
+
+        expect(statusOf(res, 'c1')).toBe('lost')
+        expect(res.finalTeamState['A'].rosterPlayerIds).toHaveLength(23)
+    })
+
+    it('no-drop claims only fill open slots; the rest are lost once full', () => {
+        const roster = Array.from({ length: 22 }, (_, i) => i + 1)
+        const res = resolveWaiverClaims(
+            [
+                claim('c1', 'A', 100, { rank: 1 }),
+                claim('c2', 'A', 101, { rank: 2 }),
+                claim('c3', 'A', 102, { rank: 3 }),
+            ],
+            [team('A', 1, roster)]
+        )
+
+        expect(statusOf(res, 'c1')).toBe('won')
+        expect(statusOf(res, 'c2')).toBe('lost')
+        expect(statusOf(res, 'c3')).toBe('lost')
+        expect(res.finalTeamState['A'].rosterPlayerIds).toContain(100)
+        expect(res.finalTeamState['A'].rosterPlayerIds).toHaveLength(23)
+    })
+
+    it('one open slot: a no-drop claim takes it, a later claim with a valid drop still swaps', () => {
+        const roster = Array.from({ length: 22 }, (_, i) => i + 1)
+        const res = resolveWaiverClaims(
+            [
+                claim('c1', 'A', 100, { rank: 1 }),
+                claim('c2', 'A', 101, { rank: 2, drop: 10 })
+            ],
+            [team('A', 1, roster)]
+        )
+
+        expect(statusOf(res, 'c1')).toBe('won')
+        expect(statusOf(res, 'c2')).toBe('won')
+
+        const final = res.finalTeamState['A'].rosterPlayerIds
+        expect(final).toEqual(expect.arrayContaining([100, 101]))
+        expect(final).not.toContain(10)
+        expect(final).toHaveLength(23)
+    })
+
+    it('a claim that succeeds via open slot does not invalidate a sibling referencing its stale drop target', () => {
+        const res = resolveWaiverClaims(
+            [
+                claim('c1', 'A', 100, { rank: 1, drop: 99 }),
+                claim('c2', 'A', 99, { rank: 2 })
+            ],
+            [team('A', 1, [1, 2, 3])]
+        )
+
+        expect(statusOf(res, 'c1')).toBe('won')
+        expect(statusOf(res, 'c2')).toBe('won')
+        expect(res.finalTeamState['A'].rosterPlayerIds).toEqual(expect.arrayContaining([100, 99]))
     })
 })

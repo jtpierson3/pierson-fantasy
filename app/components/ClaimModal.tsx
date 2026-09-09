@@ -79,26 +79,23 @@ export default function ClaimModal({
                 <p className="text-sm text-gray-500 mb-4">
                     {rosterFull 
                         ? 'Your roster is full. Select a player to drop if this claim is processed'
-                        : 'Submit a waiver claim for this player.'}
+                        : 'Optionally choose a player to drop if this claim is processed. Leave it blank to just fill the empty roster slot.'}
                 </p>
-
-                {rosterFull && (
-                    <select
-                        value={dropPlayerId}
-                        onChange={e => setDropPlayerId(e.target.value)}
-                        onClick={e => e.stopPropagation()}
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 mb-4"
-                    >
-                        <option value="">Select a player to drop...</option>
-                        {rosterPlayers
-                            .filter(p => p.rosterSlot !== 'IR')
-                            .map(p => (
-                                <option key={p.id} value={p.playerId}>
-                                    {p.player.display_name}
-                                </option>
-                            ))}
-                    </select>
-                )}
+                <select
+                    value={dropPlayerId}
+                    onChange={e => setDropPlayerId(e.target.value)}
+                    onClick={e => e.stopPropagation()}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 mb-4"
+                >
+                    <option value="">Select a player to drop...</option>
+                    {rosterPlayers
+                        .filter(p => p.rosterSlot !== 'IR')
+                        .map(p => (
+                            <option key={p.id} value={p.playerId}>
+                                {p.player.display_name}
+                            </option>
+                        ))}
+                </select>
 
                 {error && (
                     <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4">

@@ -80,21 +80,18 @@ export function resolveWaiverClaims(
                 const rosterSize = teamRosterSizeMap.get(teamId)!
                 
                 const playerAlreadyTaken = claimedPlayerIds.has(claim.playerToAddId)
-                const dropStillValid = claim.playerToDropId
-                    ? roster.has(claim.playerToDropId)
-                    : true
-                const hasOpenSlot = claim.playerToDropId
-                    ? true
-                    : rosterSize < MAX_NON_IR_ROSTER
 
-                const isValid = !playerAlreadyTaken && dropStillValid && hasOpenSlot
+                const dropPresent = claim.playerToDropId !== null && roster.has(claim.playerToDropId)
+                const hasOpenSlot = rosterSize < MAX_NON_IR_ROSTER
+
+                const isValid = !playerAlreadyTaken && (dropPresent || hasOpenSlot)
 
                 if (isValid) {
                     claimedPlayerIds.add(claim.playerToAddId)
                     roster.add(claim.playerToAddId)
 
-                    if (claim.playerToDropId) {
-                        roster.delete(claim.playerToDropId)
+                    if (dropPresent) {
+                        roster.delete(claim.playerToDropId!)
                     } else {
                         teamRosterSizeMap.set(teamId, rosterSize + 1)
                     }
@@ -108,7 +105,7 @@ export function resolveWaiverClaims(
                         }
                     }
 
-                    if (claim.playerToDropId) {
+                    if (dropPresent) {
                         for (const other of claims) {
                             if (other.id === claim.id || claimStatusMap.has(other.id)) continue
                             if (

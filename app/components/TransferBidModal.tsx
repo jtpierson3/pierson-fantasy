@@ -124,22 +124,29 @@ export default function TransferBidModal({
                     </div>
                 </div>
 
-                {rosterFull && (
-                    <select
-                        value={dropPlayerId}
-                        onChange={e => setDropPlayerId(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 mb-4 text-gray-900"
-                    >
-                        <option value="">Select a player to drop if you win...</option>
-                        {rosterPlayers
-                            .filter(p => p.rosterSlot !== 'IR')
-                            .map(p => (
-                                <option key={p.id} value={p.playerId}>
-                                    {p.player.display_name}
-                                </option>
-                        ))}
-                    </select>
-                )}
+                <p className="text-xs text-gray-500 mb-1">
+                    {rosterFull
+                        ? 'Your roster is full - choose a player to drop if you win'
+                        : 'Optionally choose a player to drop if you win. Leave blank to fill an empty roster spot'
+                    }
+                </p>
+
+                <select
+                    value={dropPlayerId}
+                    onChange={e => setDropPlayerId(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 mb-4 text-gray-900"
+                >
+                    <option value="">
+                        {rosterFull ? 'Select a player to drop if you win...' : 'No player to drop'}
+                    </option>
+                    {rosterPlayers
+                        .filter(p => p.rosterSlot !== 'IR')
+                        .map(p => (
+                            <option key={p.id} value={p.playerId}>
+                                {p.player.display_name}
+                            </option>
+                    ))}
+                </select>
 
                 {error && (
                     <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4">
