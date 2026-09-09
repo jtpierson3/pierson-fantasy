@@ -10,9 +10,21 @@ export async function syncTeamSidelined(teamId: number, triggeredBySource: strin
         remainingAfterCall: remaining,
     })
 
+    const knownPlayerIds = new Set(
+        (await prisma.player.findMany({
+            where: { id: { in: sidelined.map(s => s.player_id) } },
+            select: { id: true },
+        })).map(p => p.id)
+    )
+
     let synced = 0
 
     for (const entry of sidelined) {
+        if (!knownPlayerIds.has(entry.player_id)) {
+            console.warn(`[sidelined sync] skipping entry ${entry.id} - unknown player ${entry.player_id}, need to run player sync first`)
+            continue
+        }
+
         const fields = {
             category: entry.category,
             typeId: entry.type_id,
