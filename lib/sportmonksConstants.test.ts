@@ -27,12 +27,12 @@ describe('resolveCupGameweek - name normalization', () => {
 
     it('matches the FA Cup "5th Round" form', () => {
         const r = resolveCupGameweek('fa_cup', '5th Round')
-        expect(r.gameweekNumber).toBe(LEAGUE_CUP_ROUND_TO_GAMEWEEK['5th Round'])
+        expect(r.gameweekNumber).toBe(DOMESTIC_CUP_ROUND_TO_GAMEWEEK['5th Round'])
     })
 
     it('maps the final', () => {
         const r = resolveCupGameweek('fa_cup', 'Final')
-        expect(r.gameweekNumber).toBe(LEAGUE_CUP_ROUND_TO_GAMEWEEK['Final'])
+        expect(r.gameweekNumber).toBe(DOMESTIC_CUP_ROUND_TO_GAMEWEEK['Final'])
     })
 })
 

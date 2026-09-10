@@ -25,7 +25,7 @@ export default function CurrentCupTile({ competition, gameweekNumber, cupPointsT
     // TODO: On span for Round get Round name based on gameweek from the Sportmonks constants
     return (
         <button
-            onClick={() => router.push(`/dashboard/my-team/cup/${gameweekNumber}`)}
+            onClick={() => router.push(`/dashboard/league/cup/${competition}/${gameweekNumber}`)}
             className="lg:col-span-2 h-full w-full bg-white border border-gray-100 rounded-xl p-4 hover:border-gray-200 hover:shadow-sm transition-all text-left"
         >
             <div className="flex items-center justify-between mb-4">
