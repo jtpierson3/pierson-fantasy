@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { auth } from '@clerk/nextjs/server'
 import { redirect, notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+import type { Prisma } from '@prisma/client'
 import { getPlayerPointsForGameweek } from '@/lib/playerPoints'
 import {
     LEAGUE_CUP_GAMEWEEK_TO_ROUND,
@@ -68,7 +69,8 @@ async function CupMatchupContent({ competition, gameweekNumber }: { competition:
         },
     })
 
-    let sourcePlayers: { playerId: number; player: any }[]
+    type PlayerWithTeam = Prisma.PlayerGetPayload<{ include: { team: true } }>
+    let sourcePlayers: { playerId: number; player: PlayerWithTeam }[]
     if (snapshot && snapshot.players.length > 0) {
         sourcePlayers = snapshot.players.map(p => ({ playerId: p.playerId, player: p.player }))
     } else {
