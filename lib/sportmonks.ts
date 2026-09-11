@@ -45,6 +45,7 @@ export type Transfer = {
     to_team_id: number | null
     date: string
     amount: number | null
+    completed: boolean
 }
 
 export type Participant = {
@@ -291,6 +292,13 @@ export async function getPlayerTransfers(playerId: number): Promise<{ transfers:
     )
     const transfers = (data as SportmonksListResponse<Transfer>).data ?? []
     return { transfers, remaining }
+}
+
+export async function getTransfersBetween(startDate: string, endDate: string): Promise<{ transfers: Transfer[]; remaining: number | null}> {
+    const { data, remaining } = await sportmonksFetchPaginatedWithMeta<Transfer>(
+        `/transfers/between/${startDate}/${endDate}`
+    )
+    return { transfers: data, remaining }
 }
 
 export async function getTeamsBySeason(seasonId: number): Promise<{ teams: TeamSummary[]; remaining: number| null }> {

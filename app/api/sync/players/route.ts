@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { COMPETITIONS } from '@/lib/sportmonksConstants'
-import { getSquad } from '@/lib/sportmonks'
+import { getSquad, getTransfersBetween } from '@/lib/sportmonks'
 import { detectDepartures, getTeamsEligibleForDepartureCheck } from '@/lib/playerDeparture'
 import { requireAutomationSecret } from '@/lib/automationAuth'
 import { logApiCall } from '@/lib/apiCallBudget'
 import { recordDeparture } from '@/lib/playerTransferRecording'
+import { resolveLatestTransferPerPlayer } from '@/lib/playerTransferResolution'
 
 const SEASON_ID = COMPETITIONS.premier_league.seasonId
 
@@ -152,14 +153,66 @@ export async function POST(req: Request) {
       })
     }
 
+    // Reconciliation pass: the squad-by-season endpoint can list a player under two tracked teams at once
+    // mid-transfer (no way to tell which is current from squad data alone), and never reliably drops a 
+    // departed player from their old team's squad. The transfers feed is ground truth for both cases,
+    // so it runs a corrective pass after the squad loop.
+    const LOOKBACK_DAYS = 21
+    const today = new Date()
+    const lookbackStart = new Date(today.getTime() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000)
+    const toDateString = (d: Date) => d.toISOString().slice(0, 10)
+
+    let transfersReconciled = 0
+    let departuresRecorded = 0
+
+    try {
+      const { transfers, remaining } = await getTransfersBetween(
+        toDateString(lookbackStart),
+        toDateString(today)
+      )
+
+      await logApiCall(`transfers/between/${toDateString(lookbackStart)}/${toDateString(today)}`, 'PLAYER_TRANSFER_LOOKUP', {
+        triggeredBy: triggeredBySource,
+        remainingAfterCall: remaining
+      })
+
+      const trackedTeamIdsSet = new Set(currentlyTrackedTeamIds)
+      const latestTransfers = resolveLatestTransferPerPlayer(transfers, trackedTeamIdsSet)
+
+      for (const [playerId, transfer] of latestTransfers) {
+        const player = await prisma.player.findUnique({ where: { id: playerId } })
+        if (!player) continue
+
+        if (transfer.to_team_id !== null && trackedTeamIdsSet.has(transfer.to_team_id)) {
+          if (player.teamId !== transfer.to_team_id) {
+            await prisma.player.update({
+              where: { id: playerId },
+              data: { teamId: transfer.to_team_id },
+            })
+            transfersReconciled++
+          }
+        } else {
+          await recordDeparture(playerId)
+          departuresRecorded++
+        }
+      }
+    } catch (err) {
+      errors.push({
+        team: 'transfer-reconciliation',
+        message: err instanceof Error ? err.message : 'Unknown error reconciling transfers',
+      })
+    }
+
     return NextResponse.json({
       success: errors.length === 0,
-      message: `${totalCreated} player(s) created, ${totalUpdated} updated, ${totalDeparted} departure(s) flagged for review across ${teams.length} team(s)`,
+      message: `${totalCreated} player(s) created, ${totalUpdated} updated, ${totalDeparted} departure(s) flagged for review, ${transfersReconciled} transfer(s) reconciled, across ${teams.length} team(s)`,
       teamsProcessed: teams.length,
       created: totalCreated,
       updated: totalUpdated,
       skipped: totalSkipped,
       departed: totalDeparted,
+      transfersReconciled,
+      departuresRecorded,
       teamResults,
       errors,
     })
