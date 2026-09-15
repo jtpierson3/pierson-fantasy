@@ -345,6 +345,16 @@ export function getPositionType (
     return DETAILED_POSITION_MAP[detailedPositionId] ?? null
 }
 
+export type ScoringPosition = 'ST' | 'WM' | 'DEF' | 'GK'
+
+export function toScoringPosition(positionType: PositionType | null): ScoringPosition | null {
+    if (positionType === 'ST') return 'ST'
+    if (positionType === 'W' || positionType === 'CM') return 'WM'
+    if (positionType === 'CB' || positionType === 'FB') return 'DEF'
+    if (positionType === 'GK') return 'GK'
+    return null
+}
+
 // Check if a players detailed position can fill a given slot
 export function canFillSlot(slot: FormationSlot, detailedPositionType: PositionType): boolean {
     if (slot.type === 'fixed') return slot.position === detailedPositionType

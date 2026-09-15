@@ -3,15 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAutomationSecret } from '@/lib/automationAuth'
 import { calculatePlayerPoints, type ScoringRuleInput, type PlayerStatsInput } from '@/lib/scoringCalculation'
 import { qualifiesForCleanSheet } from '@/lib/scoringRules'
-import { getPositionType } from '@/lib/formations'
-
-function toScoringPosition(positionType: string | null): 'ST' | 'WM' | 'DEF' | 'GK' | null {
-    if (positionType === 'ST') return 'ST'
-    if (positionType === 'W' || positionType === 'CM') return 'WM'
-    if (positionType === 'CB' || positionType === 'FB') return 'DEF'
-    if (positionType === 'GK') return 'GK'
-    return null
-}
+import { getPositionType, toScoringPosition } from '@/lib/formations'
 
 export async function POST(req: Request) {
     const authResult = requireAutomationSecret(req)

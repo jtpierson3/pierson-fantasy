@@ -5,6 +5,7 @@ import { logApiCall } from '@/lib/apiCallBudget'
 import { requireAutomationSecret } from '@/lib/automationAuth'
 import { STAT_TYPE_IDS } from '@/lib/scoringStatTypes'
 import { mapFixtureStatus } from '@/lib/sportmonksConstants'
+import { resolveSubstitutePositions } from '@/lib/subPositionAssignment'
 
 export async function POST(req: Request) {
     const authResult = requireAutomationSecret(req)
@@ -45,6 +46,11 @@ export async function POST(req: Request) {
 
         let synced = 0
 
+        const positionByPlayerId = new Map<number, number | null>(
+            fixture.lineups.map(l => [l.player_id, l.detailedposition?.id ?? null])
+        )
+        const subAssignments = resolveSubstitutePositions(fixture.events, positionByPlayerId)
+
         for (const lineup of fixture.lineups) {
             const playerExists = await prisma.player.findUnique({
                 where: { id: lineup.player_id },
@@ -69,7 +75,7 @@ export async function POST(req: Request) {
 
             const minutesPlayed = statsMap[STAT_TYPE_IDS.MINUTES_PLAYED] ?? 0
             const wasStarter = lineup.type_id === 11
-            const positionPlayedId = lineup.detailedposition?.id ?? null
+            const positionPlayedId = lineup.detailedposition?.id ?? subAssignments.get(lineup.player_id) ?? null
 
             await prisma.playerMatchStats.upsert({
                 where: { playerId_fixtureId: { playerId: lineup.player_id, fixtureId: fixture.id } },
