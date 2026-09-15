@@ -51,6 +51,13 @@ export async function POST(req: Request) {
         )
         const subAssignments = resolveSubstitutePositions(fixture.events, positionByPlayerId)
 
+        const manualOverrides = new Map(
+            (await prisma.playerMatchStats.findMany({
+                where: { fixtureId: fixture.id, positionManuallySet: true },
+                select: { playerId: true, positionPlayedId: true }
+            })).map(s => [s.playerId, s.positionPlayedId])
+        )
+
         for (const lineup of fixture.lineups) {
             const playerExists = await prisma.player.findUnique({
                 where: { id: lineup.player_id },
@@ -75,7 +82,9 @@ export async function POST(req: Request) {
 
             const minutesPlayed = statsMap[STAT_TYPE_IDS.MINUTES_PLAYED] ?? 0
             const wasStarter = lineup.type_id === 11
-            const positionPlayedId = lineup.detailedposition?.id ?? subAssignments.get(lineup.player_id) ?? null
+            const positionPlayedId = manualOverrides.has(lineup.player_id)
+                ? manualOverrides.get(lineup.player_id)
+                : (lineup.detailedposition?.id ?? subAssignments.get(lineup.player_id) ?? null)
 
             await prisma.playerMatchStats.upsert({
                 where: { playerId_fixtureId: { playerId: lineup.player_id, fixtureId: fixture.id } },
