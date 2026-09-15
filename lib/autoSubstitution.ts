@@ -108,6 +108,7 @@ export function resolveAutoSubstitutions(
         // Pass 2: assign whoever's left to whatver slots remain, in order
         remainingSlots.forEach((slot, i) => {
             const entry = remainingWinners[i]
+            if (!entry) return
             finalAssignments.set(slot.slotIndex, entry.player)
             assignedPlayerIds.add(entry.player.fantasyTeamPlayerId)
         })
@@ -250,7 +251,7 @@ export function finalizeLineup(
         if (reservePick) {
             return {
                 ...result,
-                FinalPlayer: reservePick,
+                finalPlayer: reservePick,
                 displacedPlayer: result.finalPlayer,
                 rule: 'RESERVE_UPGRADE' as const
             }
