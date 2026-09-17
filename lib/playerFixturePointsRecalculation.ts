@@ -19,7 +19,7 @@ export async function recalculatePlayerFixturePoints(
     playerMatchStatsId: string,
     positionPlayedId: number,
     options: { manual?: boolean } = {}
-): Promise<{ points: number; breakdown: unknown }> {
+): Promise<{ points: number; breakdown: unknown; playerId: number; gameweekNumber: number | null }> {
     const ps = await prisma.playerMatchStats.findUnique({
         where: { id: playerMatchStatsId },
         include: { player: true, fixture: true }
@@ -76,5 +76,5 @@ export async function recalculatePlayerFixturePoints(
         create: { playerId: ps.playerId, fixtureId: ps.fixtureId, points: totalPoints, breakdown }
     })
 
-    return { points: totalPoints, breakdown }
+    return { points: totalPoints, breakdown, playerId: ps.playerId, gameweekNumber: ps.fixture.gameweekNumber }
 }
