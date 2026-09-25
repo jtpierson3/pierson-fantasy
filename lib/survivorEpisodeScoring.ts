@@ -19,36 +19,48 @@ type TribeWithPlayers = Prisma.SurvivorFantasyLeagueTribeGetPayload<{
     }
 }>
 
+type PickWithStats = TribeWithPlayers['players'][number]
+
 /**
  * Points a fantasy tribe earned for one specific episode.
  * Mirrors the wap-aware logic in leagueDashboard.tsx's calculate Tribe Points,
  * but scoped to a single episode instead of summed across the season.
  */
+export function calculatePickEpisodePoints(
+    pick: PickWithStats,
+    episodeId: string,
+    episodeNumber: number,
+    mergeEpisodeNumber: number
+): number {
+    if (pick.isSwap) {
+        const newPoints = episodeNumber > mergeEpisodeNumber
+            ? pick.contestant.episodeStats
+                .filter(s => s.episode.id === episodeId)
+                .reduce((sum, s) => sum + s.event.points, 0)
+            : 0
+
+        const oldPoints = episodeNumber <= mergeEpisodeNumber
+            ? (pick.swappedFrom?.episodeStats ?? [])
+                .filter(s => s.episode.id === episodeId)
+                .reduce((sum, s) => sum + s.event.points, 0)
+            : 0
+
+        return newPoints + oldPoints
+    }
+
+    return pick.contestant.episodeStats
+        .filter(s => s.episode.id === episodeId)
+        .reduce((sum, s) => sum + s.event.points, 0)
+}
+
 export function calculateTribeEpisodePoints(
     tribe: TribeWithPlayers,
     episodeId: string,
     episodeNumber: number,
     mergeEpisodeNumber: number
 ): number {
-    return (tribe.players ?? []).reduce((total, pick) => {
-        if (pick.isSwap) {
-            const newPoints = episodeNumber > mergeEpisodeNumber
-                ? pick.contestant.episodeStats
-                    .filter(s => s.episode.id === episodeId)
-                    .reduce((sum, s) => sum + s.event.points, 0)
-                : 0
-
-            const oldPoints = episodeNumber <= mergeEpisodeNumber
-                ? (pick.swappedFrom?.episodeStats ?? [])
-                    .filter(s => s.episode.id === episodeId)
-                    .reduce((sum, s) => sum + s.event.points, 0)
-                : 0
-
-            return total + newPoints + oldPoints
-        }
-
-        return total + pick.contestant.episodeStats
-            .filter(s => s.episode.id === episodeId)
-            .reduce((sum, s) => sum + s.event.points, 0)
-    }, 0)
+    return (tribe.players ?? []).reduce(
+        (total, pick) => total + calculatePickEpisodePoints(pick, episodeId, episodeNumber, mergeEpisodeNumber),
+        0
+    )
 }

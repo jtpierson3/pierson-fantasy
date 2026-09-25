@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { redirect, notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
-import { calculateTribeEpisodePoints } from '@/lib/survivorEpisodeScoring'
+import { calculatePickEpisodePoints } from '@/lib/survivorEpisodeScoring'
 import EpisodeSummary from './episodeSummary'
 
 export default async function EpisodeSummaryPage({
@@ -30,7 +30,10 @@ export default async function EpisodeSummaryPage({
                     players: {
                         include: {
                             contestant: {
-                                include: { episodeStats: { include: { event: true, episode: true } } },
+                                include: {
+                                    survivorPlayer: true,
+                                    episodeStats: { include: { event: true, episode: true } } 
+                                },
                             },
                             swappedFrom: {
                                 include: { episodeStats: { include: { event: true, episode: true } } },
@@ -59,9 +62,16 @@ export default async function EpisodeSummaryPage({
 
     const members = league.members.map((member) => {
         const tribe = league.tribes.find((t) => t.userId === member.userId)
-        const points = tribe
-            ? calculateTribeEpisodePoints(tribe, episode.id, episode.number, mergeEpisodeNumber)
-            : 0
+
+        const contestants = (tribe?.players ?? []).map((pick) => ({
+            contestantId: pick.contestant.id,
+            name: pick.contestant.survivorPlayer.name,
+            imageUrl: pick.contestant.imageUrl,
+            status: pick.contestant.status,
+            points: calculatePickEpisodePoints(pick, episode.id, episode.number, mergeEpisodeNumber),
+        }))
+
+        const points = contestants.reduce((sum, c) => sum + c.points, 0)
 
         const pick = league.eliminationPicks.find((p) => p.userId === member.userId)
 
@@ -69,6 +79,7 @@ export default async function EpisodeSummaryPage({
             memberId: member.id,
             username: member.user.username,
             points,
+            contestants,
             pickName: pick?.contestant.survivorPlayer.name ?? null,
             isCorrect: pick?.isCorrect ?? false,
         }
