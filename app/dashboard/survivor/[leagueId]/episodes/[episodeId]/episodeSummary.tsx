@@ -40,7 +40,7 @@ export default function EpisodeSummary({
                     <select
                         value={episode.id}
                         onChange={(e) =>
-                            router.push(`/dashobard/survivor/${leagueId}/episodes/${e.target.value}`)
+                            router.push(`/dashboard/survivor/${leagueId}/episodes/${e.target.value}`)
                         }
                         className="px-2 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-600 text-gray-700"
                     >
