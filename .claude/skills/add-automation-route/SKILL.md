@@ -1,17 +1,17 @@
 ---
 name: add-automation-route
-description: Checklist for adding a new machine-triggered API route in pierson-fantasy (e.g. an endpoint called by a GitHub Actions / Python script, a cron sync job, or any caller that isn't a logged-in user). Use this whenever the user wants to add, create, or wire up a new automation, sync, cron, scheduled, or webhook-style API route under app/api/. This project has a recurring real bug where a new automation route isn't added to middleware.ts's public matcher, so Clerk intercepts the unauthenticated request and returns a misleading 404 before the route handler ever runs — this skill exists specifically to stop that from happening again.
+description: Checklist for adding a new machine-triggered API route in pierson-fantasy (e.g. an endpoint called by a GitHub Actions / Python script, a cron sync job, or any caller that isn't a logged-in user). Use this whenever the user wants to add, create, or wire up a new automation, sync, cron, scheduled, or webhook-style API route under app/api/. This project has a recurring real bug where a new automation route isn't added to proxy.ts's public matcher, so Clerk intercepts the unauthenticated request and returns a misleading 404 before the route handler ever runs — this skill exists specifically to stop that from happening again.
 ---
 
 # Add Automation Route
 
 ## The bug this prevents
 
-pierson-fantasy uses Clerk middleware (`middleware.ts`) to protect all routes by default. Routes
+pierson-fantasy uses Clerk middleware (`proxy.ts`) to protect all routes by default. Routes
 meant to be called by a machine (GitHub Actions, a Python script, a cron job) don't have a Clerk
 session, so they authenticate with a shared secret instead
 (`lib/automationAuth.ts::requireAutomationSecret`). If a new route like this isn't explicitly
-listed in `middleware.ts`'s public matcher, Clerk's `auth.protect()` intercepts the request before
+listed in `proxy.ts`'s public matcher, Clerk's `auth.protect()` intercepts the request before
 it ever reaches your route handler — and because Clerk's rejection for an unauthenticated request
 to a protected page looks like a 404 rather than a clear 401, this has repeatedly looked like "the
 route doesn't exist" rather than "the route is auth-blocked," costing real debugging time. Every
@@ -20,7 +20,7 @@ step below exists to catch that specific failure mode before it ships.
 ## Steps
 
 1. **Decide the route path — prefer `/api/sync/...`.** That prefix is already covered by
-   `middleware.ts`'s public matcher (`'/api/sync(.*)'`), so a route placed there needs no
+   `proxy.ts`'s public matcher (`'/api/sync(.*)'`), so a route placed there needs no
    middleware change. Only reach for a different top-level prefix if the route doesn't
    conceptually belong under sync (e.g. it's a webhook, not a sync job) — in that case you'll need
    step 3.
@@ -37,8 +37,8 @@ step below exists to catch that specific failure mode before it ships.
    }
    ```
 
-3. **If the route is NOT under `/api/sync/...`, add its prefix to `middleware.ts`'s
-   `isPublicRoute` matcher explicitly.** Open `middleware.ts`, find the `createRouteMatcher([...])`
+3. **If the route is NOT under `/api/sync/...`, add its prefix to `proxy.ts`'s
+   `isPublicRoute` matcher explicitly.** Open `proxy.ts`, find the `createRouteMatcher([...])`
    array, and add the new prefix following the existing pattern (e.g. `'/api/my-new-thing(.*)'`).
    Skipping this step is exactly the bug this skill exists to prevent — do not skip it just
    because the route "should" be public by virtue of using `requireAutomationSecret`. Clerk
@@ -75,7 +75,7 @@ step below exists to catch that specific failure mode before it ships.
 ## Quick self-check before calling it done
 
 - [ ] Route uses `requireAutomationSecret`, not `requireUser`/`requireSiteAdmin`
-- [ ] Route path is under `/api/sync/...`, OR its own prefix was added to `middleware.ts`
+- [ ] Route path is under `/api/sync/...`, OR its own prefix was added to `proxy.ts`
 - [ ] Curled without auth header → got the handler's own rejection, not a bare Clerk-blocked 404
 - [ ] Curled with correct `Authorization: Bearer $SYNC_SECRET` → reached real logic successfully
 - [ ] If called from GitHub Actions/Python, `SYNC_SECRET` is actually available to that caller

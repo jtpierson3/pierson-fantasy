@@ -11,11 +11,13 @@ const isPublicRoute = createRouteMatcher ([
     '/api/admin/api-usage/rollup(.*)',
 ])
 
-export default clerkMiddleware(async(auth, request) => {
+const proxy = clerkMiddleware(async(auth, request) => {
     if (!isPublicRoute(request)) {
         await auth.protect()
     }
 })
+
+export default proxy
 
 export const config = {
     matcher: [

@@ -56,7 +56,7 @@ GitHub Actions running Python scripts for scheduled jobs (`.github/workflows/api
   directly (Clerk session-based)
 - `lib/automationAuth.ts`: `requireAutomationSecret(req)` — for scheduled/machine-triggered
   routes (bearer token), e.g. anything called by a Python/GitHub Actions script
-- **Any new automation route MUST be covered by `middleware.ts`'s public routes matcher**, or
+- **Any new automation route MUST be covered by `proxy.ts`'s public routes matcher**, or
   Clerk will intercept the unauthenticated request and return a misleading 404 before it reaches
   the route handler. Currently public: `/sign-in`, `/api/webhooks`, `/api/sportmonks`,
   `/api/sync(.*)`, `/api/survivor`, `/api/waivers`, `/api/transfer-and-waiver-processing`,
