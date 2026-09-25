@@ -489,7 +489,7 @@ export default function LeagueDashboard({ league, userId, seasonContestants, act
           {/* Last Episode */}
           {lastEpisode ? (
             <Link 
-              href={`/survivor/seasons/${league.survivorSeason.id}/episodes/${lastEpisode.id}`}
+              href={`/survivor/seasons/${leagueId}/episodes/${lastEpisode.id}`}
               className="hover:border-gray-500 rounded-xl hover:shadow-lg transition-all cursor-pointer"
             >
               <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
