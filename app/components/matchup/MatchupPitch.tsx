@@ -6,12 +6,16 @@ import { assignAllRows, type SlotAssignable } from '@/lib/lineupAssignment'
 import PlayerCard from '@/app/components/playerCard'
 import type { DisplayPlayer } from '@/lib/playerTypes'
 import PlayerScoringModal from '@/app/components/PlayerScoringModal'
+import { checkPositionAnomaly } from '@/lib/positionAnomaly'
 
 export type MatchupPlayer = SlotAssignable & {
   rosterSlot: string
   player: DisplayPlayer & { detailed_position_id: number | null }
   points?: number
   breakdown?: unknown
+  playerMatchStatsId?: string | null
+  positionPlayedId?: number | null
+  minutesPlayed?: number
 }
 
 export type MatchupTeamData = {
@@ -27,6 +31,7 @@ export type MatchupTeamData = {
 type Props = {
   homeTeam: MatchupTeamData
   awayTeam: MatchupTeamData
+  isAdmin: boolean
 }
 
 function TeamStartersRows({
@@ -68,6 +73,7 @@ function TeamStartersRows({
                   positionLabel={slotPositionLabel}
                   points={fp.points ?? 0}
                   isHomeTeam={isHomeTeam}
+                  flagReason={checkPositionAnomaly(fp.player, fp.positionPlayedId ?? null, fp.minutesPlayed ?? 0)}
                 />
               </button>
             )
@@ -108,7 +114,13 @@ function BenchSection({
                         className="bg-white border border-gray-100 rounded-lg px-2 py-1.5 flex items-center gap-2 text-left cursor-pointer"
                     >
                         <span className="text-xs font-medium text-gray-400 w-4">{fp.slotOrder}</span>
-                        <PlayerCard player={fp.player} points={fp.points ?? 0} size="sm" isHomeTeam={isHomeTeam} />
+                        <PlayerCard
+                          player={fp.player}
+                          points={fp.points ?? 0}
+                          size="sm"
+                          isHomeTeam={isHomeTeam}
+                          flagReason={checkPositionAnomaly(fp.player, fp.positionPlayedId ?? null, fp.minutesPlayed ?? 0)}  
+                        />
                     </button>
                 ))}
             </div>
@@ -122,11 +134,27 @@ function ordinal(n: number): string {
     return n + (s[(v -20) % 10] ?? s[v] ?? s[0])
 }
 
-export default function MatchupPitch({ homeTeam, awayTeam }: Props) {
+export default function MatchupPitch({ homeTeam: initialHomePlayers, awayTeam: initialAwayPlayers, isAdmin }: Props) {
+  const [homeTeam, setHomeTeam] = useState(initialHomePlayers)
+  const [awayTeam, setAwayTeam] = useState(initialAwayPlayers)
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
 
   const selectedPlayer = [...homeTeam.players, ...awayTeam.players]
     .find(p => p.id === selectedPlayerId) ?? null
+
+  function applyCorrection(
+    playerRowId: string,
+    result: { points: number; breakdown: unknown; positionPlayedId: number }
+  ) {
+    const update = (team: MatchupTeamData): MatchupTeamData => ({
+      ...team,
+      players: team.players.map(p => p.id === playerRowId
+        ? { ...p, points: result.points, breakdown: result.breakdown, positionPlayedId: result.positionPlayedId }
+        : p)
+    })
+    setHomeTeam(update)
+    setAwayTeam(update)
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -217,6 +245,10 @@ export default function MatchupPitch({ homeTeam, awayTeam }: Props) {
           points={selectedPlayer.points ?? 0}
           breakdown={selectedPlayer.breakdown}
           onClose={() => setSelectedPlayerId(null)}
+          isAdmin={isAdmin}
+          playerMatchStatsId={selectedPlayer.playerMatchStatsId}
+          currentPositionPlayedId={selectedPlayer.positionPlayedId}
+          onCorrected={(result) => applyCorrection(selectedPlayer.id, result)}
         />
       )}
     </div>

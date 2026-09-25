@@ -86,6 +86,9 @@ async function buildTeamData(fantasyTeamId: string, gameweekId: string, fantasyL
                 slotOrder: row.slotOrder,
                 points: gwPoints?.points ?? 0,
                 breakdown: gwPoints?.breakdown ?? [],
+                playerMatchStatsId: gwPoints?.playerMatchStatsId ?? null,
+                positionPlayedId: gwPoints?.positionPlayedId ?? null,
+                minutesPlayed: gwPoints?.minutesPlayed ?? 0,
                 subResultInfo: row.subResultInfo,
                 player: {
                     id: playerData.id,
@@ -180,7 +183,7 @@ async function MatchupContent({ matchupId }: { matchupId: string }) {
                 allGameweeks={allGameweeks}
                 fantasyLeagueId={matchup.gameweek.fantasyLeagueId}
             />
-            <MatchupPitch homeTeam={homeTeam} awayTeam={awayTeam} />
+            <MatchupPitch homeTeam={homeTeam} awayTeam={awayTeam} isAdmin={user.isSiteAdmin} />
         </div>
     )
 }

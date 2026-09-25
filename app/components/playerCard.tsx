@@ -22,9 +22,10 @@ type Props = {
     sidelinedInfo?: { category: string; typeName: string; endDate: string | null } | null
     subResultInfo?: SubResultInfo | null
     didNotPlay?: boolean
+    flagReason?: 'unexpected-position' | 'missing-position' | null
 }
 
-export default function PlayerCard({ player, size = 'md', showName = true, points, positionLabel, outOfPosition, isHomeTeam, sidelinedInfo, subResultInfo, didNotPlay }: Props) {
+export default function PlayerCard({ player, size = 'md', showName = true, points, positionLabel, outOfPosition, isHomeTeam, sidelinedInfo, subResultInfo, didNotPlay, flagReason }: Props) {
     const imageSize = size === 'sm' ? 'w-8 h-8' : 'w-10 h-10'
     const borderWidth = size === 'sm' ? 'border' : 'border-2'
     const eligible = isPremierLeagueEligible(player.team?.leagueId)
@@ -100,6 +101,18 @@ export default function PlayerCard({ player, size = 'md', showName = true, point
                         title="No eligible replacement was available - moved to reserves"
                     >
                         <div className="w-2 h-2.5 bg-red-600 rounded-sm" />
+                    </div>
+                )}
+
+                {flagReason && (
+                    <div
+                        className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-amber-400 flex items-center justify-center shadow-sm cursor-help"
+                        title={flagReason === 'unexpected-position'
+                            ? 'Played a different position than expected - may need review'
+                            : 'No position recorded for this match - needs review'
+                        }
+                    >
+                        <span className="text-white text-[9px] font-bold leading-none">!</span>
                     </div>
                 )}
             </div>

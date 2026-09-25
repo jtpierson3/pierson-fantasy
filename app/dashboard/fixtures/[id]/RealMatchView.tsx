@@ -6,12 +6,14 @@ import { isSupportedFormation, type Formation } from '@/lib/formations'
 import PlayerCard from '@/app/components/playerCard'
 import { assignRealMatchLineup } from '@/lib/realMatchLineupAssignment'
 import  PlayerScoringModal from '@/app/components/PlayerScoringModal'
+import { checkPositionAnomaly } from '@/lib/positionAnomaly'
 
 type RealPlayer = {
   id: string
   playerId: number
   wasStarter: boolean
   positionPlayedId: number | null
+  minutesPlayed: number
   points: number
   breakdown: unknown
   player: {
@@ -40,6 +42,7 @@ type Props = {
   }
   homePlayers: RealPlayer[]
   awayPlayers: RealPlayer[]
+  isAdmin: boolean
 }
 
 function BenchSection({
@@ -65,7 +68,13 @@ function BenchSection({
             onClick={() => onSelectPlayer(fp.id)}
             className="bg-white border border-gray-100 rounded-lg px-2 py-1.5 flex items-center gap-2 text-left cursor-pointer"
           >
-            <PlayerCard player={fp.player} points={fp.points} size="sm" isHomeTeam={isHomeTeam} />
+            <PlayerCard 
+              player={fp.player}
+              points={fp.points}
+              size="sm"
+              isHomeTeam={isHomeTeam}
+              flagReason={checkPositionAnomaly(fp.player, fp.positionPlayedId, fp.minutesPlayed)}  
+            />
           </button>
         ))}
       </div>
@@ -123,6 +132,7 @@ function TeamPitchHalf({ teamName, formation, players, mirrored, borderColorHex,
                   positionLabel={slotPositionLabel}
                   points={realPlayer.points}
                   isHomeTeam={!mirrored}
+                  flagReason={checkPositionAnomaly(realPlayer.player, realPlayer.positionPlayedId, realPlayer.minutesPlayed)}
                 />
               </button>
             )
@@ -133,10 +143,21 @@ function TeamPitchHalf({ teamName, formation, players, mirrored, borderColorHex,
   )
 }
 
-export default function RealMatchView({ fixture, homePlayers, awayPlayers }: Props) {
+export default function RealMatchView({ fixture, homePlayers: initialHomePlayers, awayPlayers: initialAwayPlayers, isAdmin }: Props) {
+  const [homePlayers, setHomePlayers] = useState(initialHomePlayers)
+  const [awayPlayers, setAwayPlayers] = useState(initialAwayPlayers)
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
 
   const selectedPlayer = [...homePlayers, ...awayPlayers].find(p => p.id === selectedPlayerId) ?? null
+
+  function applyCorrection(playerMatchStatsId: string, result: { points: number; breakdown: unknown; positionPlayedId: number }) {
+    const update = (list: RealPlayer[]) =>
+      list.map(p => p.id === playerMatchStatsId
+        ? { ...p, points: result.points, breakdown: result.breakdown, positionPlayedId: result.positionPlayedId }
+        : p)
+    setHomePlayers(update)
+    setAwayPlayers(update)
+  }
 
   return (
     <div className="p-6">
@@ -230,6 +251,10 @@ export default function RealMatchView({ fixture, homePlayers, awayPlayers }: Pro
                     points={selectedPlayer.points}
                     breakdown={selectedPlayer.breakdown}
                     onClose={() => setSelectedPlayerId(null)}
+                    isAdmin={isAdmin}
+                    playerMatchStatsId={selectedPlayer.id}
+                    currentPositionPlayedId={selectedPlayer.positionPlayedId}
+                    onCorrected={(result) => applyCorrection(selectedPlayer.id, result)}
                 />
             )}
         </div>

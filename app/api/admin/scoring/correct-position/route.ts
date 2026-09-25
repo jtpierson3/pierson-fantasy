@@ -59,7 +59,7 @@ export async function POST(req: Request) {
             }
         }
 
-        return NextResponse.json({ success: true, points, breakdown, teamsReResolved })
+        return NextResponse.json({ success: true, points, breakdown, positionPlayedId, teamsReResolved })
     } catch (err) {
         if (err instanceof RecalculationError) {
             return NextResponse.json({ error: err.message }, { status: err.status })

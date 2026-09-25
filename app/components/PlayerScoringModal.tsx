@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 
 export type ScoringBreakdownLine = {
@@ -10,15 +10,39 @@ export type ScoringBreakdownLine = {
     pointsPerUnit?: number
 }
 
+const POSITION_OPTIONS = [
+    { label: 'Goalkeeper', detailedPositionId: 24 },
+    { label: 'Center Back', detailedPositionId: 148 },
+    { label: 'Right Back', detailedPositionId: 154 },
+    { label: 'Left Back', detailedPositionId: 155 },
+    { label: 'Defensive Mid', detailedPositionId: 149 },
+    { label: 'Center Mid', detailedPositionId: 153 },
+    { label: 'Attacking Mid', detailedPositionId: 150 },
+    { label: 'Left Wing', detailedPositionId: 152 },
+    { label: 'Right Wing', detailedPositionId: 156 },
+    { label: 'Striker', detailedPositionId: 151 },
+]
+
 type Props = {
     playerName: string
     playerImage: string
     points: number
     breakdown: unknown
     onClose: () => void
+    isAdmin?: boolean
+    playerMatchStatsId?: string | null
+    currentPositionPlayedId?: number | null
+    onCorrected?: (result: { points: number; breakdown: unknown; positionPlayedId: number }) => void
 }
 
-export default function PlayerScoringModal({ playerName, playerImage, points, breakdown, onClose }: Props) {
+export default function PlayerScoringModal({ 
+    playerName, playerImage, points, breakdown, onClose,
+    isAdmin, playerMatchStatsId, currentPositionPlayedId, onCorrected
+}: Props) {
+    const [selectedPositionId, setSelectedPositionId] = useState(currentPositionPlayedId ?? '')
+    const [saving, setSaving] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose()
@@ -28,6 +52,26 @@ export default function PlayerScoringModal({ playerName, playerImage, points, br
     }, [onClose])
 
     const lines = Array.isArray(breakdown) ? (breakdown as ScoringBreakdownLine[]) : []
+
+    async function handleSave() {
+        if (!playerMatchStatsId || selectedPositionId === '') return
+        setSaving(true)
+        setError(null)
+        try {
+            const res = await fetch('/api/admin/scoring/correct-position', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ playerMatchStatsId, positionPlayedId: Number(selectedPositionId) })
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error ?? 'Failed to save')
+            onCorrected?.({ points: data.points, breakdown: data.breakdown, positionPlayedId: data.positionPlayedId })
+        } catch (err) {
+            setError(err instanceof Error ? err.message: 'Failed to save')
+        } finally {
+            setSaving(false)
+        }
+    }
 
     return (
         <div 
@@ -78,6 +122,32 @@ export default function PlayerScoringModal({ playerName, playerImage, points, br
                         </div>
                     ))}
                 </div>
+
+                {isAdmin && playerMatchStatsId && (
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                        <p className="text-xs font-medium text-gray-500 mb-1">Admin: Correct Position Played</p>
+                        <div className="flex gap-2">
+                            <select
+                                value={selectedPositionId}
+                                onChange={(e) => setSelectedPositionId(Number(e.target.value))}
+                                className="flex-1 text-xs border border-gray-200 rounded px-2 py-1"
+                            >
+                                <option value="" disabled>Select position...</option>
+                                {POSITION_OPTIONS.map(opt => (
+                                    <option key={opt.detailedPositionId} value={opt.detailedPositionId}>{opt.label}</option>
+                                ))}
+                            </select>
+                            <button
+                                onClick={handleSave}
+                                disabled={saving || selectedPositionId === ''}
+                                className="text-xs bg-gray-900 text-white px-2 py-1 rounded disabled:opacity-40"
+                            >
+                                {saving ? 'Saving...' : 'Save & Recalculate'}
+                            </button>
+                        </div>
+                        {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+                    </div>
+                )}
             </div>
         </div>
     )

@@ -48,6 +48,7 @@ async function MatchContent({ fixtureId }: { fixtureId: number }) {
         playerId: s.playerId,
         wasStarter: s.wasStarter,
         positionPlayedId: s.positionPlayedId,
+        minutesPlayed: s.minutesPlayed,
         points: pointsByPlayerId.get(s.playerId)?.points ?? 0,
         breakdown: pointsByPlayerId.get(s.playerId)?.breakdown ?? null,
         player: {
@@ -80,6 +81,7 @@ async function MatchContent({ fixtureId }: { fixtureId: number }) {
       }}
       homePlayers={buildTeamPlayers(fixture.homeTeamId)}
       awayPlayers={buildTeamPlayers(fixture.awayTeamId)}
+      isAdmin={user.isSiteAdmin}
     />
   )
 }
