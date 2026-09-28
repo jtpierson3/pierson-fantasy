@@ -94,7 +94,7 @@ export default function EpisodeSummary({
                         </div>
 
                         <div className="p-4">
-                            <div className="grid grid-cols-4 gap-3">
+                            <div className="grid grid-cols-3 gap-3">
                                 {m.contestants.map((c) => (
                                     <div key={c.contestantId} className="flex flex-col items-center gap-1">
                                         <div className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-100">
