@@ -128,7 +128,7 @@ export default function EpisodeSummary({
                                 <p className="text-sm text-gray-600 mt-3 pt-3 border-t border-gray-100">
                                     Pick:{' '}
                                     {m.pickName ? (
-                                        <span className={m.isCorrect ? 'text-green-600 font-medium' : 'text-gray-900'}>
+                                        <span className={m.isCorrect ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
                                             {m.pickName}
                                             {m.isCorrect && (
                                                 <span className="text-green-600 font-medium">+{pickBonusPoints}</span>
