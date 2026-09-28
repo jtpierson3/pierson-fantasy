@@ -493,9 +493,12 @@ export default function LeagueDashboard({ league, userId, seasonContestants, act
               className="hover:border-gray-500 rounded-xl hover:shadow-lg transition-all cursor-pointer"
             >
               <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-                <div className="px-4 py-3 border-b border-gray-100">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
                   <h2 className="text-sm font-medium text-gray-900">
                     {lastEpisode ? `Last Episode — Ep ${lastEpisode.number}` : 'Next Episode'}
+                    {lastEpisode && (
+                      <p className="text-xs text-green-700 font-medium">See weekly results →</p>
+                    )}
                   </h2>
                 </div>
                 <div className="p-4">
