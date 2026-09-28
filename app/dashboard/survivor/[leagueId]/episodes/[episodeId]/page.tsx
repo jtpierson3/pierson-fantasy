@@ -60,6 +60,16 @@ export default async function EpisodeSummaryPage({
     const mergeEpisode = league.survivorSeason.episodes.find((e) => e.isMerge)
     const mergeEpisodeNumber = mergeEpisode?.number ?? Infinity
 
+    const eliminationPickEvent = await prisma.scoringEvent.findFirst({
+        where: { survivorSeasonId: league.survivorSeason.id, label: 'Correct Elimination Pick' },
+    })
+    const winnerPickEvent = await prisma.scoringEvent.findFirst({
+        where: { survivorSeasonId: league.survivorSeason.id, label: 'Correct Winner Pick' },
+    })
+    const pickBonusPoints = episode.isFinale
+        ? winnerPickEvent?.points ?? 0
+        : eliminationPickEvent?.points ?? 0
+
     const members = league.members.map((member) => {
         const tribe = league.tribes.find((t) => t.userId === member.userId)
 
@@ -73,7 +83,8 @@ export default async function EpisodeSummaryPage({
 
         const points = contestants.reduce((sum, c) => sum + c.points, 0)
 
-        const pick = league.eliminationPicks.find((p) => p.userId === member.userId)
+        const rawPick = league.eliminationPicks.find((p) => p.userId === member.userId)
+        const pick = episode.isAired ? rawPick : undefined
 
         return {
             memberId: member.id,
@@ -93,14 +104,16 @@ export default async function EpisodeSummaryPage({
                 number: episode.number,
                 name: episode.name,
                 isFinale: episode.isFinale,
+                isAired: episode.isAired,
             }}
-            season={{ number: league.survivorSeason.number, title: league.survivorSeason.title }}
+            season={{ id: league.survivorSeason.id, number: league.survivorSeason.number, title: league.survivorSeason.title }}
             seasonEpisodes={league.survivorSeason.episodes.map((e) => ({
                 id: e.id,
                 number: e.number,
                 name: e.name,
             }))}
             members={members}
+            pickBonusPoints={pickBonusPoints}
         />
     )
 }
