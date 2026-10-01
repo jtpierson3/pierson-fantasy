@@ -55,3 +55,6 @@ next-env.d.ts
 prisma/migration
 generated/
 .env*.local
+
+# Ignores temporary files
+tmp*
