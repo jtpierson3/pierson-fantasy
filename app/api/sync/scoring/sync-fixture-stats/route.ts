@@ -89,6 +89,7 @@ export async function POST(req: Request) {
             await prisma.playerMatchStats.upsert({
                 where: { playerId_fixtureId: { playerId: lineup.player_id, fixtureId: fixture.id } },
                 update: {
+                    teamId: lineup.team_id,
                     minutesPlayed,
                     wasStarter,
                     rating,
@@ -98,6 +99,7 @@ export async function POST(req: Request) {
                 create: {
                     playerId: lineup.player_id,
                     fixtureId: fixture.id,
+                    teamId: lineup.team_id,
                     minutesPlayed,
                     wasStarter,
                     rating,

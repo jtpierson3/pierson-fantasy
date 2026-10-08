@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { calculatePlayerPoints, type PlayerStatsInput, type ScoringRuleInput } from '@/lib/scoringCalculation'
 import { qualifiesForCleanSheet } from '@/lib/scoringRules'
 import { getPositionType, toScoringPosition } from '@/lib/formations'
+import { getTeamGoalsConceded } from './goalsConceded'
 
 export class RecalculationError extends Error {
     constructor(message: string, public status: number) {
@@ -57,10 +58,15 @@ export async function recalculatePlayerFixturePoints(
     }))
 
     const fixture = ps.fixture
-    const teamGoalsConceded = ps.player.teamId === fixture.homeTeamId
-        ? (fixture.awayScore ?? 0)
-        : (fixture.homeScore ?? 0)
-    const isCleanSheet = qualifiesForCleanSheet(teamGoalsConceded, ps.minutesPlayed)
+    const goalsConceded = getTeamGoalsConceded({
+        matchTeamId: ps.teamId,
+        fallbackTeamId: ps.player.teamId,
+        fixture,
+    })
+    if (goalsConceded === null && ps.minutesPlayed > 0) {
+        console.warn(`[recalculatePlayerFixturePoints] can't tell which side player ${ps.playerId} played for in fixture ${ps.fixtureId} - no clean sheet awarded`)
+    }
+    const isCleanSheet = goalsConceded !== null && qualifiesForCleanSheet(goalsConceded, ps.minutesPlayed)
 
     const statsInput: PlayerStatsInput = {
         stats: (ps.stats as Record<string, number>) ?? {},

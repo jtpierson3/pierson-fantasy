@@ -234,6 +234,7 @@ model PlayerMatchStats {
   playerId            Int
   fixture             Fixture  @relation(fields: [fixtureId], references: [id])
   fixtureId           Int
+  teamId              Int?
   minutesPlayed       Int      @default(0)
   wasStarter          Boolean  @default(false)
   rating              Float?

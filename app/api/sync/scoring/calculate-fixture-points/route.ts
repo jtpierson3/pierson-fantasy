@@ -4,6 +4,7 @@ import { requireAutomationSecret } from '@/lib/automationAuth'
 import { calculatePlayerPoints, type ScoringRuleInput, type PlayerStatsInput } from '@/lib/scoringCalculation'
 import { qualifiesForCleanSheet } from '@/lib/scoringRules'
 import { getPositionType, toScoringPosition } from '@/lib/formations'
+import { getTeamGoalsConceded } from '@/lib/goalsConceded'
 
 export async function POST(req: Request) {
     const authResult = requireAutomationSecret(req)
@@ -24,10 +25,6 @@ export async function POST(req: Request) {
         if (allStats.length === 0) {
             return NextResponse.json({ error: 'No stats synced for this fixture yet - run sync fixture-stats first' }, { status: 400 })
         }
-
-        // Determine which team conceded which - needed for clean sheet calc
-        const homeGoalsConceded = fixture.awayScore ?? 0
-        const awayGoalsConceded = fixture.homeScore ?? 0
 
         const allRules = await prisma.scoringRule.findMany({ where: { isActive: true } })
         const rulesByPosition = new Map<string, ScoringRuleInput[]>()
@@ -55,8 +52,15 @@ export async function POST(req: Request) {
 
             const rules = rulesByPosition.get(scoringPosition) ?? []
 
-            const teamGoalsConceded = ps.player.teamId == fixture.homeTeamId ? homeGoalsConceded : awayGoalsConceded
-            const isCleanSheet = qualifiesForCleanSheet(teamGoalsConceded, ps.minutesPlayed)
+            const goalsConceded = getTeamGoalsConceded({
+                matchTeamId: ps.teamId,
+                fallbackTeamId: ps.player.teamId,
+                fixture,
+            })
+            if (goalsConceded === null && ps.minutesPlayed > 0) {
+                console.warn(`[calculate-fixture-points] can't tell which side player ${ps.playerId} played for in fixture ${fixtureId} - no clean sheet awarded`)
+            }
+            const isCleanSheet = goalsConceded !== null && qualifiesForCleanSheet(goalsConceded, ps.minutesPlayed)
 
             const statsInput: PlayerStatsInput = {
                 stats: (ps.stats as Record<string, number>) ?? {},
