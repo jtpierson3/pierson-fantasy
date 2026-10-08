@@ -37,7 +37,7 @@ export async function POST(req: Request) {
             orderedClaimIds.every(id => pendingIds.has(id))
 
         if (!matchesExactly) {
-            return NextResponse.json({ error: 'Claims changed = refresh and try again' }, { status: 400 })
+            return NextResponse.json({ error: 'Claims changed - refresh and try again' }, { status: 400 })
         }
         
         await prisma.$transaction(

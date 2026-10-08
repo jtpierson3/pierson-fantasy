@@ -31,33 +31,27 @@ export async function resolveCupGameweekPoints(fantasyTeamId: string, gameweekId
         slotOrder: i,
     }))
 
-    const existing = await prisma.gameweekLineup.findUnique({
-        where: { fantasyTeamId_gameweekId: { fantasyTeamId, gameweekId } },
-        select: { id: true },
-    })
-
-    if (existing) {
-        await prisma.gameweekLineup.deleteMany({ where: { id: existing.id } })
-        await prisma.gameweekLineup.update({
-            where: { id: existing.id },
-            data: {
+    await prisma.$transaction(async tx => {
+        await tx.gameweekLineupPlayer.deleteMany({
+            where: { GameweekLineup: { fantasyTeamId, gameweekId } },
+        })
+        await tx.gameweekLineup.upsert({
+            where: { fantasyTeamId_gameweekId: { fantasyTeamId, gameweekId } },
+            update: {
                 formation: team.formation,
                 lockedAt: new Date(),
                 cupPointsTotal: total,
                 players: { create: playerRows },
             },
-        })
-    } else {
-        await prisma.gameweekLineup.create({
-            data: {
+            create: {
                 fantasyTeamId,
                 gameweekId,
                 formation: team.formation,
                 cupPointsTotal: total,
-                players: { create: playerRows }
-            }
+                players: { create: playerRows },
+            },
         })
-    }
+    })
 
     return total
 }

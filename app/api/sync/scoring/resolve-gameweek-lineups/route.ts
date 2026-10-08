@@ -16,12 +16,12 @@ export async function POST(req: Request) {
     })
     if (!gameweek) return NextResponse.json({ error: 'Gameweek not found' }, { status: 404 })
 
-    if (gameweek.competition !== 'premier_league') {
-        const resolvedCount = await resolveCupGameweekForAllTeams(gameweekId)
-        return NextResponse.json({ success: true, teamsResolved: resolvedCount })
-    }
-
     try {
+        if (gameweek.competition !== 'premier_league') {
+            const resolvedCount = await resolveCupGameweekForAllTeams(gameweekId)
+            return NextResponse.json({ success: true, teamsResolved: resolvedCount })
+        }
+
         const lineups = await prisma.gameweekLineup.findMany({
             where: { gameweekId },
             select: { fantasyTeamId: true }
