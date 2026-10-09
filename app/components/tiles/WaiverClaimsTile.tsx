@@ -1,18 +1,22 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { WAIVER_TIMEZONE } from '@/lib/waiverWindowCalculation'
 
 type Props = {
     claimCount: number
     closesAt: string | null
 }
 
+// Always rendered in the league's timezone (not the viewer's) so the label matches
+// when waivers actually process, and server/client renders agree
 function formatDeadline(iso: string): string {
-    const date = new Date(iso)
-    return date.toLocaleDateString(undefined, {
+    return new Date(iso).toLocaleString('en-US', {
+        timeZone: WAIVER_TIMEZONE,
         weekday: 'short',
         hour: 'numeric',
-        minute: '2-digit'
+        minute: '2-digit',
+        timeZoneName: 'short',
     })
 }
 

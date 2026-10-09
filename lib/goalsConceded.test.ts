@@ -26,7 +26,7 @@ describe('getTeamGoalsConceded', () => {
 
     it('never matches a null side (untracked opponent) to a player with no club', () => {
         const cupFixture = { homeTeamId: null, awayTeamId: 2, homeScore: 0, awayScore: 2 }
-        expect(getTeamGoalsConceded({ matchTeamId: null, fallbackTeamId: 2, fixture: cupFixture })).toBeNull()
+        expect(getTeamGoalsConceded({ matchTeamId: null, fallbackTeamId: null, fixture: cupFixture })).toBeNull()
     })
 
     it('still resolves the tracked side when the other side is untracked', () => {

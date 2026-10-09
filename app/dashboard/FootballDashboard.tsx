@@ -277,7 +277,7 @@ export default async function FootballDashobard() {
                     </div>
                     <WaiverClaimsTile 
                         claimCount={pendingClaimsCount}
-                        closesAt={waiverWindow?.closesAt.toISOString() ?? 'Waiver Window Issue'}
+                        closesAt={waiverWindow?.closesAt.toISOString() ?? null}
                     />
                     <SidelinedTile sidelinedCount={sidelinedCount} />
                 </div>
