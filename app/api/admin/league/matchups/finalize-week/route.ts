@@ -1,174 +1,112 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { requireSiteAdmin } from '@/lib/apiAuth'
 import { prisma } from '@/lib/prisma'
+import { getLeagueStandings } from '@/lib/leagueStandings'
+import { computeWeeklyResults } from '@/lib/weeklyResults'
+
+class FinalizeError extends Error {
+    constructor(message: string, public status: number) {
+        super(message)
+    }
+}
 
 export async function POST(req: Request) {
     try {
-        const { userId: clerkId } = await auth()
-        if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-        const currentUser = await prisma.user.findUnique({ where: { clerkId } })
-        if (!currentUser?.isSiteAdmin) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        const authResult = await requireSiteAdmin()
+        if (!authResult.ok) {
+            return NextResponse.json({ error: authResult.error }, { status: authResult.status })
         }
 
         const { gameweekId } = await req.json()
-
-        const gameweek = await prisma.fantasyGameweek.findUnique({
-            where: { id: gameweekId },
-            include: {
-                matchups: {
-                    include: {
-                        homeTeam: true,
-                        awayTeam: true,
-                    }
-                },
-                fantasyLeague: {
-                    include: {
-                        teams: true,
-                    }
-                }
-            }
-        })
-
-        if (!gameweek) return NextResponse.json({ error: 'Gameweek not found' }, { status: 404 })
-
-        // Capture current standings order (before this week's update) for standingsChange
-        const beforeStandings = [...gameweek.fantasyLeague.teams]
-            .sort((a, b) => {
-                if (b.totalLeaguePoints !== a.totalLeaguePoints) return b.totalLeaguePoints - a.totalLeaguePoints
-                return b.totalFantasyPoints - a.totalFantasyPoints
-            })
-        const beforeRank = new Map(beforeStandings.map((t, i) => [t.id, i + 1]))
-
-        // Build weekly score list - every team's score this week
-        const weeklyScores: { teamId: string; score: number }[] = []
-        gameweek.matchups.forEach(m => {
-            weeklyScores.push({ teamId: m.homeTeamId, score: m.homePoints })
-            weeklyScores.push({ teamId: m.awayTeamId, score: m.awayPoints })
-        })
-
-        
-        const totalTeamCount = gameweek.fantasyLeague.teams.length
-        const cutoffBase = Math.floor(totalTeamCount / 2)
-
-        const sortedScores = [...weeklyScores].sort((a, b) => b.score - a.score)
-        let cutoffCount = cutoffBase
-        if (sortedScores.length > cutoffBase) {
-            const lastInCutoffScore = sortedScores[cutoffBase- 1 ].score
-            const nextScore = sortedScores[cutoffBase].score
-            if (nextScore === lastInCutoffScore) {
-                cutoffCount = cutoffBase + 1 
-            }
-        }
-        const topScoreThreshold = sortedScores[Math.min(cutoffCount, sortedScores.length) - 1]?.score ?? -Infinity
-        const topTeamIds = new Set(
-            sortedScores.filter(s => s.score >= topScoreThreshold).map(s => s.teamId)
-        )
-
-        //Process each matchup - determine result + update each team
-        for (const matchup of gameweek.matchups) {
-            const homeWon = matchup.homePoints > matchup.awayPoints
-            const awayWon = matchup.awayPoints > matchup.homePoints
-
-            // Determine result for home team
-            let homeResult: 'win' | 'loss' | 'draw'
-            if (homeWon) homeResult = 'win'
-            else if (!awayWon) homeResult = 'draw' // exact tie in the matchup itself
-            else homeResult = topTeamIds.has(matchup.homeTeamId) ? 'draw' : 'loss'
-
-            //Determine result for away team
-            let awayResult: 'win' | 'loss' | 'draw'
-            if (awayWon) awayResult = 'win'
-            else if (!homeWon) awayResult = 'draw'
-            else awayResult = topTeamIds.has(matchup.awayTeamId) ? 'draw': 'loss'
-
-            await updateTeamResult(matchup.homeTeamId, homeResult, matchup.homePoints)
-            await updateTeamResult(matchup.awayTeamId, awayResult, matchup.awayPoints)
+        if (typeof gameweekId !== 'string') {
+            return NextResponse.json({ error: 'gameweekId is required' }, { status: 400 })
         }
 
-        async function updateTeamResult(
-            teamId: string,
-            result: 'win' | 'loss' | 'draw',
-            weekScore: number
-        ) {
-            const leaguePointsToAdd = result === 'win' ? 3 : result === 'draw' ? 1 : 0
-
-            await prisma.fantasyTeam.update({
-                where: { id: teamId },
-                data: {
-                    wins: { increment: result === 'win' ? 1 : 0 },
-                    losses: { increment: result === 'loss' ? 1 : 0 },
-                    draws: { increment: result === 'draw' ? 1 : 0 },
-                    totalLeaguePoints: { increment: leaguePointsToAdd },
-                    totalFantasyPoints: { increment: weekScore }
-                }
-            })
-        }
-
-        const wasCurrent = gameweek.isCurrent
-
-        const nextGameweek = wasCurrent
-            ? await prisma.fantasyGameweek.findFirst({
-                where: {
-                    fantasyLeagueId: gameweek.fantasyLeagueId,
-                    competition: gameweek.competition,
-                    gameweekNumber: gameweek.gameweekNumber + 1,
-                    isComplete: false,
-                },
-            })
-            : null
-
-        await prisma.$transaction([
-            prisma.fantasyGameweek.update({
+        const summary = await prisma.$transaction(async tx => {
+            const gameweek = await tx.fantasyGameweek.findUnique({
                 where: { id: gameweekId },
-                data: {
-                    isComplete: true, 
-                    ...(wasCurrent ? { isCurrent : false }: {}),
-                },
-            }),
-            ...(nextGameweek
-                ?   [
-                        prisma.fantasyGameweek.update({
-                            where: { id: nextGameweek.id },
-                            data: { isCurrent: true },
-                        }),
-                    ]
-                : []),
-        ])
-
-        if (wasCurrent && !nextGameweek) {
-            console.warn(`[finalize-week] finalized GW${gameweek.gameweekNumber} but no GW${gameweek.gameweekNumber + 1} exists - isCurrent is left unset`)
-        }
-
-        // Recalculate standings order AFTER updates to compute standings change
-        const afterTeams = await prisma.fantasyTeam.findMany({
-            where: { fantasyLeagueId: gameweek.fantasyLeagueId }
-        })
-        const afterStandings = [...afterTeams].sort((a, b) => {
-            if (b.totalLeaguePoints !== a.totalLeaguePoints) return b.totalLeaguePoints - a.totalLeaguePoints
-            return b.totalFantasyPoints - a.totalFantasyPoints
-        })
-
-        for (let i = 0; i < afterStandings.length; i++) {
-            const team = afterStandings[i]
-            const newRank = i + 1
-            const oldRank = beforeRank.get(team.id) ?? newRank
-            const change = oldRank - newRank // positive = moved up
-
-            await prisma.fantasyTeam.update({
-                where: { id: team.id },
-                data: { standingsChange: change }
+                include: { matchups: true },
             })
-        }
+            if (!gameweek) throw new FinalizeError('Gameweek not found', 404)
+            if (gameweek.isComplete) throw new FinalizeError('This gameweek is already finalized', 409)
+
+            const incomplete = gameweek.matchups.filter(m => !m.isComplete).length
+            if (incomplete > 0) {
+                throw new FinalizeError(`${incomplete} matchup(s) are not marked complete`, 400)
+            }
+
+            const teamsBefore = await tx.fantasyTeam.findMany({
+                where: { fantasyLeagueId: gameweek.fantasyLeagueId },
+            })
+            const beforeRank = new Map(getLeagueStandings(teamsBefore).map(s => [s.team.id, s.rank]))
+
+            const claimed = await tx.fantasyGameweek.updateMany({
+                where: { id: gameweekId, isComplete: false },
+                data: { isComplete: true, isCurrent: false },
+            })
+            if (claimed.count === 0) throw new FinalizeError('This gameweek is already finalized', 409)
+
+            const outcomes = computeWeeklyResults(gameweek.matchups, teamsBefore.length)
+            for (const o of outcomes) {
+                await tx.fantasyTeam.update({
+                    where: { id: o.teamId },
+                    data: {
+                        wins: { increment: o.result === 'win' ? 1 : 0 },
+                        losses: { increment: o.result === 'loss' ? 1 : 0 },
+                        draws: { increment: o.result === 'draw' ? 1 : 0 },
+                        totalLeaguePoints: { increment: o.leaguePoints },
+                        totalFantasyPoints: { increment: o.score },
+                    }
+                })
+            }
+
+            const nextGameweek = gameweek.isCurrent
+                ? await tx.fantasyGameweek.findFirst({
+                    where: {
+                        fantasyLeagueId: gameweek.fantasyLeagueId,
+                        competition: gameweek.competition,
+                        gameweekNumber: gameweek.gameweekNumber + 1,
+                        isComplete: false
+                    }
+                })
+                : null
+            if (nextGameweek) {
+                await tx.fantasyGameweek.update({
+                    where: { id: nextGameweek.id },
+                    data: { isCurrent: true },
+                })
+            }
+            if (gameweek.isCurrent && !nextGameweek) {
+                console.warn(`[finalize-week] finalized GW${gameweek.gameweekNumber} but no GW${gameweek.gameweekNumber + 1} exists - isCurrent is left unset`)
+            }
+
+            const teamsAfter = await tx.fantasyTeam.findMany({
+                where: { fantasyLeagueId: gameweek.fantasyLeagueId },
+            })
+            for (const { team, rank } of getLeagueStandings(teamsAfter)) {
+                const oldRank = beforeRank.get(team.id) ?? rank
+                await tx.fantasyTeam.update({
+                    where: { id: team.id },
+                    data: { standingsChange: oldRank - rank },
+                })
+            }
+
+            return {
+                finalizedGameweek: gameweek.gameweekNumber,
+                newCurrentGameweek: nextGameweek?.gameweekNumber ?? null
+            }
+        }, { timeout: 20000 })
 
         return NextResponse.json({
             success: true,
-            finalizedGameweek: gameweek.gameweekNumber,
-            newCurrentGameweek: nextGameweek?.gameweekNumber ?? null,
-            advancedCurrent: Boolean(nextGameweek),
+            finalizedGameweek: summary.finalizedGameweek,
+            newCurrentGameweek: summary.newCurrentGameweek,
+            advancedCurrent: summary.newCurrentGameweek !== null,
         })
     } catch (err) {
+        if (err instanceof FinalizeError) {
+            return NextResponse.json({ error: err.message }, { status: err.status })
+        }
         console.error('[finalize-week] error:', err)
         return NextResponse.json({ error: 'Failed to finalize week' }, { status: 500 })
     }
