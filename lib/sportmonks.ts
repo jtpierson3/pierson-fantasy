@@ -223,7 +223,6 @@ export async function sportmonksFetch(endpoint: string, revalidate = 60, retries
 }
 
 const DAILY_RESET = 60*60*24
-const HOURLY_RESET = 60*60
 
 export async function getCurrentSeason(): Promise<Season | null> {
     const data = await sportmonksFetch(
@@ -239,14 +238,6 @@ export async function getRounds(seasonId: number): Promise<Round[]> {
         DAILY_RESET
     ) as SportmonksListResponse<Round>
     return data.data ?? []
-}
-
-export async function getFixturesByRound(roundId: number): Promise<Fixture[]> {
-  const data = await sportmonksFetch(
-    `/fixtures?filters=roundLeagues:${roundId}&include=participants;scores;venue;state;round&per_page=20`,
-    HOURLY_RESET
-  ) as SportmonksListResponse<Fixture>
-  return data.data ?? []
 }
 
 async function sportmonksFetchPaginated<T>(endpoint: string, revalidate = 60): Promise<T[]> {
