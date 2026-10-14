@@ -1,4 +1,4 @@
-const MAX_NON_IR_ROSTER = 23
+import { MAX_NON_IR_ROSTER } from './leagueRules'
 
 export type WaiverClaimInput = {
     id: string
