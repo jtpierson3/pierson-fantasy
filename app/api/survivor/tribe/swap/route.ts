@@ -1,73 +1,55 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
+import { requireUser } from '@/lib/apiAuth'
+import { PICKABLE_CONTESTANT_STATUSES } from '@/lib/leagueRules'
+import { getSwapWindow, SWAP_WINDOW_MESSAGES } from '@/lib/survivorSwapWindow'
 
 export async function POST(req: Request) {
     try {
-        const { userId: clerkId } = await auth()
-        if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-        const user = await prisma.user.findUnique({ where: { clerkId } })
-        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        const authResult = await requireUser()
+        if (!authResult.ok) {
+            return NextResponse.json({ error: authResult.error }, { status: authResult.status })
+        }
+        const { user } = authResult
 
         const { tribeId, swapOutId, swapInId } = await req.json()
+        if (typeof tribeId !== 'string' || typeof swapOutId !== 'string' || typeof swapInId !== 'string') {
+            return NextResponse.json({ error: 'tribeId, swapOutId and swapInId are required' }, { status: 400 })
+        }
 
-        // Verify tribe belongs to user
         const tribe = await prisma.survivorFantasyLeagueTribe.findFirst({
             where: { id: tribeId, userId: user.id },
             include: {
+                players: true,
                 survivorLeague: {
-                    include: {
-                        survivorSeason: {
-                            include: {
-                                episodes: {
-                                    orderBy: { number: 'asc' }
-                                }
-                            }
-                        }
-                    }
+                    include: { survivorSeason: { include: { episodes: true } } },
                 },
-                players: true
-            }
+            },
         })
-
         if (!tribe) return NextResponse.json({ error: 'Tribe not found' }, { status: 404 })
-
         if (tribe.hasUsedMergeSwap) return NextResponse.json({ error: 'Tribe swap already used'}, { status: 400})
 
-        // Check Merge has Happened
-        const mergeEpisode = tribe.survivorLeague.survivorSeason.episodes
-            .find(e => e.isMerge && e.isAired)
-
-        if (!mergeEpisode) {
-            return NextResponse.json({ error: 'Merge has not happened yet' }, { status: 400 })
+        const window = getSwapWindow(tribe.survivorLeague.survivorSeason.episodes)
+        if (!window.open) {
+            return NextResponse.json({ error: SWAP_WINDOW_MESSAGES[window.reason] }, { status: 400 })
         }
 
-        // Check next episode hasn't aired yet.
-        const episodesAfterMerge = tribe.survivorLeague.survivorSeason.episodes
-            .filter(e => e.number > mergeEpisode.number)
-            .sort((a, b) => a.number - b.number)
-
-        const nextEpisode = episodesAfterMerge[0]
-        if (nextEpisode?.isAired) {
-            return NextResponse.json({ error: 'Swap window has closed' }, { status: 400 })
-        }
-
-        // Verify swap out is in tribe
         const swapOutPick = tribe.players.find(p => p.contestantId === swapOutId)
         if (!swapOutPick) {
             return NextResponse.json({ error: 'Contestant not in tribe' }, { status: 404 })
         }
 
-        // Verify swap in is active
+        if (tribe.players.some(p => p.contestantId === swapInId)) {
+            return NextResponse.json({ error: 'That contestant is already in your tribe' }, { status: 400 })
+        }
+
         const swapInContestant = await prisma.contestant.findFirst({
             where: {
                 id: swapInId,
                 survivorSeasonId: tribe.survivorLeague.survivorSeason.id,
-                status: { in: ['active', 'finalist']}
-            }
+                status: { in: PICKABLE_CONTESTANT_STATUSES },
+            },
         })
-
         if (!swapInContestant) {
             return NextResponse.json({ error: 'Contestant not available' }, { status: 400 })
         }

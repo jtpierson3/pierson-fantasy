@@ -1,56 +1,64 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
+import { requireUser } from '@/lib/apiAuth'
+
+const PICKS_REQUIRED = 6
 
 export async function POST(req: Request) {
   try {
-    const { userId: clerkId } = await auth()
-    if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-    const user = await prisma.user.findUnique({ where: { clerkId } })
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const authResult = await requireUser()
+    if (!authResult.ok) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status })
+    }
+    const { user } = authResult
 
     const { tribeId, contestantIds } = await req.json()
-
-    if (!Array.isArray(contestantIds) || contestantIds.length !== 6) {
-      return NextResponse.json({ error: 'You must pick exactly 6 contestants' }, { status: 400 })
+    if (
+      typeof tribeId !== 'string' ||
+      !Array.isArray(contestantIds) ||
+      !contestantIds.every((id): id is string => typeof id === 'string') ||
+      contestantIds.length !== PICKS_REQUIRED ||
+      new Set(contestantIds).size !== PICKS_REQUIRED
+    ) {
+      return NextResponse.json(
+        { error: `You must pick exactly ${PICKS_REQUIRED} different contestants` },
+        { status: 400 }
+      )
     }
 
-    // Verify tribe belongs to user
     const tribe = await prisma.survivorFantasyLeagueTribe.findFirst({
       where: { id: tribeId, userId: user.id },
       include: {
         survivorLeague: {
           include: {
             survivorSeason: {
-              include: {
-                episodes: {
-                  orderBy: { number: 'asc' },
-                  take: 1,
-                }
-              }
+              include: { episodes: { orderBy: { number: 'asc' }, take: 1 } },
             }
           }
         }
       }
     })
-
     if (!tribe) return NextResponse.json({ error: 'Tribe not found' }, { status: 404 })
 
-    // Check picks aren't locked
     const firstEpisode = tribe.survivorLeague.survivorSeason.episodes[0]
     if (firstEpisode?.isAired) {
       return NextResponse.json({ error: 'Picks are locked — season has started' }, { status: 400 })
     }
 
-    // Delete existing picks and create new ones
-    await prisma.survivorPicks.deleteMany({ where: { tribeId } })
-    await prisma.survivorPicks.createMany({
-      data: contestantIds.map((contestantId: string) => ({
-        tribeId,
-        contestantId,
-      }))
+    const inSeasonCount = await prisma.contestant.count({
+      where: { id: { in: contestantIds }, survivorSeasonId: tribe.survivorLeague.survivorSeasonId },
     })
+    if (inSeasonCount !== PICKS_REQUIRED) {
+      return NextResponse.json({ error: 'One or more contestants are not in this season' }, { status: 400 })
+    }
+
+    // Delete existing picks and create new ones
+    await prisma.$transaction([
+      prisma.survivorPicks.deleteMany({ where: { tribeId } }),
+      prisma.survivorPicks.createMany({
+        data: contestantIds.map(contestantId => ({ tribeId, contestantId }))
+      }),
+    ])
 
     return NextResponse.json({ success: true })
   } catch (err) {
