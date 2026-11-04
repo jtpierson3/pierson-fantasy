@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireUser } from '@/lib/apiAuth'
+import { getWaiverWindowStatus } from '@/lib/fixtureTiming'
 
 export async function POST(req: Request) {
     try {
@@ -23,6 +24,11 @@ export async function POST(req: Request) {
             where: { id: fantasyTeamId, userId: user.id }
         })
         if (!team) return NextResponse.json({ error: 'Team not found' }, { status: 404 })
+
+        const windowStatus = await getWaiverWindowStatus(team.fantasyLeagueId)
+        if (windowStatus.state === 'closed') {
+            return NextResponse.json({ error: 'The waiver window is closed' }, { status: 403 })
+        }
 
         const pendingClaims = await prisma.waiverClaim.findMany({
             where: { fantasyTeamId: team.id, status: 'pending' },

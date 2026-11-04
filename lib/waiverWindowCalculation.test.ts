@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculateWaiverCloseTime } from './waiverWindowCalculation'
+import { calculateWaiverCloseTime, isWaiverWindowOpen } from './waiverWindowCalculation'
 
 // All inputs/outputs are explicit UTC instants so results never depend on the machine's timezone.
 // Central offsets: CDT = UTC-5 (until Sun Nov 1, 2026), UTC-6 after
@@ -84,3 +84,24 @@ describe('calculateWaiverCloseTime', () => {
     })
 })
     
+describe('isWaiverWindowOpen', () => {
+    const normalStart = new Date('2026-10-10T19:00:00Z')
+
+    it('is open before the close time', () => {
+        expect(isWaiverWindowOpen(normalStart, new Date('2026-10-10T16:59:59Z'))).toBe(true)
+    })
+
+    it('is closed at the exact close instant', () => {
+        expect(isWaiverWindowOpen(normalStart, new Date('2026-10-10T17:00:00Z'))).toBe(false)
+    })
+
+    it('stays closed between the close time and the gameweek start', () => {
+        expect(isWaiverWindowOpen(normalStart, new Date('2026-10-10T18:30:00Z'))).toBe(false)
+    })
+
+    it('uses the early kickoff close (5pm central the day before', () => {
+        const earlyStart = new Date('2026-10-10T11:30:00Z')
+        expect(isWaiverWindowOpen(earlyStart, new Date('2026-10-09T21:59:59Z'))).toBe(true)
+        expect(isWaiverWindowOpen(earlyStart, new Date('2026-10-09T22:00:00Z'))).toBe(false)
+    })
+})

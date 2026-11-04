@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { calculateWaiverCloseTime } from './waiverWindowCalculation'
+import { calculateWaiverCloseTime, isWaiverWindowOpen } from './waiverWindowCalculation'
 import { FantasyCompetition, FantasyGameweek } from '@prisma/client'
 
 export type FixtureWindowInfo = {
@@ -32,6 +32,25 @@ export async function getActiveWaiverGameweek(fantasyLeagueId: string) {
         where: { fantasyLeagueId, startDate: { gt: new Date() }, isComplete: false },
         orderBy: { startDate: 'asc' }
     })
+}
+
+export type WaiverWindowStatus =
+    | { state: 'open'; gameweek: FantasyGameweek }
+    | { state: 'closed'; closesAt: Date }
+    | { state: 'none' }
+
+/**
+ * Where a leagues's waiver window stands right now, for the gameweek claims attach to.
+ * 'none' means there is no upcoming gameweek to claim for.
+ */
+export async function getWaiverWindowStatus(fantasyLeagueId: string): Promise<WaiverWindowStatus> {
+    const gameweek = await getActiveWaiverGameweek(fantasyLeagueId)
+    if (!gameweek) return { state: 'none' }
+
+    if (!isWaiverWindowOpen(gameweek.startDate)) {
+        return { state: 'closed', closesAt: calculateWaiverCloseTime(gameweek.startDate) }
+    }
+    return { state: 'open', gameweek }
 }
 
 export async function isWaiverWindowClosed(): Promise<boolean> {

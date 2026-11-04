@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-import { getActiveWaiverGameweek } from '@/lib/fixtureTiming'
+import { getWaiverWindowStatus } from '@/lib/fixtureTiming'
 
 export async function POST(req: Request) {
     try {
@@ -18,6 +18,15 @@ export async function POST(req: Request) {
             include: { players: true }
         })
         if (!fantasyTeam) return NextResponse.json({ error: 'Team not found' }, { status: 404 })
+
+        const windowStatus = await getWaiverWindowStatus(fantasyTeam.fantasyLeagueId)
+        if (windowStatus.state === 'none') {
+            return NextResponse.json({ error: 'No active gameweek found' }, { status: 400 })
+        }
+        if (windowStatus.state === 'closed') {
+            return NextResponse.json({ error: 'The waiver window is closed' }, { status: 403 })
+        }
+        const currentGameweek = windowStatus.gameweek
 
         // Check player isn't already rostered
         const alreadyRostered = await prisma.fantasyTeamPlayer.findFirst({
@@ -42,12 +51,6 @@ export async function POST(req: Request) {
             if (!dropPlayerOnTeam) {
                 return NextResponse.json({ error: 'Player to drop is not on your team' }, { status: 400 })
             }
-        }
-
-        // Find the current gameweek to tie the claim to
-        const currentGameweek = await getActiveWaiverGameweek(fantasyTeam.fantasyLeagueId)
-        if (!currentGameweek) { 
-            return NextResponse.json({ error: 'No acitve gameweek found' }, { status: 400 })
         }
 
         // Prevent duplicate claim on same player by same team this gameweek

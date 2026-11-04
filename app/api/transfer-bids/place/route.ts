@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { validateBidAmount } from '@/lib/transferBidValuation'
-import { getActiveWaiverGameweek } from '@/lib/fixtureTiming'
+import { getWaiverWindowStatus } from '@/lib/fixtureTiming'
 
 export async function POST(req: Request) {
     try {
@@ -19,6 +19,15 @@ export async function POST(req: Request) {
             include: { players: true }
         })
         if (!team) return NextResponse.json({ error: 'Team not found' }, { status: 404 })
+
+        const windowStatus = await getWaiverWindowStatus(team.fantasyLeagueId)
+        if (windowStatus.state === 'none') {
+            return NextResponse.json({ error: 'No active gameweek found' }, { status: 400 })
+        }
+        if (windowStatus.state === 'closed') {
+            return NextResponse.json({ error: 'The waiver window is closed' }, { status: 403 })
+        }
+        const currentGameweek = windowStatus.gameweek
 
         // Check player isn't already rostered
         const alreadyRostered = await prisma.fantasyTeamPlayer.findFirst({
@@ -41,12 +50,6 @@ export async function POST(req: Request) {
             if (!dropPlayerOnTeam) {
                 return NextResponse.json({ error: 'Player to drop is not on your team' }, { status: 400 })
             }
-        }
-
-        // current gameweek
-        const currentGameweek = await getActiveWaiverGameweek(team.fantasyLeagueId)
-        if (!currentGameweek) {
-            return NextResponse.json({ error: 'No active gameweek found' }, { status: 400 })
         }
 
         // Calculate this team's available (unlocked) funds - total balance minus

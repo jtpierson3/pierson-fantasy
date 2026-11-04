@@ -16,10 +16,16 @@ export async function POST(req: Request) {
         const fantasyTeam = await prisma.fantasyTeam.findFirst({
             where: { id: fantasyTeamId, userId: user.id },
             include: {
-                players: true
+                players: true,
+                fantasyLeague: { select: { draftComplete: true } },
             }
         })
         if (!fantasyTeam) return NextResponse.json({ error: 'Team not found' }, { status: 404 })
+
+        // Free-Agent adds are only for the draft, after it, players come through waiver claims
+        if (fantasyTeam.fantasyLeague.draftComplete) {
+            return NextResponse.json({ error: 'The draft is complete, use a waiver claim to add players' }, { status: 400 })
+        }
 
         // Check Roster Limit
         const rosteredCount = fantasyTeam.players.filter(p => p.rosterSlot !== 'IR').length

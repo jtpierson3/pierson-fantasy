@@ -65,3 +65,11 @@ export function calculateWaiverCloseTime(kickoff: Date): Date {
 
     return new Date(kickoff.getTime() - LOCK_HOURS_BEFORE_KICKOFF * 60 * 60 * 1000)
 }
+
+/**
+ * Whether a waiver window is still open for the gameweek that starts at gameweekStart.
+ * Compares against the server clock, so it's the same answer for every user regardless of timezone.
+ */
+export function isWaiverWindowOpen(gameweekStart: Date, now: Date = new Date()): boolean {
+    return now.getTime() < calculateWaiverCloseTime(gameweekStart).getTime()
+}

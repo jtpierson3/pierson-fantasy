@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
+import { getWaiverWindowStatus } from '@/lib/fixtureTiming'
 
 export async function POST(req: Request) {
     try {
@@ -23,6 +24,11 @@ export async function POST(req: Request) {
         }
         if (claim.status !== 'pending') {
             return NextResponse.json({ error: 'Only pending claims can be cancelled' }, { status: 400})
+        }
+
+        const windowStatus = await getWaiverWindowStatus(claim.fantasyTeam.fantasyLeagueId)
+        if (windowStatus.state === 'closed') {
+            return NextResponse.json({ error: 'The waiver window is closed' }, { status: 403 })
         }
 
         await prisma.waiverClaim.delete({ where: { id: claimId } })
