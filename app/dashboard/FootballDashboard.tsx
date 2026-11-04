@@ -13,6 +13,7 @@ import NextFixturesTile from '@/app/components/tiles/NextFixturesTile'
 import { COMPETITIONS } from '@/lib/sportmonksConstants'
 import SidelinedTile from '@/app/components/tiles/SidelinedTile'
 import { GameweekWithDateRange } from '@/lib/gameweekSelection'
+import { getActiveSidelinedForPlayers } from '@/lib/playerSidelined'
 
 export default async function FootballDashobard() {
     const { userId } = await auth()
@@ -259,13 +260,12 @@ export default async function FootballDashobard() {
     }))
 
     // AFter fetching myTeam, get roster player IDs and count active sidelined entries
-    const rosterPlayerIds = closestGameweekSnapshot?.players.map(p => p.playerId)
-    const sidelinedCount = await prisma.sidelined.count({
-        where: {
-            playerId: { in: rosterPlayerIds },
-            completed: false
-        }
+    const roster = await prisma.fantasyTeamPlayer.findMany({
+        where: { fantasyTeamId: myTeam.id },
+        select: { playerId: true },
     })
+    const sidelinedByPlayer = await getActiveSidelinedForPlayers(roster.map(r => r.playerId))
+    const sidelinedCount = sidelinedByPlayer.size
 
     return (
         <div className="p-6">
