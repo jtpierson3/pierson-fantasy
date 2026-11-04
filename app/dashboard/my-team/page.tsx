@@ -3,12 +3,13 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import MyTeam from './myTeam'
 import { redirect } from 'next/navigation'
-import { getGameweekLockTime } from '@/lib/fixtureTiming'
 import { mergeLineupWithSnapshot } from '@/lib/lineupSnapshot'
 import { selectTargetGameweek } from '@/lib/gameweekSelection'
 import { getActiveSidelinedForPlayers } from '@/lib/playerSidelined'
 import { getWaiverClaimBadge } from '@/lib/waiverClaimStatus'
 import { getWaiverPriorityOrder } from '@/lib/waiverPriorityOrder'
+import { computeGameweekLockTimes, COMPETITION_TO_FIXTURE_KEY } from '@/lib/gameweekSelection'
+import { summarizePlayerCompetition } from '@/lib/waiverContext'
 
 function MyTeamSkeleton() {
   return (
@@ -60,120 +61,143 @@ async function MyTeamContent() {
     )
   }
 
-  const leagueTeams = await prisma.fantasyTeam.findMany({
-    where: { fantasyLeagueId: fantasyTeam.fantasyLeagueId },
-    select: { id: true, totalLeaguePoints: true, totalFantasyPoints: true, draftPosition: true },
-  })
+  const leagueId = fantasyTeam.fantasyLeagueId
+  const rosterPlayerIds = fantasyTeam.players.map(p => p.playerId)
+
+  const [leagueTeams, sidelinedMap, myClaimsRaw, myBidsRaw, allGameweeks, lastSnapshot] = await Promise.all([
+    prisma.fantasyTeam.findMany({
+      where: { fantasyLeagueId: leagueId },
+      select: { id: true, totalLeaguePoints: true, totalFantasyPoints: true, draftPosition: true },
+    }),
+    getActiveSidelinedForPlayers(rosterPlayerIds),
+    prisma.waiverClaim.findMany({
+      where: { fantasyTeamId: fantasyTeam.id, status: 'pending' },
+      include: { playerToAdd: { include: { team: true } }, playerToDrop: true },
+      orderBy: { rank: 'asc' },
+    }),
+    prisma.transferBid.findMany({
+      where: { fantasyTeamId: fantasyTeam.id, status: 'pending' },
+      include: { player: { include: { team: true } } },
+      orderBy: { submittedAt: 'desc' },
+    }),
+    prisma.fantasyGameweek.findMany({
+      where: { fantasyLeagueId: leagueId },
+      orderBy: { gameweekNumber: 'asc' },
+    }),
+    prisma.gameweekLineup.findFirst({
+      where: { fantasyTeamId: fantasyTeam.id },
+      include: { players: true },
+      orderBy: { lockedAt: 'desc' },
+    }),
+  ])
+
   const waiverOrder = getWaiverPriorityOrder(leagueTeams)
   const myWaiverPos = waiverOrder.get(fantasyTeam.id) ?? Number.MAX_SAFE_INTEGER
 
-  const rosterPlayerIds = fantasyTeam.players.map(p => p.playerId)
-  const sidelinedMap = await getActiveSidelinedForPlayers(rosterPlayerIds)
-
   const sidelinedByPlayerId: Record<number, { category: string; typeName: string; endDate: string | null }> = {}
   for (const [playerId, info] of sidelinedMap.entries()) {
-    sidelinedByPlayerId[playerId] = {
+    sidelinedByPlayerId[playerId] ={
       category: info.category,
       typeName: info.typeName,
-      endDate: info.endDate?.toISOString() ?? null
+      endDate: info.endDate?.toISOString() ?? null,
     }
   }
 
-  // Fetch pending claims for this team
-  const myClaimsRaw = await prisma.waiverClaim.findMany({
-    where: { fantasyTeamId: fantasyTeam.id, status: 'pending' },
-    include: {
-      playerToAdd: { include: { team: true } },
-      playerToDrop: true,
-    },
-    orderBy: { rank: 'asc' }
-  })
+  const contestedPlayerIds = [
+    ...new Set([
+      ...myClaimsRaw.map(c => c.playerToAddId),
+      ...myBidsRaw.map(b => b.playerId),
+    ])
+  ]
 
-  // For each claim, compute leading/losing against competing claims
-  const myClaims = await Promise.all(
-    myClaimsRaw.map(async claim => {
-      const competingClaims = await prisma.waiverClaim.findMany({
-        where: {
-          playerToAddId: claim.playerToAddId,
-          status: 'pending',
-          fantasyTeam: { fantasyLeagueId: fantasyTeam.fantasyLeagueId },
-          NOT: { fantasyTeamId: fantasyTeam.id}
-        },
+  const fixtureKeys = [...new Set(allGameweeks.map(gw => COMPETITION_TO_FIXTURE_KEY[gw.competition]))]
+  const rangeStart = allGameweeks.reduce<Date | null>((min, gw) => (min === null || gw.startDate < min ? gw.startDate : min), null)
+  const rangeEnd = allGameweeks.reduce<Date | null>((max, gw) => (max === null || gw.endDate > max ? gw.endDate : max), null)
+
+  const [leagueClaims, leagueBidsRaw, fixtureKickoffs] = await Promise.all([
+    contestedPlayerIds.length === 0
+      ? Promise.resolve([])
+      : prisma.waiverClaim.findMany({
+          where: {
+            playerToAddId: { in: contestedPlayerIds },
+            status: 'pending',
+            fantasyTeam: { fantasyLeagueId: leagueId },
+            NOT: { fantasyTeamId: fantasyTeam.id },
+          },
+          select: { playerToAddId: true, fantasyTeamId: true },
+      }),
+    contestedPlayerIds.length === 0
+      ? Promise.resolve([])
+      : prisma.transferBid.findMany({
+          where: {
+            playerId: { in: contestedPlayerIds },
+            status: 'pending',
+            fantasyTeam: { fantasyLeagueId: leagueId },
+          },
+          orderBy: { amount: 'desc' },
+          select: { playerId: true, amount: true, fantasyTeamId: true, fantasyTeam: { select: { name: true } } },
+      }),
+    rangeStart && rangeEnd
+      ? prisma.fixture.findMany({
+          where: {
+            competition: { in: fixtureKeys },
+            kickoff: { gte: rangeStart, lte: rangeEnd },
+          },
+          select: { kickoff: true, competition: true },
       })
+      : Promise.resolve([]),
+  ])
 
-      const bidsOnPlayer = await prisma.transferBid.findMany({
-        where: {
-          playerId: claim.playerToAddId,
-          status: 'pending',
-          fantasyTeam: { fantasyLeagueId: fantasyTeam.fantasyLeagueId }
-        },
-        orderBy: { amount: 'desc' },
-        include: { fantasyTeam: { select: { id: true, name: true } } }
-      })
+  const leagueBids = leagueBidsRaw.map(b => ({
+    playerId: b.playerId,
+    amount: b.amount,
+    fantasyTeamId: b.fantasyTeamId,
+    fantasyTeamName: b.fantasyTeam.name,
+  }))
 
-      const highBid = bidsOnPlayer[0] ?? null
-      const myBid = bidsOnPlayer.find(b => b.fantasyTeam.id === fantasyTeam.id) ?? null
-      const hasForeignBid = highBid ? highBid.fantasyTeam.id !== fantasyTeam.id : false
-
-      const projectedBidWinnerIsMe = bidsOnPlayer.length === 0 ? null : highBid!.fantasyTeam.id === fantasyTeam.id
-
-      const badge = getWaiverClaimBadge({
-        myWaiverPriority: myWaiverPos,
-        competingClaimPriorities: competingClaims.map(c => waiverOrder.get(c.fantasyTeamId) ?? Number.MAX_SAFE_INTEGER),
-        hasForeignBid,
-        projectedBidWinnerIsMe,
-      })
-
-      return {
-        id: claim.id,
-        rank: claim.rank,
-        status: claim.status,
-        submittedAt: claim.submittedAt.toISOString(),
-        player: {
-          id: claim.playerToAdd.id,
-          display_name: claim.playerToAdd.display_name,
-          image_path: claim.playerToAdd.image_path,
-        },
-        playerToDrop: claim.playerToDrop
-          ? { display_name: claim.playerToDrop.display_name }
-          : null,
-        badge,
-        hasOtherClaims: competingClaims.length > 0,
-        currentHighBid: highBid?.amount ?? null,
-        currentHighBidderName: highBid?.fantasyTeam.name,
-        myBidAmount: myBid?.amount ?? null,
-        hasForeignBid,
-      }
+  const myClaims = myClaimsRaw.map(claim => {
+    const comp = summarizePlayerCompetition({
+      myTeamId: fantasyTeam.id,
+      playerId: claim.playerToAddId,
+      leagueClaims,
+      leagueBids,
     })
-  )
 
-  // Determine which gameweek is currently being set = the earliest gameweek
-  // Whose locktime hasnt passed yet
-  const allGameweeks = await prisma.fantasyGameweek.findMany({
-    where: { fantasyLeagueId: fantasyTeam.fantasyLeagueId },
-    orderBy: { gameweekNumber: 'asc' }
+    const badge = getWaiverClaimBadge({
+      myWaiverPriority: myWaiverPos,
+      competingClaimPriorities: comp.competingClaimTeamIds.map(id => waiverOrder.get(id) ?? Number.MAX_SAFE_INTEGER),
+      hasForeignBid: comp.hasForeignBid,
+      projectedBidWinnerIsMe: comp.projectedBidWinnerIsMe,
+    })
+
+    return {
+      id: claim.id,
+      rank: claim.rank,
+      status: claim.status,
+      submittedAt: claim.submittedAt.toISOString(),
+      player: {
+        id: claim.playerToAdd.id,
+        display_name: claim.playerToAdd.display_name,
+        image_path: claim.playerToAdd.image_path,
+      },
+      playerToDrop: claim.playerToDrop
+        ? { display_name: claim.playerToDrop.display_name }
+        : null,
+      badge,
+      hasOtherClaims: comp.competingClaimTeamIds.length > 0,
+      currentHighBid: comp.highBid?.amount ?? null,
+      currentHighBidderName: comp.highBid?.fantasyTeamName ?? null,
+      myBidAmount: comp.myBid?.amount ?? null,
+      hasForeignBid: comp.hasForeignBid,
+    }
   })
 
-  const gameweeksWithLockInfo = await Promise.all(
-    allGameweeks.map(async gw => ({
-      id: gw.id,
-      gameweekNumber: gw.gameweekNumber,
-      lockTime: await getGameweekLockTime(gw)
-    }))
-  )
-
+  const gameweeksWithLockInfo = computeGameweekLockTimes(allGameweeks, fixtureKickoffs)
   const targetGameweekInfo = selectTargetGameweek(gameweeksWithLockInfo, new Date())
   const targetGameweek = targetGameweekInfo
     ? allGameweeks.find(gw => gw.id === targetGameweekInfo.id) ?? null
     : null
   const targetGameweekLockTime = targetGameweekInfo?.lockTime ?? null
-
-  // Load the most recent locked in snapshot (if any) to merge as the starting point
-  const lastSnapshot = await prisma.gameweekLineup.findFirst({
-    where:  { fantasyTeamId: fantasyTeam.id },
-    include: { players: true },
-    orderBy: { lockedAt: 'desc' }
-  })
 
   const mergedPlayers = mergeLineupWithSnapshot(
     fantasyTeam.players.map(p => ({ id: p.id, playerId: p.playerId })),
@@ -201,39 +225,25 @@ async function MyTeamContent() {
     formation: lastSnapshot?.formation ?? fantasyTeam.formation,
   }
 
-  // Fetch this team's active transfer bids, plus league wide context for each
-  const myBidsRaw = await prisma.transferBid.findMany({
-    where: { fantasyTeamId: fantasyTeam.id, status: 'pending' },
-    include: {
-      player: { include: { team: true } }
-    },
-    orderBy: { submittedAt: 'desc' }
-  })
-
-  const myBids = await Promise.all(
-    myBidsRaw.map(async bid => {
-      const highestBid = await prisma.transferBid.findFirst({
-        where: {
-          playerId: bid.playerId,
-          status: 'pending',
-          fantasyTeam: { fantasyLeagueId: fantasyTeam.fantasyLeagueId }
-        },
-        include: { fantasyTeam: { include: { user: true } } },
-        orderBy: { amount: 'desc' }
-      })
-
-      return {
-        id: bid.id,
-        playerId: bid.playerId,
-        playerName: bid.player.display_name,
-        playerImage: bid.player.image_path,
-        myAmount: bid.amount,
-        currentHighAmount: highestBid?.amount ?? bid.amount,
-        currentHighBidderName: highestBid?.fantasyTeam.name ?? fantasyTeam.name,
-        isWinning: highestBid?.fantasyTeamId === fantasyTeam.id
-      }
+  const myBids = myBidsRaw.map(bid => {
+    const comp = summarizePlayerCompetition({
+      myTeamId: fantasyTeam.id,
+      playerId: bid.playerId,
+      leagueClaims: [],
+      leagueBids,
     })
-  )
+
+    return {
+      id: bid.id,
+      playerId: bid.playerId,
+      playerName: bid.player.display_name,
+      playerImage: bid.player.image_path,
+      myAmount: bid.amount,
+      currentHighAmount: comp.highBid?.amount ?? bid.amount,
+      currentHighBidderName: comp.highBid?.fantasyTeamName ?? fantasyTeam.name,
+      isWinning: comp.highBid?.fantasyTeamId === fantasyTeam.id,
+    }
+  })
 
   const lockedFunds = myBidsRaw.reduce((sum, b) => sum + b.amount, 0)
   const availableFunds = fantasyTeam.fundsBalance - lockedFunds

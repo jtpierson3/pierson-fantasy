@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { calculateWaiverCloseTime, isWaiverWindowOpen } from './waiverWindowCalculation'
 import { FantasyCompetition, FantasyGameweek } from '@prisma/client'
+import { COMPETITION_TO_FIXTURE_KEY } from './gameweekSelection'
 
 export type FixtureWindowInfo = {
     closesAt: Date
@@ -57,12 +58,6 @@ export async function isWaiverWindowClosed(): Promise<boolean> {
     const window = await getCurrentWaiverWindow()
     if (!window) return false
     return new Date() >= window.closesAt
-}
-
-const COMPETITION_TO_FIXTURE_KEY: Record<FantasyCompetition, string> = {
-    premier_league: 'premier_league',
-    league_cup: 'carabao_cup',
-    domestic_cup: 'fa_cup',
 }
 
 export async function getCurrentGameweekByCompetition(fantasyLeagueId: string, competition: FantasyCompetition) {

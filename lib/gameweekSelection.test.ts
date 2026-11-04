@@ -3,7 +3,8 @@ import {
     selectTargetGameweek, 
     selectClosestGameweek, 
     type GameweekWithDateRange, 
-    type GameweekWithLockInfo 
+    type GameweekWithLockInfo, 
+    computeGameweekLockTimes
 } from './gameweekSelection'
 
 const NOW = new Date('2026-08-15T12:00:00Z')
@@ -92,5 +93,46 @@ describe('selectTargetGameweek', () => {
         const result = selectTargetGameweek(gameweeks, NOW)
         
         expect(result?.id).toBe('gw1')
+    })
+})
+
+describe('computeGameweekLockTimes', () => {
+    const d = (s: string) => new Date(s)
+    const gw = (n: number, start: string, end: string, competition: 'premier_league' | 'league_cup' = 'premier_league') => 
+        ({ id: `gw${n}`, gameweekNumber: n, startDate: d(start), endDate: d(end), competition })
+
+    it('uses the earliest in-range kickoff for the right competition', () => {
+        const result = computeGameweekLockTimes(
+            [gw(1, '2026-08-01T00:00:00Z', '2026-08-03T23:59:59Z'), gw(2, '2026-08-08T00:00:00Z', '2026-08-10T23:59:59Z')],
+            [
+                { kickoff: d('2026-08-02T15:00:00Z'), competition: 'premier_league' },
+                { kickoff: d('2026-08-01T12:30:00Z'), competition: 'premier_league' },
+                { kickoff: d('2026-08-09T14:00:00Z'), competition: 'premier_league' },
+            ]
+        )
+        expect(result[0].lockTime).toEqual(d('2026-08-01T12:30:00Z'))
+        expect(result[1].lockTime).toEqual(d('2026-08-09T14:00:00Z'))
+    })
+
+    it('ignores fixtures from other competitions', () => {
+        const result = computeGameweekLockTimes(
+            [gw(1, '2026-08-01T00:00:00Z', '2026-08-03T23:59:59Z', 'league_cup')],
+            [
+                { kickoff: d('2026-08-01T12:00:00Z'), competition: 'premier_league' },
+                { kickoff: d('2026-08-02T19:45:00Z'), competition: 'carabao_cup' },
+            ]
+        )
+        expect(result[0].lockTime).toEqual(d('2026-08-02T19:45:00Z'))
+    })
+
+    it('returns null when no fixture falls in range, and skips null kickoffs', () => {
+        const result = computeGameweekLockTimes(
+            [gw(1, '2026-08-01T00:00:00Z', '2026-08-03T23:59:59Z')],
+            [
+                { kickoff: d('2026-09-01T12:00:00Z'), competition: 'premier_league' },
+                { kickoff: null, competition: 'premier_league' },
+            ]
+        )
+        expect(result[0].lockTime).toBeNull()
     })
 })

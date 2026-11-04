@@ -63,3 +63,38 @@ export function selectTargetGameweek(
     }
     return null
 }
+
+export const COMPETITION_TO_FIXTURE_KEY: Record<FantasyCompetition, string> = {
+    premier_league: 'premier_league',
+    league_cup: 'carabao_cup',
+    domestic_cup: 'fa_cup',
+}
+
+export type GameweekForLockTime = GameweekWithDateRange & {
+    competition: FantasyCompetition
+}
+
+export type FixtureKickoff = {
+    kickoff: Date | null
+    competition: string
+}
+
+/**
+ * In-memory equivalent of getGameweekLockTime for many gameweeks at once: each gameweek's
+ * lock time is the earliest kickoff within its date range for its competition's fixtures.
+ */
+export function computeGameweekLockTimes(
+    gameweeks: GameweekForLockTime[],
+    fixtures: FixtureKickoff[]
+): GameweekWithLockInfo[] {
+    return gameweeks.map(gw => {
+        const key = COMPETITION_TO_FIXTURE_KEY[gw.competition]
+        let lockTime: Date | null = null
+        for (const f of fixtures) {
+            if (!f.kickoff || f.competition !== key) continue
+            if (f.kickoff < gw.startDate || f.kickoff > gw.endDate) continue
+            if (lockTime === null || f.kickoff < lockTime) lockTime = f.kickoff
+        }
+        return { id: gw.id, gameweekNumber: gw.gameweekNumber, lockTime}
+    })
+}
