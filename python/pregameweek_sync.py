@@ -49,6 +49,7 @@ def run() -> dict:
         timeout=120,
     )
     sync.raise_for_status()
+    sync_result = sync.json()
 
     fixtures_sync = requests.post(
         f'{APP_URL}/api/sync/fixtures',
@@ -57,10 +58,16 @@ def run() -> dict:
     )
     fixtures_sync.raise_for_status()
     fixtures_result = fixtures_sync.json()
-    if not fixtures_result.get("success"):
-        raise RuntimeError(f"Fixtures sync reported failure: {fixtures_result.get('errors')}")
 
-    return {"ran": True, "gameweekNumber": gameweek_number, "SyncResult": sync.json(), "fixturesSyncResult": fixtures_result}
+    failures = []
+    if not sync_result.get("success"):
+        failures.append(f"Players sync reported failure: {sync_result.get('errors')}")
+    if not fixtures_result.get("success"):
+        failures.append(f"Fixtures sync reported failure: {fixtures_result.get('errors')}")
+    if failures:
+        raise RuntimeError("; ".join(failures))
+
+    return {"ran": True, "gameweekNumber": gameweek_number, "SyncResult": sync_result, "fixturesSyncResult": fixtures_result}
 
 if __name__ == "__main__":
     try:

@@ -14,21 +14,20 @@ export async function POST(req: Request) {
 
         const transfer = await prisma.playerTransfer.findUnique({ where: { id: transferId } })
         if (!transfer) return NextResponse.json({ error: 'Transfer not found' }, { status: 404 })
-        if (transfer.status !== 'pending_review') {
-            return NextResponse.json({ error: 'This transfer has already been reviewed' }, { status: 400 })
-        }
-
-        await prisma.playerTransfer.update({
-            where: { id : transferId },
+        
+        const dismissed = await prisma.playerTransfer.updateMany({
+            where: { id: transferId, status: 'pending_review' },
             data: {
                 status: 'dismissed',
                 reviewedAt: new Date(),
-                reviewedByUserId: currentUser.id
-            }
+                reviewedByUserId: currentUser.id,
+            },
         })
+        if (dismissed.count === 0) {
+            return NextResponse.json({ error: 'This transfer has already been reviewed' }, { status: 400 })
+        }
 
         return NextResponse.json({ success: true })
-
     } catch (err) {
         console.error('[admin/transfers/dismiss] error: ', err)
         return NextResponse.json({ error: 'Failed to dismiss transfer' }, { status: 500 })

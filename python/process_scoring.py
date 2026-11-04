@@ -24,7 +24,7 @@ def run_process_scoring() -> dict:
         f"{APP_URL}/api/sync/scoring/process-scoring",
         headers={
             "Authorization": f"Bearer {SYNC_SECRET}",
-            "x-vercel-production-bypass": VERCEL_BYPASS_SECRET,
+            "x-vercel-protection-bypass": VERCEL_BYPASS_SECRET,
             "User-Agent": "Mozilla/5.0 (compatible; PiersonFantasyScoring/1.0)",
         },
         timeout=120,

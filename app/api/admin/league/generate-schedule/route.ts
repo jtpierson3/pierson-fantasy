@@ -72,49 +72,55 @@ export async function POST(req: Request) {
         }
 
         const teamIds = league.teams.map(t => t.id)
-        if (teamIds.length < 2) {{
-            return NextResponse.json({ error: 'Need at least 2 teams to generate a schedule', status: 400 })
-        }}
+        if (teamIds.length < 2) {
+            return NextResponse.json({ error: 'Need at least 2 teams to generate a schedule' }, { status: 400 })
+        }
 
         const rounds = generateRoundRobinRounds(teamIds)
         const weeksPerCycle = rounds.length
 
-        // Build gameweeks + matchups, repeating the cyle to fill TOTAL_WEEKS
         const startDate = new Date()
 
-        for (let week = 1; week <= TOTAL_WEEKS; week++) {
-            const roundIndex = (week - 1) % weeksPerCycle
-            const roundMatches = rounds[roundIndex]
-
-            // TODO: THIS HAS TO BE ADJUSTED TO WORK WITH THE FIXTURE SCHEDULE OF THE LEAGUE
-            const weekStart = new Date(startDate)
-            weekStart.setDate(weekStart.getDate() + (week - 1) * 7)
-            const weekEnd = new Date(weekStart)
-            weekEnd.setDate(weekEnd.getDate() + 6)
-
-            const gameweek = await prisma.fantasyGameweek.create({
-                data: {
-                    fantasyLeagueId: leagueId,
-                    gameweekNumber: week,
-                    startDate: weekStart,
-                    endDate: weekEnd,
-                    isCurrent: week === 1,
-                }
+        const generated = await prisma.$transaction(async tx => {
+            const claimed = await tx.fantasyLeague.updateMany({
+                where: { id: leagueId, scheduleGenerated: false },
+                data: { scheduleGenerated: true },
             })
+            if (claimed.count === 0) return false
 
-            await prisma.fantasyMatchup.createMany({
-                data: roundMatches.map(m => ({
-                    gameweekId: gameweek.id,
-                    homeTeamId: m.home,
-                    awayTeamId: m.away,
-                }))
-            })
+            for (let week = 1; week <= TOTAL_WEEKS; week++) {
+                const roundMatches = rounds[(week - 1) % weeksPerCycle]
+
+                //TODO: THIS HAS TO BE ADJESTED TO WORK WITH THE FIXTURE SCHEDULE OF THE LEAGUE
+                const weekStart = new Date(startDate)
+                weekStart.setDate(weekStart.getDate() + (week - 1) * 7)
+                const weekEnd = new Date(weekStart)
+                weekEnd.setDate(weekEnd.getDate() + 6)
+
+                const gameweek = await tx.fantasyGameweek.create({
+                    data: {
+                        fantasyLeagueId: leagueId,
+                        gameweekNumber: week,
+                        startDate: weekStart,
+                        endDate: weekEnd,
+                        isCurrent: week === 1,
+                    },
+                })
+
+                await tx.fantasyMatchup.createMany({
+                    data: roundMatches.map(m => ({
+                        gameweekId: gameweek.id,
+                        homeTeamId: m.home,
+                        awayTeamId: m.away,
+                    })),
+                })
+            }
+            return true
+        }, { timeout: 30000 })
+
+        if (!generated) {
+            return NextResponse.json({ error: 'Schedule has already been generated for this league.' }, { status: 400 })
         }
-
-        await prisma.fantasyLeague.update({
-            where: { id: leagueId },
-            data: { scheduleGenerated: true }
-        })
 
         return NextResponse.json({ success: true, weeksGenerated: TOTAL_WEEKS })
     } catch (err) {
