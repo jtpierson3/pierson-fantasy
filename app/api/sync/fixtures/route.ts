@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { FantasyCompetition } from '@prisma/client'
-import { env } from '@/lib/env'
+import { requireAutomationSecret } from '@/lib/automationAuth'
 import { getSeasonFixturesWithMeta } from '@/lib/sportmonks'
 import { logApiCall } from '@/lib/apiCallBudget'
-import { COMPETITIONS, DOMESTIC_CUP_ROUND_TO_GAMEWEEK, LEAGUE_CUP_ROUND_TO_GAMEWEEK, mapFixtureStatus, type CompetitionKey, TERMINAL_FIXTURE_STATES, resolveCupGameweek } from '@/lib/sportmonksConstants'
+import { planFixtureSync } from '@/lib/fixtureSyncPlan'
+import { COMPETITIONS, mapFixtureStatus, type CompetitionKey, TERMINAL_FIXTURE_STATES, resolveCupGameweek } from '@/lib/sportmonksConstants'
 
 async function syncCupGameweeks(
   fixtureKey: 'carabao_cup' | 'fa_cup', 
@@ -35,10 +36,8 @@ async function syncCupGameweeks(
 }
 
 export async function POST(req: Request) {
-  const authHeader = req.headers.get('authorization')
-  if (authHeader !== `Bearer ${env.SYNC_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const authResult = requireAutomationSecret(req)
+  if (!authResult.ok) return NextResponse.json({ error: authResult.error }, { status: authResult.status })
 
   const unmapped: {
     competition: string
@@ -54,6 +53,8 @@ export async function POST(req: Request) {
   const competitionResults: { competition: string; created: number; updated: number; fetched: number, skipped?: number | string }[] = []
 
   try {
+    const knownTeamIds = new Set((await prisma.team.findMany({ select: { id: true }})).map(t => t.id))
+
     for (const key of Object.keys(COMPETITIONS) as CompetitionKey[]) {
       const { leagueId, seasonId } = COMPETITIONS[key]
       let created = 0
@@ -74,6 +75,13 @@ export async function POST(req: Request) {
           remainingAfterCall: remaining
         })
 
+        const existingStatusById = new Map(
+          (await prisma.fixture.findMany({
+            where: { id: { in: fixtures.map(f => f.id) } },
+            select: { id: true, status: true },
+          })).map(f => [f.id, f.status])
+        )
+
         for (const fx of fixtures) {
           const participants = fx.participants ?? []
           const home = participants.find(p => p.meta?.location === 'home')
@@ -81,8 +89,17 @@ export async function POST(req: Request) {
 
           if (!home || !away) continue
 
-          const homeTeamExists = await prisma.team.findUnique({ where: { id: home.id } })
-          const awayTeamExists = await prisma.team.findUnique({ where: { id: away.id } })
+          const plan = planFixtureSync({
+            homeId: home.id,
+            awayId: away.id,
+            existingStatus: existingStatusById.get(fx.id),
+            knownTeamIds,
+            terminalStates: TERMINAL_FIXTURE_STATES,
+          })
+          if (plan.action === 'skip') {
+            skipped++
+            continue
+          }
 
           const homeScoreEntry = fx.scores?.find(
             s => s.score.participant === 'home' && s.description === 'CURRENT'
@@ -129,8 +146,8 @@ export async function POST(req: Request) {
             seasonId: COMPETITIONS[key].seasonId,
             round: roundOrStageName,
             gameweekNumber,
-            homeTeamId: homeTeamExists ? home.id : null,
-            awayTeamId: awayTeamExists ? away.id : null,
+            homeTeamId: plan.homeTeamId,
+            awayTeamId: plan.awayTeamId,
             homeTeamName: home.name,
             awayTeamName: away.name,
             homeTeamImage: home.image_path ?? null,
@@ -149,7 +166,7 @@ export async function POST(req: Request) {
             create: { id: fx.id, ...data },
           })
 
-          if (existing) updated++
+          if (plan.action === 'update') updated++
           else created++
         }
 
