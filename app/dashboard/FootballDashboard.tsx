@@ -35,22 +35,67 @@ export default async function FootballDashobard() {
         )
     }
 
-    const leagueTeams = await prisma.fantasyTeam.findMany({
-        where: { fantasyLeagueId: myTeam.fantasyLeagueId },
-        select: { id: true, totalLeaguePoints: true, totalFantasyPoints: true }
-    })
+    const now = new Date()
+
+    // Stage 1: everything that depends only on myTeam all at once
+    const [
+        leagueTeams,
+        allGameweeks,
+        pendingClaimsCount,
+        waiverWindow,
+        activeWaiverGw,
+        recentClaimsRaw,
+        upcomingFixturesRaw,
+        roster,
+    ] = await Promise.all([
+        prisma.fantasyTeam.findMany({
+            where: { fantasyLeagueId: myTeam.fantasyLeagueId },
+            select: { id: true, totalLeaguePoints: true, totalFantasyPoints: true }
+        }),
+        // Determine which gameweek's matchup to show, based on date proximity
+        prisma.fantasyGameweek.findMany({
+            where: { fantasyLeagueId: myTeam.fantasyLeagueId },
+            select: { id: true, gameweekNumber: true, startDate: true, endDate: true, competition: true },
+            orderBy: { startDate: 'asc' }
+        }),
+        prisma.waiverClaim.count({
+            where: { fantasyTeamId: myTeam.id, status: 'pending' }
+        }),
+        getCurrentWaiverWindow(),
+        getActiveWaiverGameweek(myTeam.fantasyLeagueId),
+        prisma.waiverClaim.findMany({
+            where: {
+                status: 'won',
+                fantasyTeam: { fantasyLeagueId: myTeam.fantasyLeagueId }
+            },
+            include: {
+                fantasyTeam: true,
+                playerToAdd: true,
+                playerToDrop: true
+            },
+            orderBy: { processedAt: 'desc' },
+            take: 20,
+        }),
+        prisma.fixture.findMany({
+            where: {
+                kickoff: { gt: now },
+                OR: [
+                    { homeTeam: { leagueId: COMPETITIONS.premier_league.leagueId } },
+                    { awayTeam: { leagueId: COMPETITIONS.premier_league.leagueId } },
+                ]
+            },
+            orderBy: { kickoff: 'asc' },
+            take: 6
+        }),
+        prisma.fantasyTeamPlayer.findMany({
+            where: { fantasyTeamId: myTeam.id },
+            select: { playerId: true },
+        }),
+    ])
 
     const standings = getLeagueStandings(leagueTeams)
     const myRank = standings.find(s => s.team.id === myTeam.id)?.rank ?? null
 
-    // Determine which gameweek's matchup to show, based on date proximity
-    const allGameweeks = await prisma.fantasyGameweek.findMany({
-        where: { fantasyLeagueId: myTeam.fantasyLeagueId },
-        select: { id: true, gameweekNumber: true, startDate: true, endDate: true, competition: true },
-        orderBy: { startDate: 'asc' }
-    })
-
-    const now = new Date()
     const closestPremLeagueGameweek = selectClosestGameweekForCompetition(allGameweeks, 'premier_league', now)
     const closestDomCupGameweek = selectClosestGameweekForCompetition(allGameweeks, 'domestic_cup', now)
     const closestLeagueCupGameweek = selectClosestGameweekForCompetition(allGameweeks, 'league_cup', now)
@@ -62,15 +107,19 @@ export default async function FootballDashobard() {
         return now >= windowStart && now <= windowEnd
     }
 
-    const cupSlides = await Promise.all(
-        [
-            { gw: closestLeagueCupGameweek, competition: 'league_cup' as const },
-            { gw: closestDomCupGameweek, competition: 'domestic_cup' as const },
-        ]
-            .filter((entry): entry is { gw: GameweekWithDateRange; competition: 'league_cup' | 'domestic_cup' } =>
-                entry.gw !== null && isCurrentlyRelevant(entry.gw)
-            )
-            .map(async ({ gw, competition }) => {
+    const closestGameweek = closestPremLeagueGameweek
+
+    const cupEntries = [
+        { gw: closestLeagueCupGameweek, competition: 'league_cup' as const },
+        { gw: closestDomCupGameweek, competition: 'domestic_cup' as const },
+    ].filter((entry): entry is { gw: GameweekWithDateRange; competition: 'league_cup' | 'domestic_cup' } =>
+        entry.gw !== null && isCurrentlyRelevant(entry.gw)
+    )
+
+    // Stage 2: the queries that needed stage 1 (gameweeks, active wavier gameweek, roster)
+    const [cupSlides, currentMatchup, closestGameweekSnapshot, bidsRaw, sidelinedByPlayer] = await Promise.all([
+        Promise.all(
+            cupEntries.map(async ({ gw, competition }) => {
                 const snapshot = await prisma.gameweekLineup.findUnique({
                     where: { fantasyTeamId_gameweekId: { fantasyTeamId: myTeam.id, gameweekId: gw.id } },
                     select: { cupPointsTotal: true }
@@ -81,48 +130,61 @@ export default async function FootballDashobard() {
                     cupPointsTotal: snapshot?.cupPointsTotal ?? null
                 }
             })
-    )
-
-    const closestGameweek = closestPremLeagueGameweek
-
-    const currentMatchup = closestGameweek
-        ? await prisma.fantasyMatchup.findFirst({
+        ),
+        closestGameweek
+            ? prisma.fantasyMatchup.findFirst({
+                where: {
+                    gameweekId: closestGameweek.id,
+                    OR: [
+                        { homeTeamId: myTeam.id },
+                        { awayTeamId: myTeam.id }
+                    ]
+                },
+                select: {
+                    id: true,
+                    homePoints: true,
+                    awayPoints: true,
+                    isComplete: true,
+                    homeTeamId: true,
+                    awayTeamId: true,
+                    gameweek: { select: { gameweekNumber: true } },
+                    homeTeam: { select: { id: true, name: true, user: { select: { username: true } } } },
+                    awayTeam: { select: { id: true, name: true, user: { select: { username: true } } } }
+                }
+            })
+            : Promise.resolve(null),
+        closestGameweek
+            ? prisma.gameweekLineup.findUnique({
+                where: {
+                    fantasyTeamId_gameweekId: {
+                        fantasyTeamId: myTeam.id,
+                        gameweekId: closestGameweek.id
+                    }
+                },
+                include: {
+                    players: {
+                        include: { player: { include: { team: true } } }
+                    }
+                }
+            })
+            : Promise.resolve(null),
+        prisma.transferBid.findMany({
             where: {
-                gameweekId: closestGameweek.id,
+                fantasyTeam: { fantasyLeagueId: myTeam.fantasyLeagueId },
                 OR: [
-                    { homeTeamId: myTeam.id },
-                    { awayTeamId: myTeam.id }
-                ]
+                    {
+                        status: 'pending',
+                        ...(activeWaiverGw ? { gameweekId: activeWaiverGw.id }: {}),
+                    },
+                    { status: 'won', processedAt: { not: null } },
+                ],
             },
-            select: {
-                id: true,
-                homePoints: true,
-                awayPoints: true,
-                isComplete: true,
-                homeTeamId: true,
-                awayTeamId: true,
-                gameweek: { select: { gameweekNumber: true } },
-                homeTeam: { select: { id: true, name: true, user: { select: { username: true } } } },
-                awayTeam: { select: { id: true, name: true, user: { select: { username: true } } } }
-            }
-        })
-        : null
-
-    const closestGameweekSnapshot = closestGameweek
-        ? await prisma.gameweekLineup.findUnique({
-            where: {
-                fantasyTeamId_gameweekId: {
-                    fantasyTeamId: myTeam.id,
-                    gameweekId: closestGameweek.id
-                }
-            },
-            include: {
-                players: {
-                    include: { player: { include: { team: true } } }
-                }
-            }
-        })
-        : null
+            include: { fantasyTeam: true, player: true },
+            orderBy: [{ amount: 'desc' }, { submittedAt: 'desc' }],
+            take: 40,
+        }),
+        getActiveSidelinedForPlayers(roster.map(r => r.playerId)),
+    ])
 
     const lineupPlayers = (closestGameweekSnapshot?.players ?? []).map(p => ({
         id: p.id,
@@ -132,43 +194,7 @@ export default async function FootballDashobard() {
         player: p.player
     }))
 
-    const pendingClaimsCount = await prisma.waiverClaim.count({
-        where: { fantasyTeamId: myTeam.id, status: 'pending' }
-    })
-
-    const waiverWindow = await getCurrentWaiverWindow()
-    const activeWaiverGw = await getActiveWaiverGameweek(myTeam.fantasyLeagueId)
-    
-    const recentClaimsRaw = await prisma.waiverClaim.findMany({
-        where: {
-            status: 'won',
-            fantasyTeam: { fantasyLeagueId: myTeam.fantasyLeagueId }
-        },
-        include: {
-            fantasyTeam: true,
-            playerToAdd: true,
-            playerToDrop: true
-        },
-        orderBy: { processedAt: 'desc' },
-        take: 20,
-    })
-
-    const bidsRaw = await prisma.transferBid.findMany({
-        where: {
-            fantasyTeam: { fantasyLeagueId: myTeam.fantasyLeagueId },
-            OR: [
-                {
-                    status: 'pending',
-                    ...(activeWaiverGw ? { gameweekId: activeWaiverGw.id }: {}),
-                },
-                { status: 'won', processedAt: { not: null } },
-            ],
-        },
-        include: { fantasyTeam: true, player: true },
-        orderBy: [{ amount: 'desc' }, { submittedAt: 'desc' }],
-        take: 40,
-    })
-
+    // Stage 3 : names for the players that bids would drop, need the bids
     const bidDropIds = Array.from(
         new Set(bidsRaw.map(b => b.playerToDropId).filter((v): v is number => v !== null))
     )
@@ -237,18 +263,6 @@ export default async function FootballDashobard() {
         .sort((a,b) => new Date(b.processedAt).getTime() - new Date(a.processedAt).getTime())
         .slice(0, 20)
 
-    const upcomingFixturesRaw = await prisma.fixture.findMany({
-        where: {
-            kickoff: { gt: new Date() },
-            OR: [
-                { homeTeam: { leagueId: COMPETITIONS.premier_league.leagueId } },
-                { awayTeam: { leagueId: COMPETITIONS.premier_league.leagueId } },
-            ]
-        },
-        orderBy: { kickoff: 'asc' },
-        take: 6
-    })
-
     const upcomingFixtures = upcomingFixturesRaw.map(fx => ({
         id: fx.id,
         homeTeamName: fx.homeTeamName,
@@ -258,13 +272,7 @@ export default async function FootballDashobard() {
         kickoff: fx.kickoff.toISOString(),
         competition: fx.competition,
     }))
-
-    // AFter fetching myTeam, get roster player IDs and count active sidelined entries
-    const roster = await prisma.fantasyTeamPlayer.findMany({
-        where: { fantasyTeamId: myTeam.id },
-        select: { playerId: true },
-    })
-    const sidelinedByPlayer = await getActiveSidelinedForPlayers(roster.map(r => r.playerId))
+    
     const sidelinedCount = sidelinedByPlayer.size
 
     return (
