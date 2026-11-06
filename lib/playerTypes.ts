@@ -35,3 +35,25 @@ export type DisplayTeam = {
     image_path: string
     leagueId?: number
 }
+
+/**
+ * What the Players page list actually renders per player. Deliberately narrower than
+ * PlayerWithTeam so the server only serializes (and the browser only receives) these fields.
+ */
+export type PlayerListItem = {
+  id: number
+  display_name: string
+  image_path: string
+  position_id: number
+  jersey_number: number | null
+  teamId: number | null
+  currentClubName: string | null
+  team: { name: string; image_path: string; leagueId: number } | null
+}
+
+/** A team as the Players page's team filter needs it */
+export type PlayerListTeam = {
+  id: number
+  name: string
+  leagueId: number
+}

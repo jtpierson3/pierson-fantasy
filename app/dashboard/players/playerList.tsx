@@ -5,36 +5,28 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { getTeamColor, getTintBackground } from '@/lib/colors'
 import { getPositionShort, getPositionColor } from '@/lib/helpers'
-import type { Team } from '@prisma/client'
 import { useRouter } from 'next/navigation'
-import { Prisma } from '@prisma/client'
 import ClaimModal from '@/app/components/ClaimModal'
 import FuturePlayerSearch from "@/app/components/FuturePlayerSearch"
 import { isPremierLeagueEligible } from "@/lib/playerEligibility"
-import type { PlayerWithTeam } from '@/lib/playerTypes'
 import { normalizeForSearch } from '@/lib/textNormalization'
+import type { PlayerListItem, PlayerListTeam } from '@/lib/playerTypes'
 
-type FantasyTeamWithPlayers = Prisma.FantasyTeamGetPayload<{
-    include: {
-        players: {
-            include: { player: true }
-        }
-    }
-}> | null
-
-type RosteredPlayer = Prisma.FantasyTeamPlayerGetPayload<{
-    include: {
-        fantasyTeam: {
-            include: { user: true }
-        }
-    }
-}>
+type MyTeamSummary = {
+    id: string
+    players: {
+        id: string
+        playerId: number
+        rosterSlot: string
+        player: { display_name: string }
+    }[]
+}
 
 type Props = {
-    players: PlayerWithTeam[]
-    teams: Team[]
-    myFantasyTeam: FantasyTeamWithPlayers
-    allRosteredPlayers: RosteredPlayer[]
+    players: PlayerListItem[]
+    teams: PlayerListTeam[]
+    myFantasyTeam: MyTeamSummary | null
+    ownerByPlayerId: Record<number, string>
     draftComplete: boolean
     myPendingClaimPlayerIds: number[]
     scores: Record<number, { total: number; games: number }>
@@ -51,7 +43,7 @@ const POSITION_IDS: Record<PositionFilter, number | null> = {
     ATT: 27
 }
 
-export default function PlayerList({ players, teams, myFantasyTeam, allRosteredPlayers, draftComplete, myPendingClaimPlayerIds, scores }: Props) {
+export default function PlayerList({ players, teams, myFantasyTeam, ownerByPlayerId, draftComplete, myPendingClaimPlayerIds, scores }: Props) {
     const [layout, setLayout] = useState<Layout>('grid')
     const [search, setSearch] = useState('')
     const [positionFilter, setPositionFilter] = useState<PositionFilter>('ALL')
@@ -67,7 +59,7 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
             const matchesPosition = positionFilter === 'ALL' || p.position_id === POSITION_IDS[positionFilter]
             const matchesTeam = teamFilter === 'ALL' || p.teamId === parseInt(teamFilter)
             const matchesEligibility = showAllLeagues || isPremierLeagueEligible(p.team?.leagueId)
-            const isOwned = allRosteredPlayers.some(rp => rp.playerId === p.id)
+            const isOwned = p.id in ownerByPlayerId
             const matchesOwnership = !showFreeAgentsOnly || !isOwned
             const matchesScore = (scores[p.id]?.total ?? 0) >= minScore
             return matchesSearch && matchesPosition && matchesTeam && matchesEligibility && matchesOwnership && matchesScore
@@ -76,7 +68,7 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
             list.sort((a, b) => (scores[b.id]?.total ?? 0) - (scores[a.id]?.total ?? 0))
         }
         return list
-    }, [players, search, positionFilter, teamFilter, showAllLeagues, showFreeAgentsOnly, allRosteredPlayers, scores, minScore, sortByScore])
+    }, [players, search, positionFilter, teamFilter, showAllLeagues, showFreeAgentsOnly, ownerByPlayerId, scores, minScore, sortByScore])
 
     const teamOptions = useMemo(() => {
         return showAllLeagues
@@ -93,7 +85,7 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
     }, [])
 
     // Adding Player Functionality
-    const [addingPlayer, setAddingPlayer] = useState<PlayerWithTeam | null>(null)
+    const [addingPlayer, setAddingPlayer] = useState<PlayerListItem | null>(null)
     const [dropPlayerId, setDropPlayerId] = useState<string>('')
     const [saving, setSaving] = useState(false)
     const router = useRouter()
@@ -102,27 +94,27 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
         p => p.rosterSlot !== 'IR'
     ).length ?? 0
 
+    const myPendingClaimSet = useMemo(() => new Set(myPendingClaimPlayerIds), [myPendingClaimPlayerIds])
+    const myPlayerIdSet = useMemo(
+        () => new Set(myFantasyTeam?.players.map(p => p.playerId) ?? []),
+        [myFantasyTeam]
+    )
+
     const atRosterLimit = myRosteredCount >= 23
 
-    const ownershipMap = useMemo(() => {
-        const map = new Map<number, RosteredPlayer>()
-        allRosteredPlayers.forEach(rp => map.set(rp.playerId, rp))
-        return map
-    }, [allRosteredPlayers])
-
     function hasMyPendingClaim(playerId: number) {
-        return myPendingClaimPlayerIds.includes(playerId)
+        return myPendingClaimSet.has(playerId)
     }
 
-    function getOwnership(playerId: number) {
-        return ownershipMap.get(playerId) ?? null
+    function getOwner(playerId: number): string | null {
+        return ownerByPlayerId[playerId] ?? null
     }
 
     function isOnMyTeam(playerId: number) {
-        return myFantasyTeam?.players.some(p => p.playerId === playerId) ?? false
+        return myPlayerIdSet.has(playerId)
     }
 
-    const handleAddPlayer = async (player: PlayerWithTeam) => {
+    const handleAddPlayer = async (player: PlayerListItem) => {
         if (!myFantasyTeam) return
         setSaving(true)
         try {
@@ -149,7 +141,7 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
     }
 
     // Waiver Claiming
-    const [claimingPlayer, setClaimingPlayer] = useState<PlayerWithTeam | null>(null)
+    const [claimingPlayer, setClaimingPlayer] = useState<PlayerListItem | null>(null)
 
     return (
         <div className="p-6">
@@ -369,9 +361,9 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
                                         <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
                                             Your Squad
                                         </span>
-                                    ) : getOwnership(player.id) ? (
+                                    ) : getOwner(player.id) ? (
                                         <span className="text-xs text-gray-400 truncate block">
-                                            {getOwnership(player.id)!.fantasyTeam.user.username}
+                                            {getOwner(player.id)}
                                         </span>
                                     ) : draftComplete && hasMyPendingClaim(player.id) ? (
                                         <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 font-medium">
@@ -476,9 +468,9 @@ export default function PlayerList({ players, teams, myFantasyTeam, allRosteredP
                                         <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
                                             Your Team
                                         </span>
-                                    ) : getOwnership(player.id) ? (
+                                    ) : getOwner(player.id) ? (
                                         <span className="text-xs text-gray-400 truncate block">
-                                            {getOwnership(player.id)!.fantasyTeam.user.username}
+                                            {getOwner(player.id)}
                                         </span>
                                     ) : draftComplete && hasMyPendingClaim(player.id) ? (
                                         <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow font-medium">
