@@ -27,7 +27,7 @@ def run_process_scoring() -> dict:
             "x-vercel-protection-bypass": VERCEL_BYPASS_SECRET,
             "User-Agent": "Mozilla/5.0 (compatible; PiersonFantasyScoring/1.0)",
         },
-        timeout=120,
+        timeout=70,
     )
     response.raise_for_status()
     return response.json()
