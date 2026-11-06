@@ -84,6 +84,13 @@ export async function POST(req: Request) {
 
         const currentSquadPlayerIds: number[] = []
 
+        const existingPlayerIds = new Set(
+          (await prisma.player.findMany({
+            where: { id: { in: squad.flatMap(m => (m.player ? [m.player.id] : [])) } },
+            select: { id: true },
+          })).map(p => p.id)
+        )
+
         for (const member of squad) {
           const player = member.player
           if (!player) {
@@ -92,8 +99,6 @@ export async function POST(req: Request) {
           }
 
           currentSquadPlayerIds.push(player.id)
-
-          const existing = await prisma.player.findUnique({ where: { id: player.id } })
 
           await prisma.player.upsert({
             where: { id: player.id },
@@ -118,7 +123,7 @@ export async function POST(req: Request) {
             },
           })
 
-          if (existing) teamUpdated++
+          if (existingPlayerIds.has(player.id)) teamUpdated++
           else teamCreated++
         }
 
@@ -179,12 +184,18 @@ export async function POST(req: Request) {
       const trackedTeamIdsSet = new Set(currentlyTrackedTeamIds)
       const latestTransfers = resolveLatestTransferPerPlayer(transfers, trackedTeamIdsSet)
 
+      const currentTeamByPlayerId = new Map(
+        (await prisma.player.findMany({
+          where: { id: { in: [...latestTransfers.keys()] } },
+          select: { id: true, teamId: true },
+        })).map(p => [p.id, p.teamId])
+      )
+
       for (const [playerId, transfer] of latestTransfers) {
-        const player = await prisma.player.findUnique({ where: { id: playerId } })
-        if (!player) continue
+        if (!currentTeamByPlayerId.has(playerId)) continue
 
         if (transfer.to_team_id !== null && trackedTeamIdsSet.has(transfer.to_team_id)) {
-          if (player.teamId !== transfer.to_team_id) {
+          if (currentTeamByPlayerId.get(playerId) !== transfer.to_team_id) {
             await prisma.player.update({
               where: { id: playerId },
               data: { teamId: transfer.to_team_id },

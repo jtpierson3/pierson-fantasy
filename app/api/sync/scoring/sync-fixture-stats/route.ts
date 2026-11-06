@@ -58,12 +58,15 @@ export async function POST(req: Request) {
             })).map(s => [s.playerId, s.positionPlayedId])
         )
 
+        const knownPlayerIds = new Set(
+            (await prisma.player.findMany({
+                where: { id: { in: fixture.lineups.map(l => l.player_id) } },
+                select: { id: true },
+            })).map(p => p.id)
+        )
+
         for (const lineup of fixture.lineups) {
-            const playerExists = await prisma.player.findUnique({
-                where: { id: lineup.player_id },
-                select: { id: true }
-            })
-            if (!playerExists) {
+            if (!knownPlayerIds.has(lineup.player_id)) {
                 console.warn(`[sync-fixture-stats] skipping stats for unsynced player ${lineup.player_id}`)
                 continue
             }

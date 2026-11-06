@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { getTeamSidelined } from '@/lib/sportmonks'
 import { logApiCall } from '@/lib/apiCallBudget'
+import { planSidelinedEntries } from '@/lib/sidelinedSyncPlan'
 
 export async function syncTeamSidelined(teamId: number, triggeredBySource: string): Promise<number> {
     const { sidelined, remaining } = await getTeamSidelined(teamId)
@@ -10,18 +11,34 @@ export async function syncTeamSidelined(teamId: number, triggeredBySource: strin
         remainingAfterCall: remaining,
     })
 
-    const knownPlayerIds = new Set(
-        (await prisma.player.findMany({
-            where: { id: { in: sidelined.map(s => s.player_id) } },
-            select: { id: true },
-        })).map(p => p.id)
+    const entryPlayerIds = [...new Set(sidelined.map(s => s.player_id))]
+    const entryIds = sidelined.map(s => s.id)
+
+    const [knownPlayers, existingRows, openManualRows] = await Promise.all([
+        prisma.player.findMany({ where: { id: { in: entryPlayerIds } }, select: { id: true } }),
+        prisma.sidelined.findMany({ where: { sportmonksId: { in: entryIds } }, select: { sportmonksId: true } }),
+        prisma.sidelined.findMany({
+            where: { playerId: { in: entryPlayerIds }, source: 'MANUAL', completed: false },
+            orderBy: { startDate: 'desc' },
+            select: { id: true, playerId: true }
+        }),
+    ])
+
+    const knownPlayerIds = new Set(knownPlayers.map(p => p.id))
+    const existingSportmonksIds = new Set(
+        existingRows.map(r => r.sportmonksId).filter((id): id is number => id !== null)
     )
+
+    const plans = planSidelinedEntries(sidelined, knownPlayerIds, existingSportmonksIds, openManualRows)
 
     let synced = 0
 
-    for (const entry of sidelined) {
-        if (!knownPlayerIds.has(entry.player_id)) {
-            console.warn(`[sidelined sync] skipping entry ${entry.id} - unknown player ${entry.player_id}, need to run player sync first`)
+    for (let i = 0; i < sidelined.length; i++) {
+        const entry = sidelined[i]
+        const plan = plans[i]
+
+        if (plan.action === 'skip-unknown-player') {
+            console.warn(`[sidelined sync] skipping entry ${entry.id} - unknown player ${entry.player_id}, need to run player sync first.`)
             continue
         }
 
@@ -35,32 +52,18 @@ export async function syncTeamSidelined(teamId: number, triggeredBySource: strin
             completed: entry.completed,
         }
 
-        const existingBySportmonksId = await prisma.sidelined.findUnique({
-            where: { sportmonksId: entry.id },
-            select: { id: true }, 
-        })
-
-        if (!existingBySportmonksId) {
-            const manualRow = await prisma.sidelined.findFirst({
-                where: { playerId: entry.player_id, source: 'MANUAL', completed: false },
-                orderBy: { startDate: 'desc' },
-                select: { id: true },
+        if (plan.action === 'claim-manual') {
+            await prisma.sidelined.update({
+                where: { id: plan.manualRowId },
+                data: { ...fields, sportmonksId: entry.id, source: 'SPORTMONKS' },
             })
-            if (manualRow) {
-                await prisma.sidelined.update({
-                    where: { id: manualRow.id },
-                    data: { ...fields, sportmonksId: entry.id, source: 'SPORTMONKS' },
-                })
-                synced++
-                continue
-            }
+        } else {
+            await prisma.sidelined.upsert({
+                where: { sportmonksId: entry.id },
+                update: fields,
+                create: { sportmonksId: entry.id, playerId: entry.player_id, source: 'SPORTMONKS', ...fields },
+            })
         }
-
-        await prisma.sidelined.upsert({
-            where: { sportmonksId: entry.id },
-            update: fields,
-            create: { sportmonksId: entry.id, playerId: entry.player_id, source: 'SPORTMONKS', ...fields },
-        })
         synced++
     }
 
