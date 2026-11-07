@@ -112,6 +112,7 @@ model FantasyTeam {
   draftPosition      Int?
 
   @@unique([userId, fantasyLeagueId])
+  @@index([fantasyLeagueId])
 }
 
 model FantasyTeamPlayer {
@@ -125,6 +126,7 @@ model FantasyTeamPlayer {
   addedAt       DateTime    @default(now())
 
   @@unique([fantasyTeamId, playerId])
+  @@index([playerId])
 }
 
 model FantasyGameweek {
@@ -159,6 +161,8 @@ model FantasyMatchup {
   awayPoints Float           @default(0)
   isComplete Boolean         @default(false)
   createdAt  DateTime        @default(now())
+
+  @@index([gameweekId])
 }
 
 model WaiverClaim {
@@ -208,6 +212,8 @@ model GameweekLineupPlayer {
   subRule             String?
   displacedByPlayerId Int?
   resolvedAt          DateTime?
+
+  @@index([gameweekLineupId])
 }
 
 model TransferBid {
@@ -244,6 +250,7 @@ model PlayerMatchStats {
   syncedAt            DateTime @default(now())
 
   @@unique([playerId, fixtureId])
+  @@index([fixtureId])
 }
 
 model PlayerFixturePoints {
@@ -257,6 +264,7 @@ model PlayerFixturePoints {
   calculatedAt DateTime @default(now())
 
   @@unique([playerId, fixtureId])
+  @@index([fixtureId])
 }
 
 model ScoringRule {
