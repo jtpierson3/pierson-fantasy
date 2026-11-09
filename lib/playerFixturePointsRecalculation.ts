@@ -1,8 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { calculatePlayerPoints, type PlayerStatsInput, type ScoringRuleInput } from '@/lib/scoringCalculation'
-import { qualifiesForCleanSheet } from '@/lib/scoringRules'
-import { getPositionType, toScoringPosition } from '@/lib/formations'
-import { getTeamGoalsConceded } from './goalsConceded'
+import { groupRulesByPosition, scorePlayerMatchStats } from '@/lib/fixturePointsScoring'
 
 export class RecalculationError extends Error {
     constructor(message: string, public status: number) {
@@ -12,75 +9,56 @@ export class RecalculationError extends Error {
 
 /**
  * Recomputes and persists PlayerFixturePoints for a single PlayerMatchStats row,
- * optionally correcting positionPlayedId first. Shared by the automated sync pipeline
- * (calculate-fixture-points) and the admin position-correction action, so both paths 
- * score a player identically
+ * optionally correcting positionPlayedId first - the admin position-correction action.
+ * The scoring decision itself lives in scorePlayerMatchStats, the same function the
+ * automated pipeline (calculateFixturePoints) uses, so both score a player identically.
  */
 export async function recalculatePlayerFixturePoints(
     playerMatchStatsId: string,
     positionPlayedId: number,
     options: { manual?: boolean } = {}
 ): Promise<{ points: number; breakdown: unknown; playerId: number; gameweekNumber: number | null }> {
-    const ps = await prisma.playerMatchStats.findUnique({
+    const playerStat = await prisma.playerMatchStats.findUnique({
         where: { id: playerMatchStatsId },
         include: { player: true, fixture: true }
     })
-    if (!ps) throw new RecalculationError('PlayerMatchStats not found', 404)
+    if (!playerStat) throw new RecalculationError('PlayerMatchStats not found', 404)
 
-    if (positionPlayedId !== ps.positionPlayedId || options.manual) {
+    if (positionPlayedId !== playerStat.positionPlayedId || options.manual) {
         await prisma.playerMatchStats.update({
             where: { id: playerMatchStatsId },
             data: {
                 positionPlayedId,
-                ...(options.manual ? { positionManuallySet: true }: {})
+                ...(options.manual ? { positionManuallySet: true } : {})
             }
         })
     }
 
-    const broadPositionId = positionPlayedId === 24 ? 24 : null
-    const positionType = getPositionType(positionPlayedId, broadPositionId)
-    const scoringPosition = toScoringPosition(positionType)
-    if (!scoringPosition) {
+    const allRules = await prisma.scoringRule.findMany({ where: { isActive: true } })
+
+    const result = scorePlayerMatchStats({
+        positionPlayedId,
+        matchTeamId: playerStat.teamId,
+        playerClubId: playerStat.player.teamId,
+        fixture: playerStat.fixture,
+        stats: playerStat.stats,
+        rating: playerStat.rating,
+        minutesPlayed: playerStat.minutesPlayed,
+        rulesByPosition: groupRulesByPosition(allRules),
+    })
+    if (!result.scored) {
         throw new RecalculationError('positionPlayedId does not resolve to a scorable position', 400)
     }
 
-    const rules = await prisma.scoringRule.findMany({
-        where: { isActive: true, position: scoringPosition }
-    })
-    const ruleInputs: ScoringRuleInput[] = rules.map(r => ({
-        statKey: r.statKey,
-        displayName: r.displayName,
-        statTypeId: r.statTypeId,
-        position: r.position,
-        pointsPerUnit: r.pointsPerUnit,
-        isGraduated: r.isGraduated,
-        tiers: r.tiers as { min: number; points: number }[] | null,
-    }))
-
-    const fixture = ps.fixture
-    const goalsConceded = getTeamGoalsConceded({
-        matchTeamId: ps.teamId,
-        fallbackTeamId: ps.player.teamId,
-        fixture,
-    })
-    if (goalsConceded === null && ps.minutesPlayed > 0) {
-        console.warn(`[recalculatePlayerFixturePoints] can't tell which side player ${ps.playerId} played for in fixture ${ps.fixtureId} - no clean sheet awarded`)
+    if (result.sideUnknown) {
+        console.warn(`[recalculatePlayerFixturePoints] can't tell which side player ${playerStat.playerId} played for in fixture ${playerStat.fixtureId} - no clean sheet awarded`)
     }
-    const isCleanSheet = goalsConceded !== null && qualifiesForCleanSheet(goalsConceded, ps.minutesPlayed)
-
-    const statsInput: PlayerStatsInput = {
-        stats: (ps.stats as Record<string, number>) ?? {},
-        rating: ps.rating,
-        minutesPlayed: ps.minutesPlayed,
-    }
-
-    const { totalPoints, breakdown } = calculatePlayerPoints(statsInput, ruleInputs, isCleanSheet)
 
     await prisma.playerFixturePoints.upsert({
-        where: { playerId_fixtureId: { playerId: ps.playerId, fixtureId: ps.fixtureId } },
-        update: { points: totalPoints, breakdown },
-        create: { playerId: ps.playerId, fixtureId: ps.fixtureId, points: totalPoints, breakdown }
+        where: { playerId_fixtureId: { playerId: playerStat.playerId, fixtureId: playerStat.fixtureId } },
+        update: { points: result.totalPoints, breakdown: result.breakdown },
+        create: { playerId: playerStat.playerId, fixtureId: playerStat.fixtureId, points: result.totalPoints, breakdown: result.breakdown }
     })
 
-    return { points: totalPoints, breakdown, playerId: ps.playerId, gameweekNumber: ps.fixture.gameweekNumber }
+    return { points: result.totalPoints, breakdown: result.breakdown, playerId: playerStat.playerId, gameweekNumber: playerStat.fixture.gameweekNumber }
 }

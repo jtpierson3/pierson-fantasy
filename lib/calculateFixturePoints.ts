@@ -1,13 +1,10 @@
 import { prisma } from '@/lib/prisma'
-import { calculatePlayerPoints, type ScoringRuleInput, type PlayerStatsInput } from '@/lib/scoringCalculation'
-import { qualifiesForCleanSheet } from '@/lib/scoringRules'
-import { getPositionType, toScoringPosition } from '@/lib/formations'
-import { getTeamGoalsConceded } from '@/lib/goalsConceded'
+import { groupRulesByPosition, scorePlayerMatchStats } from '@/lib/fixturePointsScoring'
 import type { PipelineResult } from '@/lib/pipelineResult'
 
 export async function calculateFixturePoints(
     fixtureId: number
-): Promise<PipelineResult< { playersCalculated: number; playersSkipped: number}>> {
+): Promise<PipelineResult<{ playersCalculated: number; playersSkipped: number }>> {
     const fixture = await prisma.fixture.findUnique({ where: { id: fixtureId } })
     if (!fixture) return { ok: false, status: 404, error: 'fixture not found' }
 
@@ -21,57 +18,36 @@ export async function calculateFixturePoints(
     }
 
     const allRules = await prisma.scoringRule.findMany({ where: { isActive: true } })
-    const rulesByPosition = new Map<string, ScoringRuleInput[]>()
-    for (const rule of allRules) {
-        const list = rulesByPosition.get(rule.position) ?? []
-        list.push({
-            statKey: rule.statKey,
-            displayName: rule.displayName,
-            statTypeId: rule.statTypeId,
-            position: rule.position,
-            pointsPerUnit: rule.pointsPerUnit,
-            isGraduated: rule.isGraduated,
-            tiers: rule.tiers as { min: number; points: number }[] | null,
-        })
-        rulesByPosition.set(rule.position, list)
-    }
+    const rulesByPosition = groupRulesByPosition(allRules)
 
     let calculated = 0
     const skippedPlayerIds: number[] = []
 
     for (const playerStat of allStats) {
-        const broadPositionId = playerStat.positionPlayedId === 24 ? 24 : null
-        const positionType = getPositionType(playerStat.positionPlayedId, broadPositionId)
-        const scoringPosition = toScoringPosition(positionType)
-        if (!scoringPosition) {
+        const result = scorePlayerMatchStats({
+            positionPlayedId: playerStat.positionPlayedId,
+            matchTeamId: playerStat.teamId,
+            playerClubId: playerStat.player.teamId,
+            fixture,
+            stats: playerStat.stats,
+            rating: playerStat.rating,
+            minutesPlayed: playerStat.minutesPlayed,
+            rulesByPosition,
+        })
+
+        if (!result.scored) {
             if (playerStat.minutesPlayed > 0) skippedPlayerIds.push(playerStat.playerId)
             continue
         }
 
-        const rules = rulesByPosition.get(scoringPosition) ?? []
-
-        const goalsConceded = getTeamGoalsConceded({
-            matchTeamId: playerStat.teamId,
-            fallbackTeamId: playerStat.player.teamId,
-            fixture,
-        })
-        if (goalsConceded === null && playerStat.minutesPlayed > 0) {
+        if (result.sideUnknown) {
             console.warn(`[calculate-fixture-points] can't tell which side player ${playerStat.playerId} played for in fixture ${fixtureId} - no clean sheet awarded`)
         }
-        const isCleanSheet = goalsConceded !== null && qualifiesForCleanSheet(goalsConceded, playerStat.minutesPlayed)
-
-        const statsInput: PlayerStatsInput = {
-            stats: (playerStat.stats as Record<string, number>) ?? {},
-            rating: playerStat.rating,
-            minutesPlayed: playerStat.minutesPlayed,
-        }
-
-        const { totalPoints, breakdown } = calculatePlayerPoints(statsInput, rules, isCleanSheet)
 
         await prisma.playerFixturePoints.upsert({
             where: { playerId_fixtureId: { playerId: playerStat.playerId, fixtureId } },
-            update: { points: totalPoints, breakdown },
-            create: { playerId: playerStat.playerId, fixtureId, points: totalPoints, breakdown },
+            update: { points: result.totalPoints, breakdown: result.breakdown },
+            create: { playerId: playerStat.playerId, fixtureId, points: result.totalPoints, breakdown: result.breakdown },
         })
         calculated++
     }
