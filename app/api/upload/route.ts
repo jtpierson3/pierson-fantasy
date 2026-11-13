@@ -1,21 +1,13 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import { put } from '@vercel/blob'
-import { prisma } from '@/lib/prisma'
+import { requireSiteAdmin } from '@/lib/apiAuth'
 
 export const runtime = 'nodejs'
 
 export async function POST(req: Request) {
     try{
-        const { userId: clerkId } = await auth()
-        if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-        const currentUser = await prisma.user.findUnique({
-            where: { clerkId }
-        })
-        if (!currentUser?.isSiteAdmin) {
-            return NextResponse.json({ error: 'Unauthorized ' }, { status: 401 })
-        }
+        const authResult = await requireSiteAdmin()
+        if (!authResult.ok) return NextResponse.json({ error: authResult.error }, { status: authResult.status })
 
         const form = await req.formData()
         const file = form.get('file') as File
