@@ -8,6 +8,7 @@ import ClaimModal from '@/app/components/ClaimModal'
 import FuturePlayerSearch from '@/app/components/FuturePlayerSearch'
 import TransferBidModal from '@/app/components/TransferBidModal'
 import type { WaiverClaimBadge } from '@/lib/waiverClaimStatus'
+import { minBidFor } from '@/lib/leagueRules'
 
 type SearchPlayer = {
   id: number
@@ -73,9 +74,6 @@ function WaiversTabInner({ team, initialClaims, initialBids, availableFunds }: P
 
   const [raisingBid, setRaisingBid] = useState<BidStatus | null>(null)
   const [biddingClaim, setBiddingClaim] = useState<ClaimStatus | null>(null)
-
-  const MIN_STARTING_BID = 1_000_000
-  const bidMinFor = (highBid: number | null) => highBid ? Math.floor(highBid / 1_000_000) * 1_000_000 + 1_000_000 : MIN_STARTING_BID
 
   useEffect(() => {
       const timeout = setTimeout(async () => {
@@ -291,7 +289,7 @@ function WaiversTabInner({ team, initialClaims, initialBids, availableFunds }: P
                     })()}
                     {(() => {
                       const contested = claim.badge === 'losing' || claim.badge === 'losing-to-bid'
-                      const canAfford = availableFunds >= bidMinFor(claim.currentHighBid)
+                      const canAfford = availableFunds >= minBidFor(claim.currentHighBid)
                       if (!contested && !claim.hasForeignBid) return null
                       if (claim.myBidAmount !== null) {
                         return (

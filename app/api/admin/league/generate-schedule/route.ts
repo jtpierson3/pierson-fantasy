@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
-
-const TOTAL_WEEKS = 38
+import { PREMIER_LEAGUE_GAMEWEEKS } from '@/lib/leagueRules'
 
 function generateRoundRobinRounds(teamIds: string[]): { home: string; away: string}[][] {
     const teams = [...teamIds]
@@ -88,7 +87,7 @@ export async function POST(req: Request) {
             })
             if (claimed.count === 0) return false
 
-            for (let week = 1; week <= TOTAL_WEEKS; week++) {
+            for (let week = 1; week <= PREMIER_LEAGUE_GAMEWEEKS; week++) {
                 const roundMatches = rounds[(week - 1) % weeksPerCycle]
 
                 //TODO: THIS HAS TO BE ADJESTED TO WORK WITH THE FIXTURE SCHEDULE OF THE LEAGUE
@@ -122,7 +121,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Schedule has already been generated for this league.' }, { status: 400 })
         }
 
-        return NextResponse.json({ success: true, weeksGenerated: TOTAL_WEEKS })
+        return NextResponse.json({ success: true, weeksGenerated: PREMIER_LEAGUE_GAMEWEEKS })
     } catch (err) {
         console.error('[generate-schedule] error: ', err)
         return NextResponse.json({ error: 'Failed to generate schedule' }, { status: 500 })

@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { validateBidAmount } from '@/lib/transferBidValuation'
 import { getWaiverWindowStatus } from '@/lib/fixtureTiming'
+import { MAX_NON_IR_ROSTER } from '@/lib/leagueRules'
 
 export async function POST(req: Request) {
     try {
@@ -42,7 +43,7 @@ export async function POST(req: Request) {
 
         // Roster fullness check - same rule as normal waivers
         const rosteredCount = team.players.filter(p => p.rosterSlot !== 'IR').length
-        if (rosteredCount >= 23 && !playerToDropId) {
+        if (rosteredCount >= MAX_NON_IR_ROSTER && !playerToDropId) {
             return NextResponse.json({ error: 'Roster full - must select a player to drop' }, { status: 400 })
         }
         if (playerToDropId) {

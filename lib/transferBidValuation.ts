@@ -1,5 +1,4 @@
-const MIN_STARTING_BID = 1_000_000
-const MIN_RAISE = 1_000_000
+import { MIN_STARTING_BID, MIN_RAISE, minBidFor } from './leagueRules'
 
 export type BidValidationResult = { valid: true } | { valid: false; error: string }
 
@@ -29,8 +28,7 @@ export function validateBidAmount(
         return { valid: true }
     }
 
-    const flooredCurrentHigh = Math.floor(currentHighBidAmount / MIN_RAISE) * MIN_RAISE
-    const minRequired = flooredCurrentHigh + MIN_RAISE
+    const minRequired = minBidFor(currentHighBidAmount)
 
     if (amount < minRequired && !isAllIn) {
         return { valid: false, error: `Bids must raise by at least ${MIN_RAISE}`}

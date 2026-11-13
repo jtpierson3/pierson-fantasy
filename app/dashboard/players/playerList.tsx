@@ -11,6 +11,7 @@ import { isPremierLeagueEligible } from "@/lib/playerEligibility"
 import { normalizeForSearch } from '@/lib/textNormalization'
 import type { PlayerListItem, PlayerListTeam } from '@/lib/playerTypes'
 import { getPositionShort, getPositionColor, POSITION_ID } from '@/lib/positions'
+import { MAX_NON_IR_ROSTER } from '@/lib/leagueRules'
 
 type MyTeamSummary = {
     id: string
@@ -97,7 +98,7 @@ export default function PlayerList({ players, teams, myFantasyTeam, ownerByPlaye
         [myFantasyTeam]
     )
 
-    const atRosterLimit = myRosteredCount >= 23
+    const atRosterLimit = myRosteredCount >= MAX_NON_IR_ROSTER
 
     function hasMyPendingClaim(playerId: number) {
         return myPendingClaimSet.has(playerId)
@@ -514,7 +515,7 @@ export default function PlayerList({ players, teams, myFantasyTeam, ownerByPlaye
                             Add {addingPlayer.display_name}
                         </h3>
                         <p className="text-sm text-gray-500 mb-4">
-                            Your roster is full (23 players). Drop a player to make room.
+                            Your roster is full ({MAX_NON_IR_ROSTER} players). Drop a player to make room.
                         </p>
 
                         <select

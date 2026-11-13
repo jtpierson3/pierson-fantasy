@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { MAX_NON_IR_ROSTER, MIN_RAISE, minBidFor } from '@/lib/leagueRules'
 
 type RosterPlayer = {
     id: string
@@ -33,18 +34,16 @@ export default function TransferBidModal({
 }: Props) {
     const router = useRouter()
     const [amount, setAmount] = useState(
-        existingBidAmount?.toString() ?? (currentHighBid? '' : '1000000')
+        existingBidAmount?.toString() ?? (currentHighBid? '' : minBidFor(null).toString())
     )
     const [dropPlayerId, setDropPlayerId] = useState('')
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
     const nonIrCount = rosterPlayers.filter(p => p.rosterSlot !== 'IR').length
-    const rosterFull = nonIrCount >= 23
+    const rosterFull = nonIrCount >= MAX_NON_IR_ROSTER
 
-    const minRequired = currentHighBid
-        ? Math.floor(currentHighBid / 1_000_000) * 1_000_000 + 1_000_000
-        : 1_000_000
+    const minRequired = minBidFor(currentHighBid)
 
     const handleGoAllIn = useCallback(() => {
         setAmount(availableFunds.toString())
@@ -110,7 +109,7 @@ export default function TransferBidModal({
                     <div className="flex gap-2">
                         <input 
                             type="number"
-                            step="1000000"
+                            step={MIN_RAISE}
                             value={amount}
                             onChange={e => setAmount(e.target.value)}
                             className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-900"

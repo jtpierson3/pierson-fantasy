@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
+import { MAX_NON_IR_ROSTER } from '@/lib/leagueRules'
 
 export async function POST(req: Request) {
     try {
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
 
         // Check Roster Limit
         const rosteredCount = fantasyTeam.players.filter(p => p.rosterSlot !== 'IR').length
-        if (rosteredCount >= 23 && !dropPlayerId) {
+        if (rosteredCount >= MAX_NON_IR_ROSTER && !dropPlayerId) {
             return NextResponse.json({ error: 'Roster full - drop a player first' }, { status: 400 })
         }
 

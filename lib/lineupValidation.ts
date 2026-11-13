@@ -1,7 +1,7 @@
 import { RosterSlot } from '@prisma/client'
 import { getFormationSlots, isSupportedFormation, type Formation } from '@/lib/formations'
+import { MAX_SUBS } from '@/lib/leagueRules'
 
-const MAX_SUBS = 5
 const VALID_SLOTS = new Set<string>(Object.values(RosterSlot))
 
 export type RosterEntry = { id: string; playerId: number }

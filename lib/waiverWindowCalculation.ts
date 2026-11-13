@@ -1,6 +1,7 @@
+import { LOCK_HOURS_BEFORE_KICKOFF } from '@/lib/leagueRules'
+
 export const WAIVER_TIMEZONE = 'America/Chicago'
 
-const LOCK_HOURS_BEFORE_KICKOFF = 2
 const EARLY_KICKOFF_HOUR_THRESHOLD = 9 // 9 am central is the cutoff, earlier starts close the evening before.
 const EARLY_CLOSE_HOUR = 17 // 5pm central previous day.
 

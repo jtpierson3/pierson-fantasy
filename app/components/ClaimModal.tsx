@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { MAX_NON_IR_ROSTER } from '@/lib/leagueRules'
 
 type RosterPlayer = {
     id: string
@@ -31,7 +32,7 @@ export default function ClaimModal({
     const [error, setError] = useState<string | null>(null)
 
     const nonIrCount = rosterPlayers.filter(p => p.rosterSlot !== 'IR').length
-    const rosterFull = nonIrCount >= 23
+    const rosterFull = nonIrCount >= MAX_NON_IR_ROSTER
 
     const handleSubmit = useCallback(async () => {
         if (rosterFull && !dropPlayerId) {
