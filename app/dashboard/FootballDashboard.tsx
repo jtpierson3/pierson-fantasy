@@ -50,7 +50,7 @@ export default async function FootballDashobard() {
     ] = await Promise.all([
         prisma.fantasyTeam.findMany({
             where: { fantasyLeagueId: myTeam.fantasyLeagueId },
-            select: { id: true, totalLeaguePoints: true, totalFantasyPoints: true }
+            select: { id: true, totalLeaguePoints: true, totalFantasyPoints: true, draftPosition: true }
         }),
         // Determine which gameweek's matchup to show, based on date proximity
         prisma.fantasyGameweek.findMany({

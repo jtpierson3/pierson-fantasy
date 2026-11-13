@@ -38,7 +38,7 @@ export default async function TransactionsPage({
 
     const leagueTeams = await prisma.fantasyTeam.findMany({
         where: { fantasyLeagueId: leagueId },
-        select: { id: true, name: true, totalLeaguePoints: true, totalFantasyPoints: true },
+        select: { id: true, name: true, totalLeaguePoints: true, totalFantasyPoints: true, draftPosition: true },
     })
     const standings = getLeagueStandings(leagueTeams)
     const teamNameById = new Map(leagueTeams.map(t => [t.id, t.name]))

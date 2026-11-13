@@ -25,7 +25,7 @@ async function buildTeamData(fantasyTeamId: string, gameweekId: string, fantasyL
 
     const leagueTeams = await prisma.fantasyTeam.findMany({
         where: { fantasyLeagueId },
-        select: { id: true, totalLeaguePoints: true, totalFantasyPoints: true }
+        select: { id: true, totalLeaguePoints: true, totalFantasyPoints: true, draftPosition: true }
     })
 
     const standings = getLeagueStandings(leagueTeams)

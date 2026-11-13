@@ -1,7 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import type { TeamWithRecord } from "./types"
+import type { TeamWithRecord } from './types'
+import { getLeagueStandings } from '@/lib/leagueStandings'
 
 type Props = {
     teams: TeamWithRecord[]
@@ -10,6 +11,7 @@ type Props = {
 
 export default function Standings({ teams, currentTeamId }: Props) {
     const router = useRouter()
+    const standings = getLeagueStandings(teams)
 
     return (
         <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
@@ -30,7 +32,7 @@ export default function Standings({ teams, currentTeamId }: Props) {
             </div>
 
             {/* Rows */}
-            {teams.map((team, index) => {
+            {standings.map(({ team, rank }) => {
                 const isCurrentTeam = team.id === currentTeamId
                 return (
                     <div
@@ -44,12 +46,12 @@ export default function Standings({ teams, currentTeamId }: Props) {
                     >
                         {/* Position */}
                         <div className={`col-span-1 font-medium ${
-                            index === 0 ? 'text-yellow-500' :
-                            index === 1 ? 'text-gray-400' :
-                            index === 2 ? 'text-amber-600' :
+                            rank === 1 ? 'text-yellow-500' :
+                            rank === 2 ? 'text-gray-400' :
+                            rank === 3 ? 'text-amber-600' :
                             'text-gray-400'
                         }`}>
-                            {index + 1}
+                            {rank}
                         </div>
 
                         {/* Team Name */}

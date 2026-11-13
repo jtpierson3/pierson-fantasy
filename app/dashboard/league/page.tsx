@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { redirect } from "next/navigation"
 import LeagueDashboard from "./leagueDashboard"
 import { LeagueWithData } from "./types"
+import { getLeagueStandings } from '@/lib/leagueStandings'
 
 function LeagueSkeleton() {
   return (
@@ -52,10 +53,6 @@ async function LeagueContent() {
           homeMatchups: true,
           awayMatchups: true,
         },
-        orderBy: [
-          { totalLeaguePoints: 'desc' },
-          { totalFantasyPoints: 'desc' },
-        ]
       },
       gameweeks: {
         include: {
@@ -94,9 +91,14 @@ async function LeagueContent() {
     )
   }
 
+  const leagueWithStandingsOrder = {
+    ...league,
+    teams: getLeagueStandings(league.teams).map(s => s.team),
+  }
+
   return (
     <LeagueDashboard 
-      league={league as unknown as LeagueWithData}
+      league={leagueWithStandingsOrder as unknown as LeagueWithData}
       currentTeamId={fantasyTeam.id}
     />
   )
