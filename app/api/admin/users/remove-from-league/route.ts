@@ -1,27 +1,14 @@
-import { NextResponse } from "next/server"
-import { auth } from '@clerk/nextjs/server'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { requireLeagueAdminOf } from '@/lib/apiAuth'
 
 export async function POST(req: Request) {
     try {
-        const { userId: clerkId } = await auth()
-        if (!clerkId) return NextResponse.json( { error: 'Unauthorized' }, { status: 401 })
-
-        const currentUser = await prisma.user.findUnique({
-            where: { clerkId },
-            include: { leagues: true}
-        })
-        if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
         const { userId, leagueId } = await req.json()
 
         //Verify current user is admin of this league
-        const isLeagueAdmin = currentUser.leagues.some(
-            m => m.fantasyLeagueId === leagueId && m.isAdmin
-        )
-        if (!isLeagueAdmin && !currentUser.isSiteAdmin) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
+        const authResult = await requireLeagueAdminOf(leagueId)
+        if (!authResult.ok) return NextResponse.json({ error: authResult.error }, { status: authResult.status })
 
         // Delete their fantasy team and players first
         const team = await prisma.fantasyTeam.findFirst({

@@ -1,27 +1,15 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { env } from '@/lib/env'
 import { createClerkClient } from '@clerk/backend'
+import { requireLeagueAdmin } from '@/lib/apiAuth'
 
 const clerk = createClerkClient({ secretKey: env.CLERK_SECRET_KEY })
 
 export async function POST(req: Request) {
     try {
-        const { userId: clerkId } = await auth()
-        if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-        const currentUser = await prisma.user.findUnique({
-            where: { clerkId },
-            include: {leagues: true }
-        })
-
-        if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-        const isLeagueAdmin = currentUser.leagues.some(m => m.isAdmin)
-        if (!currentUser.isSiteAdmin && !isLeagueAdmin) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
+        const authResult = await requireLeagueAdmin()
+        if (!authResult.ok) return NextResponse.json({ error: authResult.error, status: authResult.status })
 
         const { email, username } = await req.json()
 
