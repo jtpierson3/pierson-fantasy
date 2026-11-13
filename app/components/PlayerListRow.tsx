@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import { getPositionShort, getPositionColor } from '@/lib/helpers'
+import { getPositionShort, getPositionColor } from '@/lib/positions'
 import { isPremierLeagueEligible } from '@/lib/playerEligibility'
 import type { DisplayPlayer, DisplayTeam } from '@/lib/playerTypes'
 

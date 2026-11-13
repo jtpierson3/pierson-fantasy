@@ -1,4 +1,5 @@
 import { getPositionType, toScoringPosition } from '@/lib/formations'
+import { toBroadPositionId } from '@/lib/positions';
 
 export type PositionAnomaly = 'unexpected-position' | 'missing-position' | null
 
@@ -10,7 +11,7 @@ export function checkPositionAnomaly(
     // player didn't play --- nothing to flag
     if (minutesPlayed <= 0) return null
 
-    const broadPositionPlayedId = positionPlayedId === 24 ? 24 : null
+    const broadPositionPlayedId = toBroadPositionId(positionPlayedId)
     const playedType = getPositionType(positionPlayedId, broadPositionPlayedId)
     const playedBucket = toScoringPosition(playedType)
 

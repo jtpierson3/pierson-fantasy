@@ -6,6 +6,7 @@ import {
 import { qualifiesForCleanSheet } from '@/lib/scoringRules'
 import { getPositionType, toScoringPosition, type ScoringPosition } from '@/lib/formations'
 import { getTeamGoalsConceded, type FixtureSides } from '@/lib/goalsConceded'
+import { toBroadPositionId } from '@/lib/positions'
 
 /** Maps a ScoringRule database row to the shape calculatePlayerPoints takes. */
 export function toScoringRuleInput(rule: {
@@ -75,7 +76,7 @@ export function scorePlayerMatchStats(args: {
 }): PlayerMatchScore {
     const { positionPlayedId, matchTeamId, playerClubId, fixture, rating, minutesPlayed, rulesByPosition } = args
 
-    const broadPositionId = positionPlayedId === 24 ? 24 : null
+    const broadPositionId = toBroadPositionId(positionPlayedId)
     const positionType = getPositionType(positionPlayedId, broadPositionId)
     const scoringPosition = toScoringPosition(positionType)
     if (!scoringPosition) return { scored: false }

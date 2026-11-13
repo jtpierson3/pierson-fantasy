@@ -1,11 +1,26 @@
-// Sportmonks position id mapping
+/** The four broad Sportmonks positions */
+export const POSITION_ID = { GK: 24, DEF: 25, MID: 26, ATT: 27 } as const
+
+/**
+ * Sportmoks sometimes returns 24 (the broad "Goalkeeper" type) as a match's positionPlayedId
+ * instead of a detailed sub-position. For match context that is authoritative GK detection,
+ * whatever the player's stored position says.
+ */
+export const GOALKEEPER_POSITION_ID = POSITION_ID.GK
+
+/**
+ * The "broad position" argument getPositionType expects, derived from a match's positionPlayedId:
+ * 24 when it is the broad Goalkeeper id, otherwise null (a detailed position decides on its own).
+ */
+export function toBroadPositionId(positionPlayedId: number | null | undefined): 24 | null {
+    return positionPlayedId === GOALKEEPER_POSITION_ID ? GOALKEEPER_POSITION_ID : null
+}
 
 export const POSITIONS: Record<number, { name: string; short: string }> = {
-    24: { name: 'Goalkeeper', short: 'GK' },
-    25: { name: 'Defender', short: 'DEF' },
-    26: { name: 'Midfielder', short: 'MID' },
-    27: { name: 'Attacker', short: 'FWD' },
-    28: { name: 'Unknown', short: '?' },
+    [POSITION_ID.GK]: { name: 'Goalkeeper', short: 'GK' },
+    [POSITION_ID.DEF]: { name: 'Defender', short: 'DEF' },
+    [POSITION_ID.MID]: { name: 'Midfielder', short: 'MID' },
+    [POSITION_ID.ATT]: { name: 'Attacker', short: 'ATT' },
 }
 
 export const DETAILED_POSITIONS: Record<number, { name: string; short: string; parentPositionId: number }> = {
@@ -28,6 +43,17 @@ export function getPositionLabel(positionId: number | null | undefined): string 
 }
 
 export function getPositionShort(positionId: number | null | undefined): string {
-    if (!positionId) return '?'
-    return POSITIONS[positionId]?.short ?? '?'
+    if (!positionId) return 'N/A'
+    return POSITIONS[positionId]?.short ?? 'N/A'
+}
+
+const POSITION_COLORS: Record<number, string> = {
+    [POSITION_ID.GK]: 'bg-yellow-100 text-yellow-700',
+    [POSITION_ID.DEF]: 'bg-blue-100 text-blue-700',
+    [POSITION_ID.MID]: 'bg-green-100 text-green-700',
+    [POSITION_ID.ATT]: 'bg-red-100 text-red-700',
+}
+
+export function getPositionColor(positionId: number): string {
+    return POSITION_COLORS[positionId] ?? 'bg-gray-100 text-gray-500'
 }

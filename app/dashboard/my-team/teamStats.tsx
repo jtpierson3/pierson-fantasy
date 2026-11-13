@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import type { FantasyTeamWithPlayers } from './types'
 import PlayerListRow from '@/app/components/PlayerListRow'
+import { POSITION_ID } from '@/lib/positions'
 
 type Props = {
     team: FantasyTeamWithPlayers
@@ -12,17 +13,17 @@ type PositionFilter = 'ALL' | 'GK' | 'DEF' | 'MID' | 'ATT'
 
 const POSITION_FILTERS: { id: PositionFilter; label: string; positionId: number | null }[] = [
     { id: 'ALL', label: 'All', positionId: null },
-    { id: 'GK', label: 'GK', positionId: 24 },
-    { id: 'DEF', label: 'DEF', positionId: 25 },
-    { id: 'MID', label: 'MID', positionId: 26 },
-    { id: 'ATT', label: 'ATT', positionId: 27 },
+    { id: 'GK', label: 'GK', positionId: POSITION_ID.GK },
+    { id: 'DEF', label: 'DEF', positionId: POSITION_ID.DEF },
+    { id: 'MID', label: 'MID', positionId: POSITION_ID.MID },
+    { id: 'ATT', label: 'ATT', positionId: POSITION_ID.ATT },
 ]
 
 const POSITION_GROUPS = [
-    { label: 'Goalkeepers', positionId: 24 },
-    { label: 'Defenders', positionId: 25 },
-    { label: 'Midfielders', positionId: 26 },
-    { label: 'Attackers', positionId: 27 },
+    { label: 'Goalkeepers', positionId: POSITION_ID.GK },
+    { label: 'Defenders', positionId: POSITION_ID.DEF },
+    { label: 'Midfielders', positionId: POSITION_ID.MID },
+    { label: 'Attackers', positionId: POSITION_ID.ATT },
 ]
 
 export default function TeamStats({ team }: Props) {

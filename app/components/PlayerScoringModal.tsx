@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
+import { GOALKEEPER_POSITION_ID } from '@/lib/positions'
 
 export type ScoringBreakdownLine = {
     label: string
@@ -11,7 +12,7 @@ export type ScoringBreakdownLine = {
 }
 
 const POSITION_OPTIONS = [
-    { label: 'Goalkeeper', detailedPositionId: 24 },
+    { label: 'Goalkeeper', detailedPositionId: GOALKEEPER_POSITION_ID },
     { label: 'Center Back', detailedPositionId: 148 },
     { label: 'Right Back', detailedPositionId: 154 },
     { label: 'Left Back', detailedPositionId: 155 },

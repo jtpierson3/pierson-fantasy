@@ -7,6 +7,7 @@ import PlayerCard from '@/app/components/playerCard'
 import { assignRealMatchLineup } from '@/lib/realMatchLineupAssignment'
 import  PlayerScoringModal from '@/app/components/PlayerScoringModal'
 import { checkPositionAnomaly } from '@/lib/positionAnomaly'
+import { toBroadPositionId } from '@/lib/positions'
 
 type RealPlayer = {
   id: string
@@ -109,7 +110,7 @@ function TeamPitchHalf({ teamName, formation, players, mirrored, borderColorHex,
       id: p.id,
       playerId: p.playerId,
       positionPlayedId: p.positionPlayedId,
-      broadPositionId: p.positionPlayedId === 24 ? 24 : null,
+      broadPositionId: toBroadPositionId(p.positionPlayedId),
       original: p
     }))
   )

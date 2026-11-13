@@ -4,13 +4,13 @@ import { useState, useMemo, useCallback } from "react"
 import Image from 'next/image'
 import Link from 'next/link'
 import { getTeamColor, getTintBackground } from '@/lib/colors'
-import { getPositionShort, getPositionColor } from '@/lib/helpers'
 import { useRouter } from 'next/navigation'
 import ClaimModal from '@/app/components/ClaimModal'
 import FuturePlayerSearch from "@/app/components/FuturePlayerSearch"
 import { isPremierLeagueEligible } from "@/lib/playerEligibility"
 import { normalizeForSearch } from '@/lib/textNormalization'
 import type { PlayerListItem, PlayerListTeam } from '@/lib/playerTypes'
+import { getPositionShort, getPositionColor, POSITION_ID } from '@/lib/positions'
 
 type MyTeamSummary = {
     id: string
@@ -37,10 +37,7 @@ type PositionFilter = 'ALL' | 'GK' | 'DEF' | 'MID' | 'ATT'
 
 const POSITION_IDS: Record<PositionFilter, number | null> = {
     ALL: null,
-    GK: 24,
-    DEF: 25,
-    MID: 26,
-    ATT: 27
+    ...POSITION_ID,
 }
 
 export default function PlayerList({ players, teams, myFantasyTeam, ownerByPlayerId, draftComplete, myPendingClaimPlayerIds, scores }: Props) {

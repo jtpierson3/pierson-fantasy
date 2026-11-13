@@ -1,3 +1,5 @@
+import { GOALKEEPER_POSITION_ID } from '@/lib/positions'
+
 // Position type keys used in formation system
 export type PositionType = 'GK' | 'CB' | 'FB' | 'CM' | 'W' | 'ST'
 
@@ -340,7 +342,7 @@ export function getPositionType (
     detailedPositionId: number | null | undefined,
     broadPositionId?: number | null
 ) : PositionType | null {
-    if (broadPositionId === 24) return 'GK'
+    if (broadPositionId === GOALKEEPER_POSITION_ID) return 'GK'
     if (!detailedPositionId) return null
     return DETAILED_POSITION_MAP[detailedPositionId] ?? null
 }
