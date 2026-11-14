@@ -1,17 +1,15 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { validateBidAmount } from '@/lib/transferBidValuation'
 import { getWaiverWindowStatus } from '@/lib/fixtureTiming'
 import { MAX_NON_IR_ROSTER } from '@/lib/leagueRules'
+import { requireUser } from '@/lib/apiAuth'
 
 export async function POST(req: Request) {
     try {
-        const { userId: clerkId } = await auth()
-        if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-        const user = await prisma.user.findUnique({ where: { clerkId } })
-        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        const authResult = await requireUser()
+        if (!authResult.ok) return NextResponse.json({ error: authResult.error }, { status: authResult.status })
+        const user = authResult.user
 
         const { fantasyTeamId, playerId, amount, playerToDropId } = await req.json()
 
