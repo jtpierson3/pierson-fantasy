@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireUser } from '@/lib/apiAuth'
+import { normalizeSearchQuery, toPlayerSearchResult, PLAYER_SEARCH_LIMIT } from '@/lib/playerSearch'
 
 export async function GET(req: Request) {
     try {
@@ -8,8 +9,8 @@ export async function GET(req: Request) {
         if (!authResult.ok) return NextResponse.json({ error: authResult.error }, { status: authResult.status })
 
         const { searchParams } = new URL(req.url)
-        const q = searchParams.get('q')?.trim()
-        if (!q || q.length < 2) return NextResponse.json({ players: [] })
+        const q = normalizeSearchQuery(searchParams.get('q'))
+        if (!q) return NextResponse.json({ players: [] })
 
         const matches = await prisma.player.findMany({
             where: {
@@ -19,19 +20,11 @@ export async function GET(req: Request) {
                 ]
             },
             include: { team: true },
-            take: 10,
+            take: PLAYER_SEARCH_LIMIT,
             orderBy: { display_name: 'asc' }
         })
 
-        return NextResponse.json({
-            players: matches.map(p => ({
-                id: p.id,
-                display_name: p.display_name,
-                image_path: p.image_path,
-                team: p.team ? { id: p.team.id, name: p.team.name, image_path: p.team.image_path, leagueId: p.team.leagueId } : null,
-                currentClubName: p.currentClubName
-            }))
-        })
+        return NextResponse.json({ players: matches.map(toPlayerSearchResult) })
     } catch (err) {
         console.error('[search-local-players] error:', err)
         return NextResponse.json({ error: 'Failed to search players' }, { status: 500 })

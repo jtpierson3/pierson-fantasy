@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireUser } from '@/lib/apiAuth'
+import { normalizeSearchQuery, toPlayerSearchResult, PLAYER_SEARCH_LIMIT } from '@/lib/playerSearch'
 
 export async function GET(req: Request) {
     try {
@@ -8,10 +9,10 @@ export async function GET(req: Request) {
         if (!authResult.ok) return NextResponse.json({ error: authResult.error }, { status: authResult.status })
 
         const { searchParams } = new URL(req.url)
-        const q = searchParams.get('q') ?? ''
+        const q = normalizeSearchQuery(searchParams.get('q'))
         const fantasyLeagueId = searchParams.get('fantasyLeagueId')
 
-        if (!fantasyLeagueId || q.length < 2) {
+        if (!fantasyLeagueId || !q) {
             return NextResponse.json({ players: [] })
         }
 
@@ -28,11 +29,11 @@ export async function GET(req: Request) {
                 id: { notIn: rosteredPlayerIds }
             },
             include: { team: true },
-            take: 10,
+            take: PLAYER_SEARCH_LIMIT,
             orderBy: { display_name: 'asc'}
         })
 
-        return NextResponse.json({ players })
+        return NextResponse.json({ players: players.map(toPlayerSearchResult) })
     } catch (err) {
         console.error('[waivers/search-players] error:', err)
         return NextResponse.json({ error: 'Failed to search players' }, { status: 500 })
