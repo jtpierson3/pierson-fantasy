@@ -2,29 +2,6 @@ import { env } from '@/lib/env'
 
 const BASE_URL = 'https://api.sportmonks.com/v3/football'
 
-export const LEAGUE_ID = 8
-
-export type Season = {
-    id: number
-    name: string
-    finished: boolean
-    pending: boolean
-    is_current: boolean
-    starting_at: string
-    ending_at: string
-}
-
-export type Round = {
-  id: number
-  name: string
-  finished: boolean
-  is_current: boolean
-  starting_at: string
-  ending_at: string
-  league_id: number
-  season_id: number
-}
-
 export type SquadMember = {
     position_id: number | null
     detailed_position_id: number | null
@@ -71,12 +48,6 @@ export type Fixture = {
   stage: { name: string } | null
   participants: Participant[]
   scores: Score[]
-}
-
-export type League = {
-    id: number
-    name: string
-    currentseason: Season
 }
 
 export type TeamSummary = {
@@ -162,6 +133,9 @@ type SportmonksFetchResult<T> = {
     remaining: number | null
 }
 
+// Most pages a paginated fetch will follow before giving up (see the warning in the loop below)
+const MAX_PAGES = 40
+
 async function sportmonksFetchPaginatedWithMeta<T>(
     endpoint: string,
     revalidate = 60
@@ -182,7 +156,10 @@ async function sportmonksFetchPaginatedWithMeta<T>(
         page++
 
         // Safety Valve
-        if (page > 40) break
+        if (hasMore && page > MAX_PAGES) {
+            console.warn(`[sportmonks] ${endpoint} hit the ${MAX_PAGES}-page limit; results are truncated`)
+            break
+        }
     }
 
     return { data: allData, remaining }
@@ -217,57 +194,7 @@ export async function sportmonksFetchWithMeta(
     return { data: json, remaining}
 }
 
-export async function sportmonksFetch(endpoint: string, revalidate = 60, retries = 3): Promise<unknown> {
-    const result = await sportmonksFetchWithMeta(endpoint, revalidate, retries)
-    return result.data
-}
-
 const DAILY_RESET = 60*60*24
-
-export async function getCurrentSeason(): Promise<Season | null> {
-    const data = await sportmonksFetch(
-        `/leagues/${LEAGUE_ID}?include=currentseason`,
-        DAILY_RESET
-    ) as SportmonksResponse<League>
-    return data.data?.currentseason ?? null
-}
-
-export async function getRounds(seasonId: number): Promise<Round[]> {
-    const data = await sportmonksFetch(
-        `/rounds/seasons/${seasonId}`,
-        DAILY_RESET
-    ) as SportmonksListResponse<Round>
-    return data.data ?? []
-}
-
-async function sportmonksFetchPaginated<T>(endpoint: string, revalidate = 60): Promise<T[]> {
-    let allData: T[] = []
-    let page = 1
-    let hasMore = true
-
-    while (hasMore) {
-        const separator = endpoint.includes('?') ? '&' : '?'
-        const pageUrl = `${endpoint}${separator}page=${page}`
-        const result = await sportmonksFetch(pageUrl, revalidate) as SportmonksPaginatedResponse<T>
-
-        allData = allData.concat(result.data ?? [])
-        hasMore = result.pagination?.has_more ?? false
-        page++
-
-        // Safety Valve - avoid infinite loops if something goes wrong
-        if (page > 40) break
-    }
-
-    return allData
-}
-
-// Fetch all fixtures for a given league/season, for the fixtures sync route
-export async function getFixturesBySeason(seasonId: number): Promise<Fixture[]> {
-    return await sportmonksFetchPaginated<Fixture>(
-        `/fixtures?filters=fixtureSeasons:${seasonId}&include=participants;scores;venue;state;round;stage&per_page=50`,
-        DAILY_RESET
-    )
-}
 
 export async function getSquad(seasonId: number, teamId: number): Promise<{ squad: SquadMember[]; remaining: number | null}> {
     const { data, remaining } = await sportmonksFetchWithMeta(
