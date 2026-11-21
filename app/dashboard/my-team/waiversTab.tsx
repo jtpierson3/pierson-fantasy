@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useAction } from '@/app/hooks/useAction'
+import { postJson } from '@/lib/clientApi'
 import Image from 'next/image'
 import type { FantasyTeamWithPlayers } from './types'
 import ClaimModal from '@/app/components/ClaimModal'
@@ -62,14 +63,14 @@ export default function WaiversTab({ team, initialClaims, initialBids, available
 }
 
 function WaiversTabInner({ team, initialClaims, initialBids, availableFunds }: Props) {
-  const router = useRouter()
+  const reorder = useAction()
+  const cancel = useAction()
   const [search, setSearch] = useState('')
   const [results, setResults] = useState<SearchPlayer[]>([])
   const [searching, setSearching] = useState(false)
   const [claimingPlayer, setClaimingPlayer] = useState<SearchPlayer | null>(null)
 
   const [orderedClaims, setOrderedClaims] = useState(initialClaims)
-  const [savingOrder, setSavingOrder] = useState(false)
   const [orderDirty, setOrderDirty] = useState(false)
 
   const [raisingBid, setRaisingBid] = useState<BidStatus | null>(null)
@@ -106,44 +107,21 @@ function WaiversTabInner({ team, initialClaims, initialBids, availableFunds }: P
     setOrderDirty(true)
   }
 
-  const saveOrder = async () => {
-    setSavingOrder(true)
-    try {
-      const res = await fetch('/api/waivers/reorder', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fantasyTeamId: team.id,
-          orderedClaimIds: orderedClaims.map(c => c.id)
-        })
-      })
-      if (!res.ok) throw new Error('Failed to save order')
-      setOrderDirty(false)
-      router.refresh()
-    } catch {
-      // handle error
-    } finally {
-      setSavingOrder(false)
-    }
-  }
+  const saveOrder = () =>
+    reorder.run(
+      () => postJson('/api/waivers/reorder', {
+        fantasyTeamId: team.id,
+        orderedClaimIds: orderedClaims.map(c => c.id),
+      }),
+      { onSuccess: () => setOrderDirty(false) }
+    )
 
   const [cancellingId, setCancellingId] = useState<string | null>(null)
 
   const cancelClaim = async (claimId: string) => {
     setCancellingId(claimId)
-    try {
-      const res = await fetch('/api/waivers/cancel', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ claimId })
-      })
-      if (!res.ok) throw new Error('Failed to cancel claim')
-      router.refresh()
-    } catch {
-      //handle error
-    } finally {
-      setCancellingId(null)
-    }
+    await cancel.run(() => postJson('/api/waivers/cancel', { claimId }))
+    setCancellingId(null)
   }
 
   return (
@@ -207,13 +185,16 @@ function WaiversTabInner({ team, initialClaims, initialBids, availableFunds }: P
       <div>
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-sm font-medium text-gray-900 mb-2">Your Pending Claims</h2>
+          {(reorder.error || cancel.error) && (
+            <p className="text-xs text-red-600 mb-2">{reorder.error ?? cancel.error}</p>
+          )}
           {orderDirty && (
             <button
               onClick={saveOrder}
-              disabled={savingOrder}
+              disabled={reorder.pending}
               className="text-xs px-3 py-1.5 rounded-lg bg-green-700 text-white hover:bg-green-600 transition-colors disabled:opacity-50 font-medium"
             >
-              {savingOrder ? 'Saving...' : 'Save Order'}
+              {reorder.pending ? 'Saving...' : 'Save Order'}
             </button>
           )}
         </div>

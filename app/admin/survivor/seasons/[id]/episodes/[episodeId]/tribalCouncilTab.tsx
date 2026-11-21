@@ -2,6 +2,9 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import ConfirmDialog from '@/app/components/ConfirmDialog'
+import { useConfirmAction } from '@/app/hooks/useConfirmAction'
+import { postJson } from '@/lib/clientApi'
 
 type Contestant = {
   id: string
@@ -61,12 +64,6 @@ const ADVANTAGE_TYPES = [
 
 type Step = 'advantages' | 'votes' | 'eliminated'
 
-type ConfirmDialog = {
-  title: string
-  message: string
-  onConfirm: () => void
-} | null
-
 export default function TribalCouncilTab({ episode, contestants }: Props) {
   const router = useRouter()
   const [showAdd, setShowAdd] = useState(false)
@@ -74,8 +71,7 @@ export default function TribalCouncilTab({ episode, contestants }: Props) {
   const [isFinalTribal, setIsFinalTribal] = useState(false)
   const [notes, setNotes] = useState('')
   const [formLoading, setFormLoading] = useState(false)
-  const [confirm, setConfirm] = useState<ConfirmDialog>(null)
-  const [confirmLoading, setConfirmLoading] = useState(false)
+  const { ask: askConfirm, dialogProps: confirmDialogProps } = useConfirmAction()
 
   // Active tribal entry state
   const [activeTribalId, setActiveTribalId] = useState<string | null>(null)
@@ -254,28 +250,14 @@ export default function TribalCouncilTab({ episode, contestants }: Props) {
   }, [episode.id, episode.tribalCouncils.length, isFiremaking, isFinalTribal, notes, router])
 
   const handleDeleteTribal = useCallback((tribal: TribalCouncil) => {
-    setConfirm({
+    askConfirm({
       title: 'Delete tribal council',
       message: 'Delete this tribal council? All votes will be removed.',
-      onConfirm: async () => {
-        setConfirmLoading(true)
-        try {
-          const res = await fetch('/api/admin/survivor/tribal/delete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tribalCouncilId: tribal.id })
-          })
-          if (!res.ok) throw new Error('Failed to delete')
-          router.refresh()
-        } catch {
-          // handle error
-        } finally {
-          setConfirmLoading(false)
-          setConfirm(null)
-        }
-      }
+      action: () => postJson('/api/admin/survivor/tribal/delete', {
+        tribalId: tribal.id,
+      })
     })
-  }, [router])
+  }, [askConfirm])
 
   const getContestantName = (id: string) =>
     contestants.find(c => c.id === id)?.survivorPlayer.name ?? 'Unknown'
@@ -792,20 +774,7 @@ export default function TribalCouncilTab({ episode, contestants }: Props) {
       )}
 
       {/* Confirm dialog */}
-      {confirm && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 max-w-md w-full shadow-xl">
-            <h3 className="text-base font-medium text-white mb-2">{confirm.title}</h3>
-            <p className="text-sm text-gray-400 mb-6">{confirm.message}</p>
-            <div className="flex gap-3 justify-end">
-              <button onClick={() => setConfirm(null)} disabled={confirmLoading} className="px-4 py-2 text-sm rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors disabled:opacity-50">Cancel</button>
-              <button onClick={confirm.onConfirm} disabled={confirmLoading} className="px-4 py-2 text-sm rounded-lg bg-red-700 text-white hover:bg-red-600 transition-colors disabled:opacity-50">
-                {confirmLoading ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog {...confirmDialogProps} />
     </div>
   )
 }

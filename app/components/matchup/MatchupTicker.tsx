@@ -36,19 +36,25 @@ export default function MatchupTicker({
 }: Props) {
     const router = useRouter()
     const [switchingGameweek, setSwitchingGameweek] = useState(false)
+    const [switchError, setSwitchError] = useState<string | null>(null)
 
     const handleGameweekChange = useCallback(async (gameweekId: string) => {
         setSwitchingGameweek(true)
+        setSwitchError(null)
         try {
             const res = await fetch(
                 `/api/league/find-my-matchup?leagueId=${fantasyLeagueId}&gameweekId=${gameweekId}`
             )
-            const data = await res.json()
-            if (res.ok && data.matchupId) {
+            const data = await res.json().catch(() => null)
+            if (res.ok && data?.matchupId) {
                 router.push(`/dashboard/league/matchup/${data.matchupId}`)
+            } else {
+                setSwitchError(
+                    typeof data?.error === 'string' ? data.error : "Couldn't find your matchup for that gameweek."
+                )
             }
-        } catch (err) {
-            console.error('Failed to switch gameweek:', err)
+        } catch {
+            setSwitchError('Network error. Check your connection and try again.')
         } finally {
             setSwitchingGameweek(false)
         }
@@ -73,6 +79,7 @@ export default function MatchupTicker({
                         </option>
                     ))}
                 </select>
+                {switchError && <p className="text-xs text-red-600 ml-2">{switchError}</p>}
             </div>
 
             {/* Ticker - other matchups this gameweek */}

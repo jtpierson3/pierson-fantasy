@@ -4,6 +4,9 @@ import { useState, useCallback } from 'react'
 import React from 'react'
 import { useRouter } from 'next/navigation'
 import Link  from 'next/link'
+import ConfirmDialog from '@/app/components/ConfirmDialog'
+import { useConfirmAction } from '@/app/hooks/useConfirmAction'
+import { postJson } from '@/lib/clientApi'
 
 type Episode = {
   id: string
@@ -45,12 +48,6 @@ const emptyForm: EpisodeForm = {
   description: ''
 }
 
-type ConfirmDialog = {
-  title: string
-  message: string
-  onConfirm: () => void
-} | null
-
 function Toggle( { label, value, onChange }: { 
     label: string 
     value: boolean 
@@ -76,8 +73,7 @@ export default function EpisodesTab({ season }: Props) {
   const [form, setForm] = useState<EpisodeForm>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
   const [formLoading, setFormLoading] = useState(false)
-  const [confirm, setConfirm] = useState<ConfirmDialog>(null)
-  const [confirmLoading, setConfirmLoading] = useState(false)
+  const { ask: askConfirm, dialogProps: confirmDialogProps } = useConfirmAction()
 
   const openAdd = useCallback(() => {
     setForm({
@@ -149,28 +145,14 @@ export default function EpisodesTab({ season }: Props) {
   }, [form, editingEpisode, season.id, router])
 
   const handleDelete = useCallback((episode: Episode) => {
-    setConfirm({
+    askConfirm({
       title: 'Delete episode',
       message: `Delete Episode ${episode.number}: ${episode.name}? All scoring stats for this episode will also be deleted.`,
-      onConfirm: async () => {
-        setConfirmLoading(true)
-        try {
-          const res = await fetch('/api/admin/survivor/episodes/delete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ episodeId: episode.id })
-          })
-          if (!res.ok) throw new Error('Failed to delete episode')
-          router.refresh()
-        } catch {
-          // handle error
-        } finally {
-          setConfirmLoading(false)
-          setConfirm(null)
-        }
-      }
+      action: () => postJson('/api/admin/survivor/episodes/delete', {
+        episodeId: episode.id,
+      })
     })
-  }, [router])
+  }, [askConfirm])
 
   const isOpen = showAdd || !!editingEpisode
 
@@ -367,20 +349,7 @@ export default function EpisodesTab({ season }: Props) {
       )}
 
       {/* Confirm dialog */}
-      {confirm && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 max-w-md w-full shadow-xl">
-            <h3 className="text-base font-medium text-white mb-2">{confirm.title}</h3>
-            <p className="text-sm text-gray-400 mb-6">{confirm.message}</p>
-            <div className="flex gap-3 justify-end">
-              <button onClick={() => setConfirm(null)} disabled={confirmLoading} className="px-4 py-2 text-sm rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors disabled:opacity-50">Cancel</button>
-              <button onClick={confirm.onConfirm} disabled={confirmLoading} className="px-4 py-2 text-sm rounded-lg bg-red-700 text-white hover:bg-red-600 transition-colors disabled:opacity-50">
-                {confirmLoading ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog {...confirmDialogProps} />
     </div>
   )
 }

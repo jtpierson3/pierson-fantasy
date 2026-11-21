@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import {
   DndContext,
   DragOverlay,
@@ -27,6 +26,8 @@ import DraggableWrapper from '@/app/components/DraggableWrapper'
 import PlayerCard from '@/app/components/playerCard'
 import PlayerListRow from '@/app/components/PlayerListRow'
 import { isPremierLeagueEligible } from '@/lib/playerEligibility'
+import { useAction } from '@/app/hooks/useAction'
+import { postJson } from '@/lib/clientApi'
 
 type Props = {
   team: FantasyTeamWithPlayers
@@ -182,11 +183,11 @@ type SelectedPlayer = {
 } | null
 
 export default function SetLineup({ team, onUpdate, targetGameweek, targetGameweekLockTime, sidelinedByPlayerId }: Props) {
-  const router = useRouter()
   const [formation, setFormation] = useState<Formation>(team.formation as Formation)
   const [players, setPlayers] = useState(() => normalizeSlotOrder(team.players, team.formation as Formation))
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
+  const saveAction = useAction()
+  const runSave = saveAction.run
 
   const [selectedPlayer, setSelectedPlayer] = useState<SelectedPlayer>(null)
   const [targetSlot, setTargetSlot] = useState<string>('')
@@ -194,7 +195,8 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
 
   const [targetSlotIndex, setTargetSlotIndex] = useState<number>(0)
 
-  const [dropping, setDropping] = useState(false)
+  const dropAction = useAction()
+  const runDrop = dropAction.run
 
   const [now, setNow] = useState(() => new Date())
 
@@ -383,31 +385,21 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
 
   const handleSave = useCallback(async () => {
     if (isLocked || !targetGameweek) return
-    setSaving(true)
-    try {
-      const res = await fetch('/api/my-team/lineup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fantasyTeamId: team.id,
-          gameweekId: targetGameweek.id,
-          formation,
-          players: players.map(p => ({
-            id: p.id,
-            playerId: p.playerId,
-            rosterSlot: p.rosterSlot,
-            slotOrder: p.slotOrder,
-          }))
-        })
-      })
-      if (!res.ok) throw new Error('Failed to save')
-      onUpdate({ ...team, formation, players })
-    } catch (err) {
-      console.error('Saving Lineup Error:', err)
-    } finally {
-      setSaving(false)
-    }
-  }, [team, formation, players, onUpdate, isLocked, targetGameweek])
+    await runSave(
+      () => postJson('/api/my-team/lineup', {
+        fantasyTeamId: team.id,
+        gameweekId: targetGameweek.id,
+        formation,
+        players: players.map(p => ({
+          id: p.id,
+          playerId: p.playerId,
+          rosterSlot: p.rosterSlot,
+          slotOrder: p.slotOrder,
+        })),
+      }),
+      { onSuccess: () => onUpdate({ ...team, formation, players }), refresh: false }
+    )
+  }, [team, formation, players, onUpdate, isLocked, targetGameweek, runSave])
 
   function assignAllRows(
     rows: { label: string; slots: FormationSlot[] }[], 
@@ -490,32 +482,23 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
   const handleDrop = useCallback(async () => {
     if (!selectedPlayer) return
     const confirmed = window.confirm(`Drop ${selectedPlayer.fp.player.display_name} from your roster`)
-    if (!confirmed) return 
-    
-    setDropping(true)
-    try {
-      const res = await fetch('/api/fantasy/roster/drop', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fantasyTeamId: team.id,
-          playerId: selectedPlayer.fp.player.id
-        })
-      })
-      if (!res.ok) throw new Error('Failed to drop player')
+    if (!confirmed) return
 
-      // Remove immediately from local state so that the UI updates without
-      // waiting on a full server round-trip
-      setPlayers(prev => prev.filter(p => p.id !== selectedPlayer.fp.id))
-
-      setSelectedPlayer(null)
-      router.refresh()
-    } catch (err) {
-      console.error('Drop player error:', err)
-    } finally {
-      setDropping(false)
-    }
-  }, [selectedPlayer, team.id, router])
+    await runDrop(
+      () => postJson('/api/fantasy/roster/drop', {
+        fantasyTeamId: team.id,
+        playerId: selectedPlayer.fp.player.id,
+      }),
+      {
+        // Remove immediately from local state so the UI updates without
+        // waiting on a full server round-trip
+        onSuccess: () => {
+          setPlayers(prev => prev.filter(p => p.id !== selectedPlayer.fp.id))
+          setSelectedPlayer(null)
+        },
+      }
+    )
+  }, [selectedPlayer, team.id, runDrop])
   
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 1000)
@@ -565,11 +548,12 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
           </div>
           <button
             onClick={handleSave}
-            disabled={saving}
+            disabled={saveAction.pending}
             className="px-4 py-2 text-sm font-medium bg-green-800 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
           >
-            {saving ? 'Saving...' : 'Save Lineup'}
+            {saveAction.pending ? 'Saving...' : 'Save Lineup'}
           </button>
+          {saveAction.error && <p className="text-xs text-red-600">{saveAction.error}</p>}
         </div>
 
         {targetGameweek && lockDate && (
@@ -836,11 +820,12 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
 
                     <button
                       onClick={handleDrop}
-                      disabled={dropping}
+                      disabled={dropAction.pending}
                       className="w-full py-2 text-sm rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 font-medium"
                     >
-                      {dropping ? 'Dropping...' : 'Drop Player'}
+                      {dropAction.pending ? 'Dropping...' : 'Drop Player'}
                     </button>
+                    {dropAction.error && <p className="text-xs text-red-600">{dropAction.error}</p>}
                 </div>
             </div>
           )}

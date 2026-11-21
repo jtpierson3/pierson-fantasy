@@ -2,6 +2,9 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import ConfirmDialog from '@/app/components/ConfirmDialog'
+import { useConfirmAction } from '@/app/hooks/useConfirmAction'
+import { postJson } from '@/lib/clientApi'
 
 type Season = {
   id: string
@@ -46,13 +49,6 @@ type Props = {
   currentUserId: string
 }
 
-type ConfirmDialog = {
-  title: string
-  message: string
-  confirmLabel: string
-  onConfirm: () => void
-} | null
-
 export default function SurvivorLeaguesManager({
   leagues,
   seasons,
@@ -63,9 +59,7 @@ export default function SurvivorLeaguesManager({
   const [showCreate, setShowCreate] = useState(false)
   const [showAddMember, setShowAddMember] = useState<string | null>(null)
   const [editingLeague, setEditingLeague] = useState<League | null>(null)
-  const [confirm, setConfirm] = useState<ConfirmDialog>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { ask: askConfirm, dialogProps: confirmDialogProps } = useConfirmAction()
 
   // Create form
   const [createForm, setCreateForm] = useState({ name: '', survivorSeasonId: '' })
@@ -167,89 +161,43 @@ export default function SurvivorLeaguesManager({
   }, [showAddMember, selectedUserId, router])
 
   const handleRemoveMember = useCallback((league: League, member: Member) => {
-    setConfirm({
+    askConfirm({
       title: 'Remove member',
       message: `Remove ${member.user.username} from ${league.name}? Their tribe and picks will be deleted.`,
       confirmLabel: 'Remove',
-      onConfirm: async () => {
-        setLoading(true)
-        try {
-          const res = await fetch('/api/admin/survivor/leagues/remove-member', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              leagueId: league.id,
-              userId: member.user.id,
-            })
-          })
-          if (!res.ok) throw new Error('Failed to remove member')
-          router.refresh()
-        } catch {
-          setError('Failed to remove member')
-        } finally {
-          setLoading(false)
-          setConfirm(null)
-        }
-      }
+      action: () => postJson('/api/admin/survivor/leagues/remove-member', {
+        leagueId: league.id,
+        userId: member.user.id,
+      })
     })
-  }, [router])
+  }, [askConfirm])
 
   const handleToggleAdmin = useCallback((league: League, member: Member) => {
     const promoting = !member.isAdmin
-    setConfirm({
+    askConfirm({
       title: promoting ? 'Make league admin' : 'Remove league admin',
       message: promoting
         ? `Make ${member.user.username} a league admin?`
         : `Remove league admin from ${member.user.username}?`,
       confirmLabel: promoting ? 'Make admin' : 'Remove admin',
-      onConfirm: async () => {
-        setLoading(true)
-        try {
-          const res = await fetch('/api/admin/survivor/leagues/toggle-admin', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              leagueId: league.id,
-              userId: member.user.id,
-              isAdmin: promoting,
-            })
-          })
-          if (!res.ok) throw new Error('Failed to update admin')
-          router.refresh()
-        } catch {
-          setError('Failed to update admin status')
-        } finally {
-          setLoading(false)
-          setConfirm(null)
-        }
-      }
+      action: () => postJson('/api/admin/survivor/leagues/toggle-admin', {
+        leagueId: league.id,
+        userId: member.user.id,
+        isAdmin: promoting,
+      })
     })
-  }, [router])
+  }, [askConfirm])
 
   const handleDeleteLeague = useCallback((league: League) => {
-    setConfirm({
+    askConfirm({
       title: 'Delete league',
       message: `Delete ${league.name}? All tribes and picks will be deleted. This cannot be undone.`,
       confirmLabel: 'Delete permanently',
-      onConfirm: async () => {
-        setLoading(true)
-        try {
-          const res = await fetch('/api/admin/survivor/leagues/delete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ leagueId: league.id })
-          })
-          if (!res.ok) throw new Error('Failed to delete league')
-          router.refresh()
-        } catch {
-          setError('Failed to delete league')
-        } finally {
-          setLoading(false)
-          setConfirm(null)
-        }
-      }
+      action: () => postJson('/api/admin/survivor/leagues/delete', {
+        leagueId: league.id,
+      })
     })
-  }, [router])
+  }, [askConfirm])
 
   return (
     <div>
@@ -266,13 +214,6 @@ export default function SurvivorLeaguesManager({
           + Create League
         </button>
       </div>
-
-      {/* Error */}
-      {error && (
-        <div className="bg-red-900/30 border border-red-800 rounded-lg px-4 py-3 mb-4 text-sm text-red-400">
-          {error}
-        </div>
-      )}
 
       {/* Leagues */}
       {leagues.length === 0 && (
@@ -565,30 +506,7 @@ export default function SurvivorLeaguesManager({
       )}
 
       {/* Confirm dialog */}
-      {confirm && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 max-w-md w-full shadow-xl">
-            <h3 className="text-base font-medium text-white mb-2">{confirm.title}</h3>
-            <p className="text-sm text-gray-400 mb-6">{confirm.message}</p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setConfirm(null)}
-                disabled={loading}
-                className="px-4 py-2 text-sm rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800 transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirm.onConfirm}
-                disabled={loading}
-                className="px-4 py-2 text-sm rounded-lg bg-red-700 text-white hover:bg-red-600 transition-colors disabled:opacity-50"
-              >
-                {loading ? 'Processing...' : confirm.confirmLabel}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog {...confirmDialogProps} />
     </div>
   )
 }
