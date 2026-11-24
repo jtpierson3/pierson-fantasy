@@ -1,7 +1,7 @@
 """
 Pre-gameweek sync trigger
 
-Checks wheter we're currently within the 24-hour window before the next upcoming Gameweek's
+Checks whether we're currently within the 24-hour window before the next upcoming Gameweek's
 first fixture, and if so - and we haven't already synced for this particular gameweek - 
 triggers the real players sync.
 
@@ -25,9 +25,30 @@ def headers() -> dict:
         "User-Agent": "Mozilla/5.0 (compatible; PiersonFantasyPreGameweekSync/1.0)"
     }
 
+def sync_gameweek_dates() -> dict:
+    """
+    Copies real fixture kickoffs onto FantasyGameweek start/end dates.
+    Must run BEFORE the should-run check, because that check finds a gameweek's first
+    kickoff using these dates - stale dates mean a wrong or missing trigger window.
+    """
+    response = requests.post(
+        f"{APP_URL}/api/sync/gameweek-dates",
+        headers=headers(),
+        timeout=60,
+    )
+    response.raise_for_status()
+    result = response.json()
+
+    if not result.get("success"):
+        raise RuntimeError(f"Gameweek dates sync reported failure: {result.get('error')}")
+
+    return result
+
 def run() -> dict: 
     if not SYNC_SECRET or not VERCEL_BYPASS_SECRET:
         raise RuntimeError("SYNC_SECRET or VERCEL_BYPASS_SECRET is not set")
+
+    gameweek_dates_result = sync_gameweek_dates()
 
     check = requests.get(
         f"{APP_URL}/api/sync/should-run-pregameweek-sync",
@@ -38,7 +59,11 @@ def run() -> dict:
     check_result = check.json()
 
     if not check_result.get("shouldRun"):
-        return {"ran": False, "reason": "Not within the gameweek sync window"}
+        return {
+            "ran": False,
+            "reason": "Not within the gameweek sync window",
+            "gameweekDatesResult": gameweek_dates_result,
+        }
 
     gameweek_number = check_result.get("gameweekNumber")
 
@@ -67,7 +92,13 @@ def run() -> dict:
     if failures:
         raise RuntimeError("; ".join(failures))
 
-    return {"ran": True, "gameweekNumber": gameweek_number, "SyncResult": sync_result, "fixturesSyncResult": fixtures_result}
+    return {
+        "ran": True,
+        "gameweekNumber": gameweek_number,
+        "SyncResult": sync_result,
+        "fixturesSyncResult": fixtures_result,
+        "gameweekDatesResult": gameweek_dates_result,
+    }
 
 if __name__ == "__main__":
     try:
