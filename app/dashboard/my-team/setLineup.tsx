@@ -28,6 +28,8 @@ import PlayerListRow from '@/app/components/PlayerListRow'
 import { isPremierLeagueEligible } from '@/lib/playerEligibility'
 import { useAction } from '@/app/hooks/useAction'
 import { postJson } from '@/lib/clientApi'
+import { MAX_SUBS, MAX_RESERVES } from '@/lib/leagueRules'
+import { nextOpenOrder } from '@/lib/slotOrder'
 
 type Props = {
   team: FantasyTeamWithPlayers
@@ -139,7 +141,7 @@ function EmptySlot({ slotId, variant, slot }: {
     const subsNeedingOrder: PlayerWithDetails[] = []
 
     subs.forEach(p => {
-        if (p.slotOrder >= 1 && p.slotOrder <= 5 && !usedSubOrders.has(p.slotOrder)) {
+        if (p.slotOrder >= 1 && p.slotOrder <= MAX_SUBS && !usedSubOrders.has(p.slotOrder)) {
             usedSubOrders.add(p.slotOrder)
         } else {
             subsNeedingOrder.push(p)
@@ -160,7 +162,7 @@ function EmptySlot({ slotId, variant, slot }: {
     const reservesNeedingOrder: PlayerWithDetails[] = []
 
     reserves.forEach(p => {
-        if (p.slotOrder >= 1 && p.slotOrder <= 7 && !usedReserveOrders.has(p.slotOrder)) {
+        if (p.slotOrder >= 1 && p.slotOrder <= MAX_RESERVES && !usedReserveOrders.has(p.slotOrder)) {
             usedReserveOrders.add(p.slotOrder)
         } else {
             reservesNeedingOrder.push(p)
@@ -286,14 +288,22 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
       // Dropped onto empty sub slot
       if (overId.startsWith('sub-')) {
         const currentSubs = updated.filter(p => p.rosterSlot === 'SUB' && p.id !== activePlayerId)
-        updated[activeIndex] = { ...updated[activeIndex], rosterSlot: 'SUB', slotOrder: currentSubs.length + 1}
+        updated[activeIndex] = {
+          ...updated[activeIndex],
+          rosterSlot: 'SUB',
+          slotOrder: nextOpenOrder(currentSubs.map(p => p.slotOrder), MAX_SUBS),
+        }
         return updated
       }
 
       // Dropped onto empty reserve slot
       if (overId.startsWith('reserve-')) {
         const currentReserves = updated.filter(p => p.rosterSlot === 'RESERVE' && p.id !== activePlayerId)
-        updated[activeIndex] = { ...updated[activeIndex], rosterSlot: 'RESERVE', slotOrder: currentReserves.length + 1}
+        updated[activeIndex] = {
+          ...updated[activeIndex],
+          rosterSlot: 'RESERVE',
+          slotOrder: nextOpenOrder(currentReserves.map(p => p.slotOrder), MAX_RESERVES),
+        }
         return updated
       }
 
@@ -368,10 +378,10 @@ export default function SetLineup({ team, onUpdate, targetGameweek, targetGamewe
             newSlotOrder = slotIndex ?? 0
         } else if (targetSlot === 'SUB') {
             const currentSubs = updated.filter(p => p.rosterSlot === 'SUB' && p.id !== playerId)
-            newSlotOrder = currentSubs.length + 1
+            newSlotOrder = nextOpenOrder(currentSubs.map(p => p.slotOrder), MAX_SUBS)
         } else if (targetSlot === 'RESERVE') {
             const currentReserves = updated.filter(p => p.rosterSlot === 'RESERVE' && p.id !== playerId)
-            newSlotOrder = currentReserves.length + 1
+            newSlotOrder = nextOpenOrder(currentReserves.map(p => p.slotOrder), MAX_RESERVES)
         }
 
         updated[idx] = { 

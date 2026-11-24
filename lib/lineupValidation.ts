@@ -80,14 +80,17 @@ export function validateLineupSubmission(
         return fail(`Starters must occupy distinct slots of the ${formation} formation`)
     }
 
-    const subOrders = parsed.filter(p => p.rosterSlot === 'SUB').map(p => p.slotOrder)
-    if (
-        subOrders.length > MAX_SUBS ||
-        new Set(subOrders).size !== subOrders.length ||
-        subOrders.some(o => o < 1 || o > MAX_SUBS)
-    ) {
-        return fail(`Substitutes must use distinct positions 1-${MAX_SUBS}`)
+    const subs = parsed.filter(p => p.rosterSlot === 'SUB')
+    if (subs.length > MAX_SUBS) {
+        return fail(`A lineup can have at most ${MAX_SUBS} substitutes`)
     }
 
-    return { valid: true, formation, players: parsed }
+    const subPosition = new Map(
+        [...subs].sort((a, b) => a.slotOrder - b.slotOrder).map((p, i) => [p.id, i + 1])
+    )
+    const normalized = parsed.map(p =>
+        p.rosterSlot === 'SUB' ? { ...p, slotOrder: subPosition.get(p.id)! }: p
+    )
+
+    return { valid: true, formation, players: normalized }
 }

@@ -7,6 +7,9 @@ export const MAX_NON_IR_ROSTER = 23
 /** Max substitutes on a lineup (bench slot 1 .. MAX_SUBS) */
 export const MAX_SUBS = 5
 
+/** Max reserves on a roster (reserve slot 1 .. MAX_RESERVES) */
+export const MAX_RESERVES = 7
+
 /** Smallest opening transfer bid, in dollars. */
 export const MIN_STARTING_BID = 1_000_000
 
